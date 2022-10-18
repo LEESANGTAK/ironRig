@@ -1,0 +1,78 @@
+import pymel.core as pm
+from ..irGlobal import Controller
+from .master import Master
+
+
+class GlobalMaster(Master):
+    def __init__(self, prefix='controlRig_', skeletonRoot=None, cogJoint=None):
+        self.__mastersGrp = None
+
+        super(GlobalMaster, self).__init__(prefix)
+
+        self.__skeletonRoot = pm.PyNode(skeletonRoot)
+        self.__cogJoint = pm.PyNode(cogJoint)
+        self.__cogJoint.segmentScaleCompensate.set(False)
+        self.__mainController = None
+        self.__cogController = None
+
+    def mainController(self):
+        return self.__mainController
+
+    def addModules(self, *args):
+        modules = sum([module if isinstance(module, list) else [module] for module in args], [])
+        for module in modules:
+            self.set().forceElement(module.set())
+            self._modulesGrp | module.topGrp()
+        self._modules.extend(modules)
+
+    def addMasters(self, *args):
+        masters = sum([master if isinstance(master, list) else [master] for master in args], [])
+        for master in masters:
+            self.set().forceElement(master.set())
+            self.__mastersGrp | master.topGrp()
+        self._masters.extend(masters)
+
+    def build(self):
+        super(GlobalMaster, self).build()
+        pm.parent([self._modulesGrp, self.__mastersGrp], self.__cogController)
+
+    def _createGroups(self):
+        super(GlobalMaster, self)._createGroups()
+        self.__spaceSwtichGrp = pm.createNode('transform', n='spaceSwitches_grp'.format(self._prefix))
+        self.__spaceSwtichGrp.hide()
+        self.__mastersGrp = pm.createNode('transform', n='{}masters'.format(self._prefix))
+        self._topGrp | self.__spaceSwtichGrp
+        self._topGrp.rename('controlRig')
+
+    def _buildSystems(self):
+        pass
+
+    def _buildControls(self):
+        globalCtrl = Controller(name='global_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
+        GlobalMaster.setupGlobalScaleAttr(globalCtrl.transform())
+        globalCtrl.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        self.__mainController = Controller(name='main_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
+        self.__mainController.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        self.__cogController = Controller(name='cog_ctrl', shape=Controller.SHAPE.TRIANGLE, color=self._controllerColor, direction=Controller.DIRECTION.Y)
+        self.__cogController.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        self.__cogController.matchTo(self.__cogJoint, position=True)
+        self._controllers = [globalCtrl, self.__mainController, self.__cogController]
+
+        globalCtrl | self.__mainController | self.__cogController
+        pm.parent(globalCtrl.zeroGrp(), self._topGrp)
+
+        globalCtrl.connect(self.__skeletonRoot, scale=True)
+        self.__mainController.constraint(self.__skeletonRoot, parent=True)
+
+        self.addMembers(globalCtrl.controllerNode(), self.__mainController.controllerNode(), self.__cogController.controllerNode())
+
+    def postBuild(self):
+        super(GlobalMaster, self).postBuild()
+        self.__mainController.scale = self._controllerScale * 0.9
+        self.__cogController.scale = self._controllerScale * 0.75
+
+    @staticmethod
+    def setupGlobalScaleAttr(transform):
+        pm.addAttr(transform, ln='globalScale', at='double', min=0.01, dv=1.0, keyable=True)
+        for scaleAttr in [ch + axis for ch in 's' for axis in 'xyz']:
+            transform.globalScale >> transform.attr(scaleAttr)
