@@ -500,3 +500,35 @@ def getWorldMatrixMirrorX(inMatrix):
                     0, 0, 0, 1]
     mirrorXMtx = pm.dt.Matrix(mirrorXMtxLs)
     return inMatrix * mirrorXMtx
+
+
+def cleanupRig():
+    cleanupControllers()
+    hideJoints()
+
+
+def cleanupControllers():
+    rigSet = pm.PyNode('controlRig_set')
+    ctrlTrsfs = [ctrlNode.inputs()[0] for ctrlNode in pm.ls(rigSet.members(flatten=True), type='controller')]
+
+    # Remove keyframe
+    for ctrlTrsf in ctrlTrsfs:
+        pm.cutKey(ctrlTrsf)
+
+    # Set default value
+    for ctrlTrsf in ctrlTrsfs:
+        for attr in ctrlTrsf.listAttr(keyable=True):
+            try:
+                attr.set(attr.getDefault())
+            except:
+                pm.warning('"{}" failed to set default value.'.format(attr))
+
+    # Set display type to reference
+    displayCtrl = [ctrlTrsf for ctrlTrsf in ctrlTrsfs if ctrlTrsf.hasAttr('geometryVis')]
+    if displayCtrl:
+        displayCtrl[0].geometryVis.set(2)
+
+
+def hideJoints():
+    for jnt in pm.ls(type='joint'):
+        jnt.drawStyle.set(2)
