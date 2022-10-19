@@ -47,13 +47,12 @@ class RevFootIK(System):
     def __buildRevFootJoints(self):
         skelJoints = [pm.PyNode(jnt.replace(self._prefix, '')) for jnt in self._joints]
         afVtxs = utils.getAffectedVertices(skelJoints, minWeight=0.5)
-
-        fVtxs = utils.getFacingVertices(afVtxs, pm.dt.Vector.yNegAxis, tol=0.95)
+        pm.select(afVtxs, r=True)
+        pm.mel.ConvertSelectionToFaces()
+        fFaces = utils.getFacingFaces(pm.selected(fl=True), pm.dt.Vector.yNegAxis, tol=0.8)
 
         # Create bottom mesh of foot
-        pm.select(fVtxs, r=True)
-        pm.mel.ConvertSelectionToFaces()
-        dupMesh = utils.duplicateFace(pm.selected(fl=True))
+        dupMesh = utils.duplicateFace(fFaces)
 
         # Get center point of bottom points of obb
         obb = OBB.from_points(dupMesh.name())

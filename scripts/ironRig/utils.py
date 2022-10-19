@@ -245,34 +245,35 @@ def getAffectedVertices(joints, minWeight=0.1):
     return affectedVtxs
 
 
-def getFacingVertices(vertices, direction, tol=0.5):
+def getFacingFaces(faces, direction, tol=0.5):
     preSel = pm.selected()
-    facingVertices = []
+    facingFaces = []
 
-    pm.select(vertices, r=True)
+    pm.select(faces, r=True)
     sels = om.MSelectionList()
     om.MGlobal.getActiveSelectionList(sels)
     itSels = om.MItSelectionList(sels)
     pm.select(cl=True)
     while not itSels.isDone():
         meshDag = om.MDagPath()
-        verticesObj = om.MObject()
-        itSels.getDagPath(meshDag, verticesObj)
+        facesObj = om.MObject()
+        itSels.getDagPath(meshDag, facesObj)
 
-        fnFacingVtxs = om.MFnSingleIndexedComponent()
-        facingVtxs = fnFacingVtxs.create(om.MFn.kMeshVertComponent)
-        itVtxs = om.MItMeshVertex(meshDag, verticesObj)
-        while not itVtxs.isDone():
-            vtxNormal = om.MVector()
-            itVtxs.getNormal(vtxNormal, om.MSpace.kWorld)
-            if (vtxNormal * direction) > tol:
-                fnFacingVtxs.addElement(itVtxs.index())
-            itVtxs.next()
-        om.MGlobal.select(meshDag, facingVtxs, om.MGlobal.kAddToList)
+        fnFacingFaces = om.MFnSingleIndexedComponent()
+        facingFaces = fnFacingFaces.create(om.MFn.kMeshPolygonComponent)
+        itFaces = om.MItMeshPolygon(meshDag, facesObj)
+        while not itFaces.isDone():
+            faceNormal = om.MVector()
+            itFaces.getNormal(faceNormal, om.MSpace.kWorld)
+            if (faceNormal * direction) > tol:
+                fnFacingFaces.addElement(itFaces.index())
+            itFaces.next()
+        om.MGlobal.select(meshDag, facingFaces, om.MGlobal.kAddToList)
         itSels.next()
-    facingVertices = pm.selected(fl=True)
+    facingFaces = pm.selected(fl=True)
     pm.select(preSel, r=True)
-    return facingVertices
+
+    return facingFaces
 
 
 def eigh(a, tol=1.0e-9):
