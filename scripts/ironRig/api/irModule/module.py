@@ -209,6 +209,7 @@ class Module(Container):
     def build(self):
         """Build module with joints and objects from the initialize step.
         """
+        self.__cleanupSkelJoints()
         if not self._initJoints:
             self._buildGroups()
             self._buildInitJointsWithSkelJoints()
@@ -220,6 +221,15 @@ class Module(Container):
         self._connectSkeleton()
         pm.matchTransform(self._topGrp, self._skelJoints[0], pivots=True)
         self._initGrp.hide()
+
+    def __cleanupSkelJoints(self):
+        limitAttrs = ['scaleMinX', 'scaleMaxX', 'scaleMinY', 'scaleMaxY', 'scaleMinZ', 'scaleMaxZ',
+                      'shearMinXY', 'shearMaxXY', 'shearMinXZ', 'shearMaxXZ', 'shearMinYZ', 'shearMaxYZ',
+                      'rotateMinX', 'rotateMaxX', 'rotateMinY', 'rotateMaxY', 'rotateMinZ', 'rotateMaxZ',
+                      'translateMinX', 'translateMaxX', 'translateMinY', 'translateMaxY', 'translateMinZ', 'translateMaxZ']
+        for skelJnt in self._skelJoints:
+            for attr in limitAttrs:
+                skelJnt.setLimited(attr, False)
 
     def _buildInitJointsWithSkelJoints(self):
         initJoints = []
