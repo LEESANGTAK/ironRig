@@ -63,14 +63,17 @@ class RevFootIK(System):
             centerVec += pm.dt.Vector(pnt)
         centerPnt = pm.dt.Point(centerVec / len(obbBotPoints))
 
-        # Get middle points with bottom points of obb
+        # Get middle points of bottom edges of obb
         midPoints = []
         for i, pnt in enumerate(obbBotPoints):
-            if i == 3:
+            if pnt == obbBotPoints[-1]:
                 break
             for otherPnt in obbBotPoints[i+1:]:
                 midVec = (pm.dt.Vector(pnt) + pm.dt.Vector(otherPnt)) * 0.5
-                if (midVec.normal() * pm.dt.Vector(centerPnt).normal()) != 1:
+                # When diagnol edge, mid point will same as center point
+                if pm.dt.Point(midVec) == centerPnt:
+                    continue
+                else:
                     midPoints.append(pm.dt.Point(midVec))
 
         # Sort middle points
@@ -100,15 +103,17 @@ class RevFootIK(System):
         anklePnt = utils.getWorldPoint(self._joints[0])
         toePnt = pm.dt.Point(heelPnt + utils.getProjectedVector(ballPnt-heelPnt, toeTipPnt-heelPnt))
 
+        # Build orientation matrix for reverse foot joints
         oriMtx = utils.getOrientMatrix(utils.getWorldPoint(self._joints[0]),
                                        utils.getWorldPoint(self._joints[-1]),
                                        utils.getWorldPoint(self._joints[0]) + pm.dt.Vector.yNegAxis)
-        if centerPnt.x < 0:
+        if centerPnt.x < 0:  # In case right side
             oriMtx = pm.dt.Matrix([oriMtx[0][0], oriMtx[0][1], oriMtx[0][2], oriMtx[0][3],
                                    -oriMtx[1][0], -oriMtx[1][1], -oriMtx[1][2], oriMtx[1][3],
                                    -oriMtx[2][0], -oriMtx[2][1], -oriMtx[2][2], oriMtx[2][3],
                                    oriMtx[3][0], oriMtx[3][1], oriMtx[3][2], oriMtx[3][3]])
 
+        # Build reverse foot joints
         inBankRevJnt = pm.createNode('joint', n='{}inBank_revJnt'.format(self._prefix))
         pm.xform(inBankRevJnt, matrix=oriMtx, ws=True)
         pm.xform(inBankRevJnt, t=inBankPnt, ws=True)
