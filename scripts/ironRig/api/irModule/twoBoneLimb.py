@@ -30,6 +30,16 @@ class TwoBoneLimb(Module):
         self.__nonrollJoints = []
         self.__blendConstraints = []
 
+        self.__startController = False
+
+    @property
+    def startController(self):
+        return self.__startController
+
+    @startController.setter
+    def startController(self, val):
+        self.__startController = val
+
     def ikSystem(self):
         return self.__ikSystem
 
@@ -117,6 +127,8 @@ class TwoBoneLimb(Module):
             self.__ikSystem.negateSclaeX = True
         self.__ikSystem.build()
         self.__ikSystem.setupStretch()
+        if self.__startController:
+            self.__ikSystem.buildStartController()
         self.__ikSystem.controllerScale = 5
         self.addSystems(self.__ikSystem)
 
