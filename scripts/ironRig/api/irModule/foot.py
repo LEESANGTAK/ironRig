@@ -59,7 +59,7 @@ class Foot(Module):
     def __buildControls(self):
         moduleCtrl = Controller('{}module_ctrl'.format(self._prefix), Controller.SHAPE.SPHERE)
         moduleCtrl.lockChannels(['translate', 'rotate', 'scale', 'visibility'])
-        pm.addAttr(moduleCtrl.transform(), ln='ik', at='double', min=0, max=1, dv=1, keyable=True)
+        pm.addAttr(moduleCtrl.transform(), ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         pm.parentConstraint(self.__blendJoints[1], moduleCtrl.zeroGrp(), mo=False)
         moduleCtrl.shapeOffset = [0, self._aimSign*10, 0]
 

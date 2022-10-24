@@ -152,7 +152,7 @@ class Module(Container):
 
         negAxisAttrNames = ['negateXAxis', 'negateYAxis', 'negateZAxis', 'swapYZAxis']
         for attrName in negAxisAttrNames:
-            pm.addAttr(midLocOriPlane, ln=attrName, at='bool', keyable=True)
+            pm.addAttr(midLocOriPlane, ln=attrName, at='bool', dv=False, keyable=True)
             midLocOriPlane.attr(attrName) >> self.__orientPlane.attr(attrName)
 
         pm.addAttr(midLocOriPlane, ln='initJointScale', type='double3', keyable=True)

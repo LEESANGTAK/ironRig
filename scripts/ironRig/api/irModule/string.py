@@ -114,7 +114,7 @@ class String(Module):
             ikAttrName = 'ik'
             baseCtrl = self.__ikSystem.controllers()[-1]
             otherCtrls = self.__ikSystem.controllers()[:-1] + self.__fkSystem.controllers()
-            pm.addAttr(baseCtrl.transform(), ln=ikAttrName, at='float', min=0, max=1, dv=1, keyable=True)
+            pm.addAttr(baseCtrl.transform(), ln=ikAttrName, at='float', min=0.0, max=1.0, dv=1.0, keyable=True)
             for ctrl in otherCtrls:
                 pm.addAttr(ctrl.transform(), ln=ikAttrName, proxy='{0}.{1}'.format(baseCtrl.transform(), ikAttrName))
 

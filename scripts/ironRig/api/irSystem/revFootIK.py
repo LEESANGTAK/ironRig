@@ -157,7 +157,7 @@ class RevFootIK(System):
         self.addMembers(footCtrl.controllerNode())
 
         for attrInfo in RevFootIK.ATTRS_INFO:
-            pm.addAttr(footCtrl, ln=attrInfo['name'], at='float', dv=attrInfo['default'], min=attrInfo['min'], max=attrInfo['max'], keyable=True)
+            pm.addAttr(footCtrl, ln=attrInfo['name'], at='float', min=attrInfo['min'], max=attrInfo['max'], dv=attrInfo['default'], keyable=True)
 
         self._connectAttributes()
 

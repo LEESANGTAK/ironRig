@@ -96,9 +96,9 @@ class TwoBoneIK(System):
 
     def setupStretch(self):
         stretchGrp = pm.createNode('transform', n='{}stretch_grp'.format(self._prefix))
-        pm.addAttr(self._controllers[0].transform(), at='double', ln='length1', min=0.01, dv=1, keyable=True)
-        pm.addAttr(self._controllers[0].transform(), at='double', ln='length2', min=0.01, dv=1, keyable=True)
-        pm.addAttr(self._controllers[0].transform(), at='double', ln='stretch', min=0, max=1, dv=1, keyable=True)
+        pm.addAttr(self._controllers[0].transform(), at='double', ln='length1', min=0.01, dv=1.0, keyable=True)
+        pm.addAttr(self._controllers[0].transform(), at='double', ln='length2', min=0.01, dv=1.0, keyable=True)
+        pm.addAttr(self._controllers[0].transform(), at='double', ln='stretch', min=0.0, max=1.0, dv=1.0, keyable=True)
 
         stretchInputNode = pm.createNode('transform', n='{}stretch_input'.format(self._prefix))
         pm.addAttr(stretchInputNode, at='double', ln='inLength1')
@@ -229,7 +229,7 @@ class TwoBoneIK(System):
         stretchOutputNode.outLength2 >> self._joints[2].attr('translate{}'.format(self._aimAxis))
 
     def setupPin(self):
-        pm.addAttr(self._controllers[-1].transform(), at='double', ln='pin', min=0, max=1, dv=0, keyable=True)
+        pm.addAttr(self._controllers[-1].transform(), at='double', ln='pin', min=0.0, max=1.0, dv=0.0, keyable=True)
 
         pinGrp = pm.createNode('transform', n='{}pin_grp'.format(self._prefix))
 

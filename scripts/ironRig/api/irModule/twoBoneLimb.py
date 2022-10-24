@@ -30,15 +30,15 @@ class TwoBoneLimb(Module):
         self.__nonrollJoints = []
         self.__blendConstraints = []
 
-        self.__startController = False
+        self.__ikStartController = False
 
     @property
-    def startController(self):
-        return self.__startController
+    def ikStartController(self):
+        return self.__ikStartController
 
-    @startController.setter
-    def startController(self, val):
-        self.__startController = val
+    @ikStartController.setter
+    def ikStartController(self, val):
+        self.__ikStartController = val
 
     def ikSystem(self):
         return self.__ikSystem
@@ -127,7 +127,7 @@ class TwoBoneLimb(Module):
             self.__ikSystem.negateSclaeX = True
         self.__ikSystem.build()
         self.__ikSystem.setupStretch()
-        if self.__startController:
+        if self.__ikStartController:
             self.__ikSystem.buildStartController()
         self.__ikSystem.controllerScale = 5
         self.addSystems(self.__ikSystem)
@@ -270,7 +270,7 @@ class TwoBoneLimb(Module):
     def __buildControls(self):
         moduleCtrl = Controller('{}module_ctrl'.format(self._prefix), Controller.SHAPE.SPHERE)
         moduleCtrl.lockChannels(['translate', 'rotate', 'scale', 'visibility'])
-        pm.addAttr(moduleCtrl.transform(), ln='ik', at='double', min=0, max=1, dv=1, keyable=True)
+        pm.addAttr(moduleCtrl.transform(), ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         pm.parentConstraint(self.__blendJoints[-1], moduleCtrl.zeroGrp(), mo=False)
         moduleCtrl.shapeOffset = [0, self._aimSign*-10, 0]
 
@@ -287,7 +287,7 @@ class TwoBoneLimb(Module):
         self.addMembers(moduleCtrl.controllerNode())
 
         if self.__upperTwistSystem or self.__lowerTwistSystem:
-            pm.addAttr(moduleCtrl.transform(), ln='bendCtrlVis', at='bool', keyable=True)
+            pm.addAttr(moduleCtrl.transform(), ln='bendCtrlVis', at='bool', dv=False, keyable=True)
             moduleTwistCtrl = Controller('{}twist_ctrl'.format(self._prefix))
             moduleTwistCtrl.matchTo(self.__blendJoints[1], position=True)
             pm.pointConstraint(self.__blendJoints[1], moduleTwistCtrl.zeroGrp(), mo=False)

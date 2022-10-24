@@ -84,6 +84,42 @@ globalMst.addModules(upHeadMod)
 #upHeadMod.remove()
 
 # ------------------------ Eye Build -----------------------------------
+prefix = 'upEyelid_L_'
+joints = [u'SK_L_UpperEyeLid']
+upEyelidLMod = irModule.Simple(prefix, joints)
+upEyelidLMod.build()
+upEyelidLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
+upEyelidLMod.controllerScale = 1
+upEyelidLMod.postBuild()
+#upEyelidLMod.remove()
+
+prefix = 'lowEyelid_L_'
+joints = [u'SK_L_LowerEyeLid']
+lowEyelidLMod = irModule.Simple(prefix, joints)
+lowEyelidLMod.build()
+lowEyelidLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
+lowEyelidLMod.controllerScale = 1
+lowEyelidLMod.postBuild()
+#lowEyelidLMod.remove()
+
+prefix = 'upEyelid_R_'
+joints = [u'SK_R_UpperEyeLid']
+upEyelidRMod = irModule.Simple(prefix, joints)
+upEyelidRMod.build()
+upEyelidRMod.controllerColor = irGlobal.Controller.COLOR.RED
+upEyelidRMod.controllerScale = 1
+upEyelidRMod.postBuild()
+#upEyelidRMod.remove()
+
+prefix = 'lowEyelid_R_'
+joints = [u'SK_R_LowerEyeLid']
+lowEyelidRMod = irModule.Simple(prefix, joints)
+lowEyelidRMod.build()
+lowEyelidRMod.controllerColor = irGlobal.Controller.COLOR.RED
+lowEyelidRMod.controllerScale = 1
+lowEyelidRMod.postBuild()
+#lowEyelidRMod.remove()
+
 prefix = 'eye_L_'
 joints = [u'SK_L_Eye', u'SK_L_EyeEnd']
 eyeLMod = irModule.Eye(prefix, joints)

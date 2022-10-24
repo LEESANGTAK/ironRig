@@ -55,7 +55,7 @@ class SpaceSwitchBuilder(object):
         otherSpaceAttrs = []
         for index, driverCtrl in enumerate(allDriverCtrls):
             attrName = driverCtrl.transform().split('_')[0] + '_space'
-            pm.addAttr(self.__drivenController.transform(), ln=attrName, at='float', min=0, max=1, keyable=True)
+            pm.addAttr(self.__drivenController.transform(), ln=attrName, at='float', min=0.0, max=1.0, dv=0.0, keyable=True)
             ctrlAttr = self.__drivenController.transform().attr(attrName)
             ctrlAttr >> cnst.target[index].targetWeight
             if driverCtrl == self.__defaultDriverController:

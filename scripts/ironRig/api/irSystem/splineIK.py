@@ -134,7 +134,7 @@ class SplineIK(System):
         pm.parent(scaleCrv, self._blbxGrp)
 
     def setupTwist(self):
-        pm.addAttr(self._controllers[-1].transform(), at='double', ln='twist', keyable=True)
+        pm.addAttr(self._controllers[-1].transform(), at='double', ln='twist', dv=0.0, keyable=True)
         self._controllers[-1].transform().twist >> self.__ikHandle.twist
 
     def setupAdvancedTwist(self):
@@ -218,11 +218,11 @@ class SplineIK(System):
 
     def __addWaveAttrs(self):
         ATTRIBUTES_INFO=[
-            {'waveOnOff': {'type': 'double', 'keyable': True}},
-            {'waveAmplitude': {'type': 'double', 'keyable': True}},
-            {'waveLength': {'type': 'double', 'keyable': True}},
-            {'waveOffset': {'type': 'double', 'keyable': True}},
-            {'waveOrient': {'type': 'double', 'keyable': True}},
+            {'waveOnOff': {'type': 'double', 'defaultValue': 0.0, 'keyable': True}},
+            {'waveAmplitude': {'type': 'double', 'defaultValue': 0.1, 'keyable': True}},
+            {'waveLength': {'type': 'double', 'defaultValue': 1.0, 'keyable': True}},
+            {'waveOffset': {'type': 'double', 'defaultValue': 0.0, 'keyable': True}},
+            {'waveOrient': {'type': 'double', 'defaultValue': 0.0, 'keyable': True}},
         ]
         # Add dvider
         pm.addAttr(self._controllers[-1].transform(), ln='wave', at='enum', en='---------------:')
@@ -231,12 +231,10 @@ class SplineIK(System):
         # Add attributes
         for attrInfo in ATTRIBUTES_INFO:
             for attrName, attrProperties in attrInfo.items():
-                pm.addAttr(self._controllers[-1].transform(), ln=attrName, at=attrProperties['type'], keyable=attrProperties['keyable'])
+                pm.addAttr(self._controllers[-1].transform(), ln=attrName, at=attrProperties['type'], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
 
         # Set default value
         self._controllers[-1].transform().waveOnOff.setRange(0, 1)
-        self._controllers[-1].transform().waveAmplitude.set(0.1)
-        self._controllers[-1].transform().waveLength.set(1)
 
     def setupDynamic(self):
         # Nodes setup
@@ -340,15 +338,15 @@ class SplineIK(System):
 
     def __addDynAttrs(self):
         ATTRIBUTES_INFO=[
-            {'enable': {'type': 'bool', 'keyable': True}},
-            {'startFrame': {'type': 'long', 'keyable': True}},
-            {'subSteps': {'type': 'long', 'keyable': True}},
-            {'bendResistance': {'type': 'double', 'range':[0, 1000], 'keyable': True}},
-            {'stiffness': {'type': 'double', 'range':[0, 1000], 'keyable': True}},
-            {'damp': {'type': 'double', 'range':[0, 1000], 'keyable': True}},
-            {'drag': {'type': 'double', 'range':[0, 1000], 'keyable': True}},
-            {'startCurveAttract': {'type': 'double', 'range':[0, 1000], 'keyable': True}},
-            {'attractionDamp': {'type': 'double', 'range':[0, 1], 'keyable': True}},
+            {'enable': {'type': 'bool', 'defaultValue': False, 'keyable': True}},
+            {'startFrame': {'type': 'long', 'defaultValue': 100000, 'keyable': True}},
+            {'subSteps': {'type': 'long', 'defaultValue': 3, 'keyable': True}},
+            {'bendResistance': {'type': 'double', 'range':[0, 1000], 'defaultValue': 0.1, 'keyable': True}},
+            {'stiffness': {'type': 'double', 'range':[0, 1000], 'defaultValue': 0.1, 'keyable': True}},
+            {'damp': {'type': 'double', 'range':[0, 1000], 'defaultValue': 0.1, 'keyable': True}},
+            {'drag': {'type': 'double', 'range':[0, 1000], 'defaultValue': 0.05, 'keyable': True}},
+            {'startCurveAttract': {'type': 'double', 'range':[0, 1000], 'defaultValue': 1.0, 'keyable': True}},
+            {'attractionDamp': {'type': 'double', 'range':[0, 1], 'defaultValue': 0.0, 'keyable': True}},
         ]
 
         # Add dvider
@@ -359,20 +357,9 @@ class SplineIK(System):
         for attrInfo in ATTRIBUTES_INFO:
             for attrName, attrProperties in attrInfo.items():
                 if attrProperties.has_key('range'):
-                    pm.addAttr(self._controllers[-1].transform(), ln=attrName, at=attrProperties['type'], min=attrProperties['range'][0], max=attrProperties['range'][1], keyable=attrProperties['keyable'])
+                    pm.addAttr(self._controllers[-1].transform(), ln=attrName, at=attrProperties['type'], min=attrProperties['range'][0], max=attrProperties['range'][1], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
                 else:
-                    pm.addAttr(self._controllers[-1].transform(), ln=attrName, at=attrProperties['type'], keyable=attrProperties['keyable'])
-
-        # Set default value
-        self._controllers[-1].transform().enable.set(False)
-        self._controllers[-1].transform().startFrame.set(100000)
-        self._controllers[-1].transform().subSteps.set(3)
-        self._controllers[-1].transform().bendResistance.set(0.1)
-        self._controllers[-1].transform().stiffness.set(0.1)
-        self._controllers[-1].transform().damp.set(0.1)
-        self._controllers[-1].transform().drag.set(0.05)
-        self._controllers[-1].transform().startCurveAttract.set(1.0)
-        self._controllers[-1].transform().attractionDamp.set(0.0)
+                    pm.addAttr(self._controllers[-1].transform(), ln=attrName, at=attrProperties['type'], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
 
     @staticmethod
     def findMultiAttributeEmptyIndex(node, attribute):

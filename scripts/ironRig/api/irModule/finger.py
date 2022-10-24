@@ -15,7 +15,7 @@ class Finger(Module):
 
     def preBuild(self):
         super(Finger, self).preBuild()
-        pm.addAttr(self._oriPlaneLocators[1], ln='curl', at='float', keyable=True)
+        pm.addAttr(self._oriPlaneLocators[1], ln='curl', at='float', dv=0.0, keyable=True)
         for initJnt in self._initJoints:
             self._oriPlaneLocators[1].curl >> initJnt.rz
 
