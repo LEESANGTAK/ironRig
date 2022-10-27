@@ -5,6 +5,10 @@ from ..irGlobal import Controller
 
 
 class Master(Container):
+    """
+    Master contains modules, controllers.
+    Master controls modules behavior.
+    """
     def __init__(self, prefix=''):
         super(Master, self).__init__(prefix)
         self._modules = []

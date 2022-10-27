@@ -5,6 +5,9 @@ from .module import Module
 
 
 class Simple(Module):
+    """
+    Simple can be applied for non-hierarchical joints like apples in basket.
+    """
     def __init__(self, prefix='', joints=[]):
         super(Simple, self).__init__(prefix, joints)
 

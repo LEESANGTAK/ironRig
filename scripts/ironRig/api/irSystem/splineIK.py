@@ -389,3 +389,8 @@ class SplineIK(System):
 
             self.addMembers(pointOnCrvInfo)
             pm.parent(bakeLocAnchor, self._noTrsfGrp)
+
+    def setCurveWeightsArc(self):
+        skinClst = utils.getSkinCluster(self.__curve)
+        pm.skinPercent(skinClst, self.__curve.cv[1], transformValue=[(self.__curveJoints[1], 0.3)], prw=0)
+        pm.skinPercent(skinClst, self.__curve.cv[-2], transformValue=[(self.__curveJoints[-2], 0.3)], prw=0)

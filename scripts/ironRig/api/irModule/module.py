@@ -6,6 +6,13 @@ from ..irSystem import TwoBoneIK
 
 
 class Module(Container):
+    """
+    Module contains geometry, initial joints, systems(IK|FK|Spline etc...), controllers, outputs.
+    Module controls modules relationship.
+
+    :param Container: _description_
+    :type Container: _type_
+    """
     def __init__(self, prefix='', skeletonJoints=None):
         super(Module, self).__init__(prefix)
 

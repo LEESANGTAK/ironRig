@@ -33,18 +33,18 @@ def getWorldPoint(object):
     return pm.dt.Point(pm.xform(object, q=True, rp=True, ws=True))
 
 
-def findClosestObject(searchPoint, joints):
-    closestJnt = None
+def findClosestObject(searchPoint, objects):
+    closestObj = None
 
     minDist = 100000.0
-    for jnt in joints:
-        jntPnt = pm.dt.Point(pm.xform(jnt, q=True, rp=True, ws=True))
-        delta = jntPnt - searchPoint
+    for obj in objects:
+        objPnt = pm.dt.Point(pm.xform(obj, q=True, rp=True, ws=True))
+        delta = objPnt - searchPoint
         if delta.length() < minDist:
-            closestJnt = jnt
+            closestObj = obj
             minDist = delta.length()
 
-    return closestJnt
+    return closestObj
 
 
 def findClosestController(searchPoint, controllers):
@@ -532,3 +532,11 @@ def cleanupControllers():
 def hideJoints():
     for jnt in pm.ls(type='joint'):
         jnt.drawStyle.set(2)
+
+
+def isOddNumber(number):
+    return number%2 == 1
+
+
+def getSkinCluster(geo):
+    return pm.mel.findRelatedSkinCluster(geo.node())

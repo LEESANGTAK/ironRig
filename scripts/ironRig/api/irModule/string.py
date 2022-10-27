@@ -6,6 +6,9 @@ from .module import Module
 
 
 class String(Module):
+    """
+    This module can be applied for the type of tongue, hair, tail, etc...
+    """
     def __init__(self, prefix='', joints=[]):
         super(String, self).__init__(prefix, joints)
 

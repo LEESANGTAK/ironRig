@@ -10,6 +10,7 @@ from . import head
 from . import eye
 from . import jaw
 from . import string
+from . import rope
 
 reload(module)
 reload(simple)
@@ -23,6 +24,7 @@ reload(head)
 reload(eye)
 reload(jaw)
 reload(string)
+reload(rope)
 
 from .simple import Simple
 from .spine import Spine
@@ -35,3 +37,4 @@ from .head import Head
 from .eye import Eye
 from .jaw import Jaw
 from .string import String
+from .rope import Rope

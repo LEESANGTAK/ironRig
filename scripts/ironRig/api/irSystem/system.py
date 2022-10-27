@@ -5,6 +5,9 @@ from ..irGlobal import Controller
 
 
 class System(Container):
+    """
+    System contains joint, joint driving system, controller.
+    """
     def __init__(self, prefix='', joints=[]):
         super(System, self).__init__(prefix)
 
