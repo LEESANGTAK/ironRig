@@ -20,7 +20,7 @@ class Rope(Module):
         self.__numberOfControllers = val
 
     def _buildSystems(self):
-        sgJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='sg')
+        sgJoints = utils.buildNewJoints(self._initJoints, searchStr='init', replaceStr='sg')
         self.__sgSystem = Single(self._prefix+'sg_', sgJoints)
         self.__sgSystem.build()
         self.__sgSystem.controllerShape = Controller.SHAPE.CUBE
@@ -48,6 +48,10 @@ class Rope(Module):
         for sgCtrl in self.__sgSystem.controllers():
             cloestIkJnt = utils.findClosestObject(utils.getWorldPoint(sgCtrl.transform()), self.__ikSystem.joints())
             pm.parentConstraint(cloestIkJnt, sgCtrl.zeroGrp(), mo=True)
+
+    def _buildOutputs(self):
+        self._outJoints = utils.buildNewJoints(self._initJoints, searchStr='init', replaceStr='out')
+        pm.parent(self._outJoints, self._outGrp)
 
     def _connectOutputs(self):
         for sysJnt, outJnt in zip(self.__sgSystem.joints(), self._outJoints):

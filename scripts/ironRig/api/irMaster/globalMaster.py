@@ -4,7 +4,7 @@ from .master import Master
 
 
 class GlobalMaster(Master):
-    def __init__(self, prefix='controlRig_', skeletonRoot=None, cogJoint=None):
+    def __init__(self, prefix='rig_', skeletonRoot=None, cogJoint=None):
         self.__mastersGrp = None
 
         super(GlobalMaster, self).__init__(prefix)
@@ -42,7 +42,7 @@ class GlobalMaster(Master):
         self.__spaceSwtichGrp.hide()
         self.__mastersGrp = pm.createNode('transform', n='{}masters'.format(self._prefix))
         self._topGrp | self.__spaceSwtichGrp
-        self._topGrp.rename('controlRig')
+        self._topGrp.rename('rig')
 
     def _buildSystems(self):
         pass
