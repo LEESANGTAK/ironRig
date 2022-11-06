@@ -20,7 +20,6 @@ class Clavicle(Module):
         if self._negateScaleX:
             self.__fkSystem.negateSclaeX = True
         self.__fkSystem.build()
-        self.__fkSystem.controllers()[0].shape = Controller.SHAPE.PIN
 
         self.addSystems(self.__fkSystem)
 

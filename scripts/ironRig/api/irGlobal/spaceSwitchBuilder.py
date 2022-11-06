@@ -44,11 +44,12 @@ class SpaceSwitchBuilder(object):
             driverCtrl.constraint(driverLocZeroGrp, parent=parent, orient=orient)
         pm.parent(topGrp, SpaceSwitchBuilder.SPACE_SWITCH_GRP)
 
-        # Constraint driven controller zero group
+        # Constraint driven controller sapce group
+        spaceGrp = utils.makeGroup(self.__drivenController.extraGrp(), '{}_space'.format(self.__drivenController))
         if parent:
-            cnst = pm.parentConstraint(driverLocs, self.__drivenController.zeroGrp(), mo=True)
+            cnst = pm.parentConstraint(driverLocs, spaceGrp, mo=True)
         elif orient:
-            cnst = pm.orientConstraint(driverLocs, self.__drivenController.zeroGrp(), mo=True)
+            cnst = pm.orientConstraint(driverLocs, spaceGrp, mo=True)
 
         # Add attributes and connect to constraint weights
         defaultSpaceAttr = None

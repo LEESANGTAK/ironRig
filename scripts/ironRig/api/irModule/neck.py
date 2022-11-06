@@ -37,13 +37,15 @@ class Neck(Module):
         if self._negateScaleX:
             self.__ikSystem.negateSclaeX = True
         self.__ikSystem.build()
-        self.__ikSystem.controllerShape = Controller.SHAPE.CIRCLE
-        self.__ikSystem.controllers()[-1].hide()
 
         if len(self._initJoints) >= 2:
             self.__ikSystem.setupAdvancedTwist()
         self.__ikSystem.setupStretch()
         self.__ikSystem.setupHybridIK()
+
+        self.__ikSystem.controllerShape = Controller.SHAPE.CIRCLE
+        self.__ikSystem.controllers()[-1].shape = Controller.SHAPE.CUBE
+        self.__ikSystem.controllers()[-1].name = 'head_ctrl'.format(self._prefix)
 
         self.addSystems(self.__ikSystem)
 
@@ -55,12 +57,13 @@ class Neck(Module):
 
     def _connectOutputs(self):
         for sysJnt, outJnt in zip(self.__ikSystem.joints(), self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])
+            if sysJnt == self.__ikSystem.joints()[-1]:
+                self.__ikSystem.controllers()[-1].constraint(outJnt, point=True, orient=True)
+            else:
+                pm.pointConstraint(sysJnt, outJnt, mo=True)
+                pm.orientConstraint(sysJnt, outJnt, mo=True)
+                utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])
 
-    def _connectSkeleton(self):
-        for outJnt, jnt in zip(self._outJoints, self._skelJoints):
-            if outJnt == self._outJoints[-1]:
-                break
-            pm.parentConstraint(outJnt, jnt, mo=True)
+    def postBuild(self):
+        super(Neck, self).postBuild()
+        self.__ikSystem.controllers()[-1].alignShapeTo(utils.getWorldPoint(self._initJoints[-1]), Controller.SIDE.BOTTOM)
