@@ -508,7 +508,7 @@ def cleanupRig():
 
 
 def cleanupControllers():
-    rigSet = pm.PyNode('controlRig_set')
+    rigSet = pm.PyNode('rig_set')
     ctrlTrsfs = [ctrlNode.inputs()[0] for ctrlNode in pm.ls(rigSet.members(flatten=True), type='controller')]
 
     # Remove keyframe

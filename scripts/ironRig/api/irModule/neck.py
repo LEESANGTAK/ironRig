@@ -57,12 +57,9 @@ class Neck(Module):
 
     def _connectOutputs(self):
         for sysJnt, outJnt in zip(self.__ikSystem.joints(), self._outJoints):
-            if sysJnt == self.__ikSystem.joints()[-1]:
-                self.__ikSystem.controllers()[-1].constraint(outJnt, point=True, orient=True)
-            else:
-                pm.pointConstraint(sysJnt, outJnt, mo=True)
-                pm.orientConstraint(sysJnt, outJnt, mo=True)
-                utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])
+            pm.pointConstraint(sysJnt, outJnt, mo=True)
+            pm.orientConstraint(sysJnt, outJnt, mo=True)
+            utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])
 
     def postBuild(self):
         super(Neck, self).postBuild()
