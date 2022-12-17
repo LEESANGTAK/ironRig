@@ -308,10 +308,11 @@ class TwoBoneIK(System):
         pinOutputNode.outLength1 >> self._joints[1].attr('translate{}'.format(self._aimAxis))
         pinOutputNode.outLength2 >> self._joints[2].attr('translate{}'.format(self._aimAxis))
 
-
     def buildStartController(self):
-        startCtrl = Controller('{}_ctrl'.format(self._joints[0]), shape=Controller.SHAPE.CUBE)
-        startCtrl.matchTo(self._joints[0], position=True, rotation=True)
+        startCtrl = Controller('{}_ctrl'.format(self._joints[0]), shape=Controller.SHAPE.SPHERE)
+        startCtrl.matchTo(self._joints[0], position=True)
+        startCtrl.matchTo(self.__ikHandleController.transform(), rotation=True, scale=True)
         startCtrl.constraint(self._joints[0].getParent(), parent=True)
+        startCtrl.lockChannels(['rotate', 'scale', 'visibility'])
         self._controllers.append(startCtrl)
         pm.parent(startCtrl.zeroGrp(), self._controllerGrp)

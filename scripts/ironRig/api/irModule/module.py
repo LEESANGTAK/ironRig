@@ -79,7 +79,7 @@ class Module(Container):
         """
         self._buildGroups()
         self._buildInitSkelLocators()
-        self.__buildOrientPlane()
+        self._buildOrientPlane()
         self._buildInitJoints()
         self._initJoints[0].scale >> self._oriPlaneLocators[1].initJointScale
         pm.select(self._oriPlaneLocators[1], r=True)
@@ -106,7 +106,7 @@ class Module(Container):
         self._initSkelLocators = initSkelLocs
         pm.parent(self._initSkelLocators, self._initGrp)
 
-    def __buildOrientPlane(self):
+    def _buildOrientPlane(self):
         pluginName = 'orientPlane'
         if not pm.pluginInfo(pluginName, q=True, loaded=True):
             pm.loadPlugin(pluginName)

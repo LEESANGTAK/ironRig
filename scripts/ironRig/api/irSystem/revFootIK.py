@@ -161,6 +161,10 @@ class RevFootIK(System):
 
         self._connectAttributes()
 
+        if self._negateScaleX:
+            toeUnitConversion = footCtrl.transform().toe.outputs(type='unitConversion')[0]
+            toeUnitConversion.conversionFactor.set(-toeUnitConversion.conversionFactor.get())
+
     def _connectAttributes(self):
         footCtrl = self._controllers[0]
         inBankJnt = self.__revFootJoints[0]

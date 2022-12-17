@@ -17,6 +17,8 @@ class Rope(Module):
 
     @numberOfControllers.setter
     def numberOfControllers(self, val):
+        if not utils.isOddNumber(val):
+            pm.error('Number of controllers should be odd number.')
         self.__numberOfControllers = val
 
     def _buildSystems(self):

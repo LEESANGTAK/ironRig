@@ -143,6 +143,25 @@ def createJointsOnCurve(curve, numJoints, prefix):
     return joints
 
 
+def createJointsOnSurface(surface, numJoints, prefix):
+    joints = []
+
+    surface = pm.PyNode(surface)
+
+    segments = numJoints - 1
+    increment = 1.0 / segments
+
+    for i in range(numJoints):
+        pointOnSurface = surface.getPointAtParam(increment * i, 0.5, space='world')
+        jnt = pm.createNode('joint', n='{}{:02d}_srfcJnt'.format(prefix, i))
+        pm.xform(jnt, t=pointOnSurface, ws=True)
+        joints.append(jnt)
+
+    pm.makeIdentity(joints, apply=True)
+
+    return joints
+
+
 def getAimAxisInfo(startJoint, endJoint):
     startJoint = pm.PyNode(startJoint)
     endJoint = pm.PyNode(endJoint)
@@ -504,6 +523,10 @@ def getWorldMatrixMirrorX(inMatrix):
 
 def cleanupRig():
     cleanupControllers()
+    # Hide private groups
+    privateGrps = pm.ls(['*_init_grp', '*_blbx_grp', '*_out_grp'])
+    for privateGrp in privateGrps:
+        privateGrp.hide()
     hideJoints()
 
 
@@ -521,9 +544,9 @@ def cleanupControllers():
             try:
                 attr.set(attr.getDefault())
             except:
-                pm.warning('"{}" failed to set default value.'.format(attr))
+                pass
 
-    # Set display type to reference
+    # Set geometry display type to reference
     displayCtrl = [ctrlTrsf for ctrlTrsf in ctrlTrsfs if ctrlTrsf.hasAttr('geometryVis')]
     if displayCtrl:
         displayCtrl[0].geometryVis.set(2)

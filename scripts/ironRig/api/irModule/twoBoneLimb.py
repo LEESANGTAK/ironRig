@@ -332,10 +332,11 @@ class TwoBoneLimb(Module):
         if self.__upperTwistSystem or self.__lowerTwistSystem:
             self._controllers[1].color = tuple(pm.dt.Vector(self._controllerColor) + 0.5)
 
-        self._controllers[0].scale = self._controllerScale * 0.25
+        self._controllers[0].scale = self._controllerScale * 0.1  # Set scale of module controller
+        self.__ikSystem.controllers()[1].scale = self._controllerScale * 0.3  # Set scale of pole vector controller
         if self.__upperTwistSystem:
-            self.__upperTwistSystem.controllerScale = self._controllerScale * 0.75
+            self.__upperTwistSystem.controllerScale = self._controllerScale * 0.9
         if self.__lowerTwistSystem:
-            self.__lowerTwistSystem.controllerScale = self._controllerScale * 0.75
+            self.__lowerTwistSystem.controllerScale = self._controllerScale * 0.9
         if self.__upperTwistSystem or self.__lowerTwistSystem:
-            self._controllers[1].scale = self._controllerScale * 0.75
+            self._controllers[1].scale = self._controllerScale * 0.9

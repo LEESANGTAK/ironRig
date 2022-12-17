@@ -26,13 +26,16 @@ class Shape:
     PIN = os.path.join(CONTROLLER_DIR, 'pin.json')
     FOOT = os.path.join(CONTROLLER_DIR, 'foot.json')
     ROOT = os.path.join(CONTROLLER_DIR, 'root.json')
+    ARROW_QUAD = os.path.join(CONTROLLER_DIR, 'arrowQuad.json')
 
 
 class Color:
     RED = (1.0, 0.0, 0.0)
+    LIGHTRED = (1.0, 0.5, 0.5)
     GREEN = (0.0, 1.0, 0.0)
+    LIGHTGREEN = (0.5, 1.0, 0.5)
     BLUE = (0.0, 0.0, 1.0)
-    SKYBLUE = (0.392, 0.863, 1.0)
+    SKYBLUE = (0.4, 0.8, 1.0)
     YELLOW = (1.0, 1.0, 0.0)
     ORANGE = (1.0, 0.15, 0.0)
     PURPLE = (0.15, 0.0, 1.0)

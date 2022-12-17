@@ -1,22 +1,34 @@
 import pymel.core as pm
 from ... import utils
 from ..irSystem import SplineIK
+from ..irSystem import RibbonIK
 from ..irSystem import FK
 from .module import Module
 
 
+class IKType:
+    SPLINE = 0
+    RIBBON = 1
+
+
 class String(Module):
     """
-    This module can be applied for the type of tongue, hair, tail, etc...
+    This module can be applied for
+    SPLINE: hair, tongue, tail, ...
+    RIBBON: brow, lid, lip, ...
     """
+    IK_TYPE = IKType
+
     def __init__(self, prefix='', joints=[]):
         super(String, self).__init__(prefix, joints)
 
         # Properties
         self.__numberOfControllers = 3
         self.__fk = False
+        self.__hybridIK = False
         self.__wave = False
         self.__dynamic = False
+        self.__ikType = String.IK_TYPE.SPLINE
 
         self.__ikSystem = None
         self.__fkSystem = None
@@ -41,6 +53,14 @@ class String(Module):
         self.__fk = val
 
     @property
+    def hybridIK(self):
+        return self.__hybridIK
+
+    @hybridIK.setter
+    def hybridIK(self, val):
+        self.__hybridIK = val
+
+    @property
     def wave(self):
         return self.__wave
 
@@ -56,23 +76,42 @@ class String(Module):
     def dynamic(self, val):
         self.__dynamic = val
 
+    @property
+    def ikType(self):
+        return self.__ikType
+
+    @ikType.setter
+    def ikType(self, val):
+        self.__ikType = val
+
     def build(self):
         super(String, self).build()
         self.__buildControls()
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = SplineIK(self._prefix+'ik_', ikJoints, self.__numberOfControllers)
-        if self._negateScaleX:
-            self.__ikSystem.negateSclaeX = True
-        self.__ikSystem.build()
-        self.__ikSystem.setupAdvancedTwist()
-        self.__ikSystem.setupStretch()
-        self.__ikSystem.setupHybridIK()
-        if self.__wave:
-            self.__ikSystem.setupWave()
-        if self.__dynamic:
-            self.__ikSystem.setupDynamic()
+        if self.__ikType == String.IK_TYPE.SPLINE:
+            self.__ikSystem = SplineIK(self._prefix+'ik_', ikJoints, self.__numberOfControllers)
+            if self._negateScaleX:
+                self.__ikSystem.negateSclaeX = True
+            self.__ikSystem.build()
+            self.__ikSystem.setupAdvancedTwist()
+            self.__ikSystem.setupStretch()
+            if self.__hybridIK:
+                self.__ikSystem.setupHybridIK()
+            if self.__wave:
+                self.__ikSystem.setupWave()
+            if self.__dynamic:
+                self.__ikSystem.setupDynamic()
+        elif self.__ikType == String.IK_TYPE.RIBBON:
+            self.__ikSystem = RibbonIK(self._prefix+'ik_', ikJoints, self.__numberOfControllers)
+            if self._negateScaleX:
+                self.__ikSystem.negateSclaeX = True
+            self.__ikSystem.build()
+            if self.__hybridIK:
+                self.__ikSystem.setupHybridIK()
+            if self.__wave:
+                self.__ikSystem.setupWave()
         self.addSystems(self.__ikSystem)
 
         if self.__fk:

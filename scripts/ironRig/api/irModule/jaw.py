@@ -16,7 +16,7 @@ class Jaw(Module):
         if self._negateScaleX:
             self.__fkSystem.negateSclaeX = True
         self.__fkSystem.build()
-        shapeOffset = utils.getDistance(self.__fkSystem.joints()[0], self.__fkSystem.joints()[-1])*1.2 * self.__fkSystem.aimSign() * utils.axisToVector(self.__fkSystem.aimAxis())
+        shapeOffset = utils.getDistance(self.__fkSystem.joints()[0], self.__fkSystem.joints()[-1])*1.2 * (self.__fkSystem.aimSign() * utils.axisToVector(self.__fkSystem.aimAxis()))
         self.__fkSystem.controllers()[0].shapeOffset = shapeOffset
         self.addSystems(self.__fkSystem)
 

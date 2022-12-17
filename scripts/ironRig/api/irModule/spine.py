@@ -37,6 +37,8 @@ class Spine(Module):
         self.__ikSystem.setupStretch()
         self.__ikSystem.controllers()[0].hide()
         self.__ikSystem.controllers()[-1].name = 'chest_ctrl'.format(self._prefix)
+        shapeOffset = utils.getDistance(self.__ikSystem.joints()[0], self.__ikSystem.joints()[1]) * (self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis()))
+        self.__ikSystem.controllers()[-1].shapeOffset = shapeOffset
         self.addSystems(self.__ikSystem)
 
         fkJoints = Spine.buildFKJoints(self._prefix, self._initJoints, 4)
@@ -74,12 +76,15 @@ class Spine(Module):
         self.__fkSystem.controllers()[-1].constraint(self.__ikSystem.controllers()[-1].zeroGrp(), parent=True)
 
     def __buildControls(self):
-        pelvisCtrl = Controller('pelvis_ctrl'.format(self._prefix), Controller.SHAPE.CUBE)
+        pelvisCtrl = Controller('pelvis_ctrl', Controller.SHAPE.CUBE)
         pelvisCtrl.matchTo(self.__ikSystem.joints()[1], position=True, rotation=True)
         pelvisCtrl.constraint(self.__ikSystem.controllers()[0].transform(), parent=True)
+        shapeOffset = utils.getDistance(self.__ikSystem.joints()[0], self.__ikSystem.joints()[1]) * (-self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis()))
+        pelvisCtrl.shapeOffset = shapeOffset
         pm.parent(pelvisCtrl.zeroGrp(), self.__controllerGrp)
         pelvisCtrl.lockChannels(['scale', 'visibility'])
         self._controllers.append(pelvisCtrl)
+        self.addMembers(pelvisCtrl.controllerNode())
 
     def _connectOutputs(self):
         for sysJnt, outJnt in zip(self.__ikSystem.joints(), self._outJoints):

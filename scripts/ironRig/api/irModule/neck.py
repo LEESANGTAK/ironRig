@@ -38,7 +38,7 @@ class Neck(Module):
             self.__ikSystem.negateSclaeX = True
         self.__ikSystem.build()
 
-        if len(self._initJoints) >= 2:
+        if len(self._initJoints) > 2:
             self.__ikSystem.setupAdvancedTwist()
         self.__ikSystem.setupStretch()
         self.__ikSystem.setupHybridIK()

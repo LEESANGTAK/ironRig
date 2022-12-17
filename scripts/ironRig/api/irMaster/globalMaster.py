@@ -4,7 +4,7 @@ from .master import Master
 
 
 class GlobalMaster(Master):
-    def __init__(self, prefix='rig_', skeletonRoot=None, cogJoint=None):
+    def __init__(self, prefix='controlRig_', skeletonRoot=None, cogJoint=None):
         self.__mastersGrp = None
 
         super(GlobalMaster, self).__init__(prefix)
@@ -12,6 +12,7 @@ class GlobalMaster(Master):
         self.__skeletonRoot = pm.PyNode(skeletonRoot)
         self.__cogJoint = pm.PyNode(cogJoint)
         self.__cogJoint.segmentScaleCompensate.set(False)
+        self.__globalController = None
         self.__mainController = None
         self.__cogController = None
 
@@ -42,34 +43,34 @@ class GlobalMaster(Master):
         self.__spaceSwtichGrp.hide()
         self.__mastersGrp = pm.createNode('transform', n='{}masters'.format(self._prefix))
         self._topGrp | self.__spaceSwtichGrp
-        self._topGrp.rename('rig')
+        self._topGrp.rename('controlRig')
 
     def _buildSystems(self):
         pass
 
     def _buildControls(self):
-        globalCtrl = Controller(name='global_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
-        GlobalMaster.setupGlobalScaleAttr(globalCtrl.transform())
-        globalCtrl.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        self.__globalController = Controller(name='global_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
+        GlobalMaster.setupGlobalScaleAttr(self.__globalController.transform())
+        self.__globalController.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.__mainController = Controller(name='main_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
         self.__mainController.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
-        self.__cogController = Controller(name='cog_ctrl', shape=Controller.SHAPE.TRIANGLE, color=self._controllerColor, direction=Controller.DIRECTION.Y)
+        self.__cogController = Controller(name='cog_ctrl', shape=Controller.SHAPE.ARROW_QUAD, color=self._controllerColor, direction=Controller.DIRECTION.Y)
         self.__cogController.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.__cogController.matchTo(self.__cogJoint, position=True)
-        self._controllers = [globalCtrl, self.__mainController, self.__cogController]
+        self._controllers = [self.__globalController, self.__mainController, self.__cogController]
 
-        globalCtrl | self.__mainController | self.__cogController
-        pm.parent(globalCtrl.zeroGrp(), self._topGrp)
+        self.__globalController | self.__mainController | self.__cogController
+        pm.parent(self.__globalController.zeroGrp(), self._topGrp)
 
-        globalCtrl.connect(self.__skeletonRoot, scale=True)
+        self.__globalController.connect(self.__skeletonRoot, scale=True)
         self.__mainController.constraint(self.__skeletonRoot, parent=True)
 
-        self.addMembers(globalCtrl.controllerNode(), self.__mainController.controllerNode(), self.__cogController.controllerNode())
+        self.addMembers(self.__globalController.controllerNode(), self.__mainController.controllerNode(), self.__cogController.controllerNode())
 
     def postBuild(self):
         super(GlobalMaster, self).postBuild()
-        self.__mainController.scale = self._controllerScale * 0.9
-        self.__cogController.scale = self._controllerScale * 0.75
+        self.__globalController.color = Controller.COLOR.LIGHTGREEN
+        self.__mainController.scale = self._controllerScale * 0.85
 
     @staticmethod
     def setupGlobalScaleAttr(transform):

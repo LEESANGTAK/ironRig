@@ -34,7 +34,7 @@ class Eye(Module):
         if self._negateScaleX:
             self.__fkSystem.negateSclaeX = True
         self.__fkSystem.build()
-        shapeOffset = utils.getDistance(self.__fkSystem.joints()[0], self.__fkSystem.joints()[-1])*1.2 * self.__aimSystem.aimSign() * utils.axisToVector(self.__aimSystem.aimAxis())
+        shapeOffset = utils.getDistance(self.__fkSystem.joints()[0], self.__fkSystem.joints()[-1])*1.2 * (self.__aimSystem.aimSign() * utils.axisToVector(self.__aimSystem.aimAxis()))
         self.__fkSystem.controllers()[0].shapeOffset = shapeOffset
         self.addSystems(self.__fkSystem)
 

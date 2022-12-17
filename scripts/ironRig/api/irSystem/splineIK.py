@@ -1,4 +1,5 @@
 import pymel.core as pm
+from maya import cmds
 from ... import utils
 from ..irGlobal import Controller
 from .system import System
@@ -169,7 +170,8 @@ class SplineIK(System):
         blendshape = pm.blendShape(crv, self.__curve, origin='local', frontOfChain=True)[0]
         blendshape.attr(crv.name()).set(1)
 
-        sine, sineHandle = pm.nonLinear(crv, type='sine')
+        sine, sineHandle = cmds.nonLinear(crv.name(), type='sine')  # If instanciate non-linear deformer as "PyNode", "Could not create desired MFn" warning is caused
+        sineHandle = pm.PyNode(sineHandle)
         sineHandle.rename('{0}sineHandle'.format(self._prefix))
         sineHandle.dropoff.set(-1)
         sineHandle.highBound.set(0)
@@ -199,14 +201,13 @@ class SplineIK(System):
         sineHandle.scale.set(scale, scale, scale)
         sineHandle.shear.set(0, 0, 0)
 
-
         self.__addWaveAttrs()
 
         sineHandleSpace = pm.createNode('transform', n='{}_zero'.format(sineHandle))
         pm.matchTransform(sineHandleSpace, sineHandle, pos=True, rot=True, scale=True)
         pm.parent(sineHandle, sineHandleSpace)
 
-        self._controllers[-1].transform().waveOnOff >> sine.envelope
+        cmds.connectAttr('{}.waveOnOff'.format(self._controllers[-1].transform()), '{}.envelope'.format(sine))
         self._controllers[-1].transform().waveOnOff >> blendshape.attr(crv.name())
         self._controllers[-1].transform().waveAmplitude >> sineHandle.amplitude
         self._controllers[-1].transform().waveLength >> sineHandle.wavelength
@@ -266,7 +267,7 @@ class SplineIK(System):
 
         dynCrv =  pm.duplicate(self.__curve, n='{0}dyn_crv'.format(self._prefix))[0]
 
-        enableCond = pm.createNode('condition', n='{0}_dynEnable_cond')
+        enableCond = pm.createNode('condition', n='{0}_dynEnable_cond'.format(self._prefix))
         enableCond.secondTerm.set(1)
         enableCond.colorIfTrueR.set(3)
 
@@ -293,7 +294,7 @@ class SplineIK(System):
         follicle.outHair >> hairSystem.inputHair[0]
 
         self.__curve.worldSpace >> rebuildCrv.inputCurve
-        rebuildCrv.outputCurve >> rebuildCrvShape.create
+        pm.connectAttr('{}.outputCurve'.format(rebuildCrv), '{}.create'.format(rebuildCrvShape))  # If use ">>" operator, "Could not create desired MFn" warning is caused
         rebuildCrvShape.local >> follicle.startPosition
         self.__curve.getTransform().worldMatrix >> follicle.startPositionMatrix
 
@@ -320,7 +321,7 @@ class SplineIK(System):
         # Cleanup
         self.addMembers(rebuildCrv, enableCond)
         pm.parent(follicle.getTransform(), self._blbxGrp)
-        pm.parent(rebuildCrvShape.getTransform(), nucleus, hairSystem, dynCrv, self._noTrsfGrp)
+        pm.parent(rebuildCrvShape.getTransform(), nucleus, hairSystem.getTransform(), self._noTrsfGrp)
 
     def __getNucleus(self):
         nucleusNode = None
