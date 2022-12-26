@@ -38,6 +38,9 @@ class SplineIK(System):
     def curveSpans(self, spans):
         self.__curveSpans = spans
 
+    def ikHandle(self):
+        return self.__ikHandle
+
     def _buildSystems(self):
         super(SplineIK, self)._buildSystems()
         self.__createCurveWithJoints()
@@ -167,7 +170,7 @@ class SplineIK(System):
     def setupWave(self):
         crv = pm.duplicate(self.__curve, n='{0}wave_crv'.format(self._prefix))[0]
 
-        blendshape = pm.blendShape(crv, self.__curve, origin='local', frontOfChain=True)[0]
+        blendshape = pm.blendShape(crv, self.__curve, n='{}_bs'.format(self.__curve), origin='local', frontOfChain=True)[0]
         blendshape.attr(crv.name()).set(1)
 
         sine, sineHandle = cmds.nonLinear(crv.name(), type='sine')  # If instanciate non-linear deformer as "PyNode", "Could not create desired MFn" warning is caused

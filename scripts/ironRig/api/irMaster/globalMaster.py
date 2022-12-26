@@ -69,7 +69,7 @@ class GlobalMaster(Master):
 
     def postBuild(self):
         super(GlobalMaster, self).postBuild()
-        self.__globalController.color = Controller.COLOR.LIGHTGREEN
+        self.__globalController.color = Controller.COLOR.YELLOW
         self.__mainController.scale = self._controllerScale * 0.85
 
     @staticmethod
