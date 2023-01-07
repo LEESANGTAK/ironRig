@@ -27,12 +27,14 @@ class String(Module):
         self.__fk = False
         self.__hybridIK = False
         self.__wave = False
+        self.__coil = False
         self.__dynamic = False
         self.__ikType = String.IK_TYPE.SPLINE
 
         self.__ikSystem = None
         self.__fkSystem = None
         self.__blendJoints = None
+        self.__coilJoints = None
         self.__blendConstraints = None
         self.__scaleChoices = None
 
@@ -67,6 +69,14 @@ class String(Module):
     @wave.setter
     def wave(self, val):
         self.__wave = val
+
+    @property
+    def coil(self):
+        return self.__coil
+
+    @coil.setter
+    def coil(self, val):
+        self.__coil = val
 
     @property
     def dynamic(self):
@@ -141,10 +151,64 @@ class String(Module):
             self.__blendConstraints = blendCnsts
             self.__scaleChoices = scaleChoices
 
+        if self.__coil:
+            self.__coilJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='coil')
+            utils.parentKeepHierarchy(self.__coilJoints, self._systemGrp)
+            self.__coilJoints[0].hide()
+            driverJoints = self.__blendJoints if self.__blendJoints else self.__ikSystem.joints()
+
+            # Connect channels of coil joints
+            pairDriverCoilJnts = zip(driverJoints, self.__coilJoints)
+
+            if not pm.pluginInfo('multiRemapValue', q=True, loaded=True):
+                pm.loadPlugin('multiRemapValue')
+            numCoilJnts = len(self.__coilJoints) - 1  # Subtract 1 from the number of coil joints to skip end joint
+            endIndex = numCoilJnts - 1
+            multRemapVal = pm.createNode('multiRemapValue', n='{}coil_multRemap'.format(self._prefix))
+            multRemapVal.inputMin.set(endIndex)
+            multRemapVal.inputMax.set(endIndex)
+            multRemapVal.outputMax.set(-100)
+
+            for i in range(numCoilJnts):
+                driverJnt = pairDriverCoilJnts[i][0]
+                coilJnt = pairDriverCoilJnts[i][1]
+                addNode = pm.createNode('addDoubleLinear', n='{}_rz_add'.format(coilJnt))
+                multRemapVal.inputValue[i].set(i)
+                driverJnt.rotateX >> coilJnt.rotateX
+                driverJnt.rotateY >> coilJnt.rotateY
+                driverJnt.rotateZ >> addNode.input1
+                multRemapVal.outValue[i] >> addNode.input2
+                addNode.output >> coilJnt.rotateZ
+
+            for driverJnt, coilJnt in pairDriverCoilJnts:
+                utils.connectTransform(driverJnt, coilJnt, ['translate', 'scale'], 'XYZ')
+            utils.connectTransform(pairDriverCoilJnts[-1][0], pairDriverCoilJnts[-1][1], ['rotate'], 'XYZ')
+
+            # Setup control attribute
+            coilAttrName = 'coil'
+            baseCtrl = self.__ikSystem.controllers()[-1]
+            otherCtrls = self.__ikSystem.controllers()[:-1]
+            if self.__fk:
+                otherCtrls.extend(self.__fkSystem.controllers())
+            pm.addAttr(baseCtrl.transform(), ln=coilAttrName, at='float', min=0.0, max=1.0, dv=0.0, keyable=True)
+            for ctrl in otherCtrls:
+                pm.addAttr(ctrl.transform(), ln=coilAttrName, proxy='{0}.{1}'.format(baseCtrl.transform(), coilAttrName))
+            coilAttrRemap = pm.createNode('remapValue', n='{}coil_remap'.format(self._prefix))
+            coilAttrRemap.outputMin.set(endIndex)
+            coilAttrRemap.outputMax.set(0.0)
+            baseCtrl.transform().coil >> coilAttrRemap.inputValue
+            coilAttrRemap.outValue >> multRemapVal.inputMin
+            baseCtrl.transform().coil >> multRemapVal.value[1].value_FloatValue
+
+            self.addMembers(multRemapVal, coilAttrRemap, addNode)
+
     def _connectOutputs(self):
         systemJoints = self.__ikSystem.joints()
         if self.__fk:
             systemJoints = self.__blendJoints
+        if self.__coil:
+            systemJoints = self.__coilJoints
+
         for sysJnt, outJnt in zip(systemJoints, self._outJoints):
             pm.pointConstraint(sysJnt, outJnt, mo=True)
             pm.orientConstraint(sysJnt, outJnt, mo=True)

@@ -523,11 +523,17 @@ def getWorldMatrixMirrorX(inMatrix):
 
 def cleanupRig():
     cleanupControllers()
+
     # Hide private groups
     privateGrps = pm.ls(['*_init_grp', '*_blbx_grp', '*_out_grp'])
     for privateGrp in privateGrps:
         privateGrp.hide()
+
     hideJoints()
+
+    multiRemapNodes = pm.ls(type='multiRemapValue')
+    for multiRemapNode in multiRemapNodes:
+        convertMultiRemapToMayaRemap(multiRemapNode)
 
 
 def cleanupControllers():
@@ -555,6 +561,79 @@ def cleanupControllers():
 def hideJoints():
     for jnt in pm.ls(type='joint'):
         jnt.drawStyle.set(2)
+
+
+def convertMultiRemapToMayaRemap(multiRemapNode):
+    # Get informations
+    valueInfo = {}
+    minMaxInfo = {}
+    inputValues = []
+    inConnectInfo = []
+    outConnectInfo = []
+    set = None
+
+    valueArray = pm.listAttr(multiRemapNode.value, multi=True, string='value')
+    for element in valueArray:
+        attr = multiRemapNode.attr(element)
+        elementInfo = {}
+        elementInfo['Position'] = attr.value_Position.get()
+        elementInfo['FloatValue'] = attr.value_FloatValue.get()
+        elementInfo['Interp'] = attr.value_Interp.get()
+        valueInfo[element] = elementInfo
+
+    for attrName in ['inputMin', 'inputMax', 'outputMin', 'outputMax']:
+        minMaxInfo[attrName] = multiRemapNode.attr(attrName).get()
+
+    inputValues = multiRemapNode.inputValue.get()
+
+    driverPlugs = multiRemapNode.inputs(plugs=True)
+    for driverPlug in driverPlugs:
+        drivenPlug = driverPlug.outputs(plugs=True, type='multiRemapValue')[0]
+        inConnectInfo.append((driverPlug, drivenPlug))
+
+    drivenPlugs = multiRemapNode.outputs(plugs=True)
+    for drivenPlug in drivenPlugs:
+        driverPlug = drivenPlug.inputs(plugs=True, type='multiRemapValue')[0]
+        outConnectInfo.append((driverPlug, drivenPlug))
+
+    set = multiRemapNode.message.outputs(type='objectSet')[0]
+
+    # Setup parent remap value
+    nodeName = multiRemapNode.rsplit('_', 1)[0]
+    parentRemap = pm.createNode('remapValue', n='{}_parent_remap'.format(nodeName))
+    for valName, valInfo in valueInfo.items():
+        for name, val in valInfo.items():
+            parentRemap.attr(valName).attr('value_{}'.format(name)).set(val)
+    for name, val in minMaxInfo.items():
+        parentRemap.attr(name).set(val)
+    for inConnect in inConnectInfo:
+        driverPlug = inConnect[0]
+        drivenPlug = pm.PyNode('{}.{}'.format(parentRemap, inConnect[1].split('.', 1)[-1]))
+        driverPlug >> drivenPlug
+
+    set.forceElement(parentRemap)
+
+    # Setup child remap values
+    childRemaps = []
+    for i, inputVal in enumerate(inputValues):
+        childRemap = pm.duplicate(parentRemap, n='{}_child_{:02d}_remap'.format(nodeName, i))[0]
+        childRemap.inputValue.set(inputVal)
+        for attrName in pm.listAttr(parentRemap.value, multi=True, string='value'):
+            parentValAttr = pm.PyNode('{}.{}'.format(parentRemap, attrName))
+            childValAttr = pm.PyNode('{}.{}'.format(childRemap, attrName))
+            parentValAttr >> childValAttr
+
+        for attrName in minMaxInfo.keys():
+            parentRemap.attr(attrName) >> childRemap.attr(attrName)
+
+        driverAttr = childRemap.outValue
+        drivenAttr = outConnectInfo[i][1]
+        driverAttr >> drivenAttr
+
+        childRemaps.append(childRemap)
+
+    pm.delete(multiRemapNode)
+    set.forceElement(childRemaps)
 
 
 def isOddNumber(number):

@@ -150,6 +150,8 @@ class Module(Container):
             midOriPlaneLocVector = TwoBoneIK.getPoleVector(self._initSkelLocators[0], midInitSkelLoc, self._initSkelLocators[-1])
             if utils.isParallel(aimVector, midOriPlaneLocVector) or round(midOriPlaneLocVector.length()) == 0.0:
                 midOriPlaneLocVector = pm.dt.Vector.zAxis
+                if self.__class__.__name__ == 'String':
+                    midOriPlaneLocVector = pm.dt.Vector.xNegAxis
             midLocPos = utils.getWorldPoint(midInitSkelLoc) + (midOriPlaneLocVector.normal() * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
 
         midLocOriPlane = pm.spaceLocator(n='{}mid_oriPlane_loc'.format(self._prefix))
