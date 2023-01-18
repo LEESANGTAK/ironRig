@@ -379,24 +379,10 @@
          <item row="0" column="1">
           <widget class="QLineEdit" name="nameLineEdit_3"/>
          </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="stretchLabel_3">
-           <property name="text">
-            <string>Stretch:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QCheckBox" name="stretchCheckBox_3">
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
          <item row="1" column="0">
           <widget class="QLabel" name="jointsLabel_3">
            <property name="text">
-            <string>Pelvis Joint:</string>
+            <string>Joints</string>
            </property>
           </widget>
          </item>
@@ -404,14 +390,18 @@
           <widget class="QLineEdit" name="jointsLineEdit_3"/>
          </item>
          <item row="2" column="0">
-          <widget class="QLabel" name="chestJointLabel_2">
+          <widget class="QLabel" name="stretchLabel_3">
            <property name="text">
-            <string>Chest Joint:</string>
+            <string>Stretch:</string>
            </property>
           </widget>
          </item>
          <item row="2" column="1">
-          <widget class="QLineEdit" name="chestJointLineEdit_2"/>
+          <widget class="QCheckBox" name="stretchCheckBox_3">
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -546,6 +536,39 @@
        </widget>
       </widget>
      </widget>
+     <widget class="QWidget" name="">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>400</y>
+        <width>251</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QPushButton" name="pushButton_3">
+         <property name="text">
+          <string>Pre-Build</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_4">
+         <property name="text">
+          <string>Build</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_5">
+         <property name="text">
+          <string>Post-Build</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
     <widget class="QPushButton" name="pushButton_2">
      <property name="geometry">
@@ -557,7 +580,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Rebuild</string>
+      <string>Build All</string>
      </property>
     </widget>
     <widget class="QGroupBox" name="groupBox_4">

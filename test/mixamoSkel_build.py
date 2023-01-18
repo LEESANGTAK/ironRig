@@ -16,31 +16,23 @@ joints = [u'Hips', u'Spine', u'Spine1', u'Spine2']
 spineMod = irModule.Spine(prefix, joints)
 spineMod.preBuild()
 spineMod.build()
-spineMod.controllerScale = 15
+spineMod.controllerScale = 20
 spineMod.postBuild()
 globalMst.addModules(spineMod)
 #spineMod.remove()
 
 prefix = 'neck_'
-joints = [u'Neck', u'Head']
+joints = [u'Neck', 'Neck1', u'Head']
 neckMod = irModule.Neck(prefix, joints)
 neckMod.preBuild()
 neckMod.numControllers = 2
 neckMod.build()
-neckMod.controllerScale = 10
+neckMod.controllerScale = 20
 neckMod.postBuild()
 neckMod.attachTo(spineMod)
 globalMst.addModules(neckMod)
 #neckMod.remove()
 
-prefix = 'head_'
-joints = [u'Head', u'HeadTop_End']
-headMod = irModule.Head(prefix, joints)
-headMod.preBuild()
-headMod.build()
-headMod.attachTo(neckMod)
-globalMst.addModules(headMod)
-#headMod.remove()
 
 # ---------------------------------------------------------------------------
 
@@ -82,7 +74,7 @@ globalMst.addModules(armLMod)
 #armLMod.remove()
 
 prefix = 'arm_R_'
-joints = [u'Shoulder_R1', u'Elbow_R1', u'Wrist_R1']
+joints = [u'RightArm', u'RightForeArm', u'RightHand']
 armRMod = irModule.TwoBoneLimb(prefix, joints)
 armRMod.preBuild()
 armRMod.negateScaleX = True
@@ -148,10 +140,10 @@ globalMst.addModules(footRMod)
 
 # Fingers L Build
 prefix = 'thumbFinger_L_'
-joints = [u'ThumbFinger1_L1',
- u'ThumbFinger2_L1',
- u'ThumbFinger3_L1',
- u'ThumbFinger4_L1']
+joints = [u'LeftHandThumb1',
+ u'LeftHandThumb2',
+ u'LeftHandThumb3',
+ u'LeftHandThumb4']
 thumbLMod = irModule.Finger(prefix, joints)
 thumbLMod.preBuild()
 thumbLMod.build()
@@ -161,10 +153,10 @@ thumbLMod.postBuild()
 #thumbLMod.remove()
 
 prefix = 'indexFinger_L_'
-joints = [u'IndexFinger1_L1',
- u'IndexFinger2_L1',
- u'IndexFinger3_L1',
- u'IndexFinger4_L1']
+joints = [u'LeftHandIndex1',
+ u'LeftHandIndex2',
+ u'LeftHandIndex3',
+ u'LeftHandIndex4']
 indexLMod = irModule.Finger(prefix, joints)
 indexLMod.preBuild()
 indexLMod.build()
@@ -174,10 +166,10 @@ indexLMod.postBuild()
 #indexLMod.remove()
 
 prefix = 'middleFinger_L_'
-joints = [u'MiddleFinger1_L1',
- u'MiddleFinger2_L1',
- u'MiddleFinger3_L1',
- u'MiddleFinger4_L1']
+joints = [u'LeftHandMiddle1',
+ u'LeftHandMiddle2',
+ u'LeftHandMiddle3',
+ u'LeftHandMiddle4']
 middleLMod = irModule.Finger(prefix, joints)
 middleLMod.preBuild()
 middleLMod.build()
@@ -187,10 +179,10 @@ middleLMod.postBuild()
 #middleLMod.remove()
 
 prefix = 'ringFinger_L_'
-joints = [u'RingFinger1_L1',
- u'RingFinger2_L1',
- u'RingFinger3_L1',
- u'RingFinger4_L1']
+joints = [u'LeftHandRing1',
+ u'LeftHandRing2',
+ u'LeftHandRing3',
+ u'LeftHandRing4']
 ringLMod = irModule.Finger(prefix, joints)
 ringLMod.preBuild()
 ringLMod.build()
@@ -200,10 +192,10 @@ ringLMod.postBuild()
 #ringLMod.remove()
 
 prefix = 'pinkyFinger_L_'
-joints = [u'PinkyFinger1_L1',
- u'PinkyFinger2_L1',
- u'PinkyFinger3_L1',
- u'PinkyFinger4_L1']
+joints = [u'LeftHandPinky1',
+ u'LeftHandPinky2',
+ u'LeftHandPinky3',
+ u'LeftHandPinky4']
 pinkyLMod = irModule.Finger(prefix, joints)
 pinkyLMod.preBuild()
 pinkyLMod.build()
@@ -223,10 +215,10 @@ globalMst.addMasters(fingersLMaster)
 # ---------------------------------------------------------------------------
 # Fingers R Build
 prefix = 'thumbFinger_R_'
-joints = [u'ThumbFinger1_R1',
- u'ThumbFinger2_R1',
- u'ThumbFinger3_R1',
- u'ThumbFinger4_R1']
+joints = [u'RightHandThumb1',
+ u'RightHandThumb2',
+ u'RightHandThumb3',
+ u'RightHandThumb4']
 thumbRMod = irModule.Finger(prefix, joints)
 thumbRMod.preBuild()
 thumbRMod.negateScaleX = True
@@ -237,10 +229,10 @@ thumbRMod.postBuild()
 #thumbRMod.remove()
 
 prefix = 'indexFinger_R_'
-joints = [u'IndexFinger1_R1',
- u'IndexFinger2_R1',
- u'IndexFinger3_R1',
- u'IndexFinger4_R1']
+joints = [u'RightHandIndex1',
+ u'RightHandIndex2',
+ u'RightHandIndex3',
+ u'RightHandIndex4']
 indexRMod = irModule.Finger(prefix, joints)
 indexRMod.preBuild()
 indexRMod.negateScaleX = True
@@ -251,10 +243,10 @@ indexRMod.postBuild()
 #indexRMod.remove()
 
 prefix = 'middleFinger_R_'
-joints = [u'MiddleFinger1_R1',
- u'MiddleFinger2_R1',
- u'MiddleFinger3_R1',
- u'MiddleFinger4_R1']
+joints = [u'RightHandMiddle1',
+ u'RightHandMiddle2',
+ u'RightHandMiddle3',
+ u'RightHandMiddle4']
 middleRMod = irModule.Finger(prefix, joints)
 middleRMod.preBuild()
 middleRMod.negateScaleX = True
@@ -265,10 +257,10 @@ middleRMod.postBuild()
 #middleRMod.remove()
 
 prefix = 'ringFinger_R_'
-joints = [u'RingFinger1_R1',
- u'RingFinger2_R1',
- u'RingFinger3_R1',
- u'RingFinger4_R1']
+joints = [u'RightHandRing1',
+ u'RightHandRing2',
+ u'RightHandRing3',
+ u'RightHandRing4']
 ringRMod = irModule.Finger(prefix, joints)
 ringRMod.preBuild()
 ringRMod.negateScaleX = True
@@ -279,10 +271,10 @@ ringRMod.postBuild()
 #ringRMod.remove()
 
 prefix = 'pinkyFinger_R_'
-joints = [u'PinkyFinger1_R1',
- u'PinkyFinger2_R1',
- u'PinkyFinger3_R1',
- u'PinkyFinger4_R1']
+joints = [u'RightHandPinky1',
+ u'RightHandPinky2',
+ u'RightHandPinky3',
+ u'RightHandPinky4']
 pinkyRMod = irModule.Finger(prefix, joints)
 pinkyRMod.preBuild()
 pinkyRMod.negateScaleX = True
@@ -304,8 +296,8 @@ globalMst.addMasters(fingersRMaster)
 mainCtrl = globalMst.mainController()
 pelvisCtrl = spineMod.controllers()[0]
 chestCtrl = spineMod.ikSystem().controllers()[-1]
-neckCtrl = neckMod.ikSystem().controllers()[-1]
-headCtrl = headMod.fkSystem().controllers()[0]
+neckCtrl = neckMod.ikSystem().controllers()[0]
+headCtrl = neckMod.ikSystem().controllers()[-1]
 
 claLCtrl = claLMod.fkSystem().controllers()[0]
 claRCtrl = claRMod.fkSystem().controllers()[0]

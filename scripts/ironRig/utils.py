@@ -521,6 +521,14 @@ def getWorldMatrixMirrorX(inMatrix):
     return inMatrix * mirrorXMtx
 
 
+def isOddNumber(number):
+    return number%2 == 1
+
+
+def getSkinCluster(geo):
+    return pm.mel.findRelatedSkinCluster(geo.node())
+
+
 def cleanupRig():
     cleanupControllers()
 
@@ -591,10 +599,12 @@ def convertMultiRemapToMayaRemap(multiRemapNode):
         drivenPlug = driverPlug.outputs(plugs=True, type='multiRemapValue')[0]
         inConnectInfo.append((driverPlug, drivenPlug))
 
-    drivenPlugs = multiRemapNode.outputs(plugs=True)
+    drivenPlugs = multiRemapNode.outputs(plugs=True, type='addDoubleLinear')
     for drivenPlug in drivenPlugs:
         driverPlug = drivenPlug.inputs(plugs=True, type='multiRemapValue')[0]
         outConnectInfo.append((driverPlug, drivenPlug))
+
+    print(outConnectInfo)
 
     set = multiRemapNode.message.outputs(type='objectSet')[0]
 
@@ -634,11 +644,3 @@ def convertMultiRemapToMayaRemap(multiRemapNode):
 
     pm.delete(multiRemapNode)
     set.forceElement(childRemaps)
-
-
-def isOddNumber(number):
-    return number%2 == 1
-
-
-def getSkinCluster(geo):
-    return pm.mel.findRelatedSkinCluster(geo.node())

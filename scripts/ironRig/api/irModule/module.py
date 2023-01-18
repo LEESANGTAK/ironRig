@@ -16,6 +16,9 @@ class Module(Container):
     def __init__(self, prefix='', skeletonJoints=None):
         super(Module, self).__init__(prefix)
 
+        self._parent = None
+        self._children = []
+
         self._geoGrp = None
         self._outGrp = None
         self._systemGrp = None
@@ -33,8 +36,14 @@ class Module(Container):
         self._systems = []
         self._controllers = []
 
+        self.__globalController = False
+
         self._controllerScale = 1
         self._controllerColor = Controller.COLOR.YELLOW
+
+    @property
+    def children(self):
+        return self._children
 
     @property
     def skelJoints(self):
@@ -51,6 +60,14 @@ class Module(Container):
     @negateScaleX.setter
     def negateScaleX(self, val):
         self._negateScaleX = val
+
+    @property
+    def globalController(self):
+        return self.__globalController
+
+    @globalController.setter
+    def globalController(self, val):
+        self.__globalController = val
 
     def outJoints(self):
         return self._outJoints
@@ -229,6 +246,8 @@ class Module(Container):
         self._connectOutputs()
         self._connectSkeleton()
         pm.matchTransform(self._topGrp, self._skelJoints[0], pivots=True)
+        if self.__globalController:
+            self.__buildGlobalController()
         self._initGrp.hide()
 
     def __cleanupSkelJoints(self):
@@ -297,6 +316,16 @@ class Module(Container):
             pCnst = pm.parentConstraint(outJnt, skelJnt, mo=True)
             pCnst.interpType.set(2)
 
+    def __buildGlobalController(self):
+        modGlobalCtrl = Controller('{}global_ctrl'.format(self._prefix),
+                                   Controller.SHAPE.CUBE,
+                                   Controller.COLOR.LIGHTGREEN,
+                                   utils.getDistance(self._initJoints[0], self._initJoints[-1]))
+        modGlobalCtrl.matchTo(self._initJoints[0], position=True, rotation=True)
+        modGlobalCtrl.lockChannels(['scale', 'visibility'], 'XYZ')
+        self._topGrp | modGlobalCtrl.zeroGrp()
+        pm.parent([self._geoGrp, self._initGrp, self._systemGrp, self._outGrp], modGlobalCtrl.transform())
+
     def postBuild(self):
         """Edit controllers states of color and shape.
         """
@@ -326,17 +355,35 @@ class Module(Container):
             pm.matchTransform(self._topGrp, closestOutJnt, pivots=True)
             pm.parentConstraint(closestOutJnt, self._topGrp, mo=True)
 
+        if self._parent and self._parent != module:
+            self._parent.children.remove(self)
+
+        self._parent = module
+        if not self in module.children:
+            module.children.append(self)
+
     def remove(self):
         """Remove all nodes realted with a module.
         """
+        if self._children:
+            for child in self._children[:]:
+                child.remove()
+            self._children = []
+
+        if self._parent:
+            self._parent.children.remove(self)
+            self._parent = None
+
         if self._outJoints:
             attrs = [ch + axis for ch in 'trs' for axis in 'xyz']
             for outJnt in self._outJoints:
                 for attrStr in attrs:
                     outJnt.attr(attrStr).disconnect()
+
         if self._systems:
             for system in self._systems:
                 system.remove()
+
         self._systems = []
         self._controllers = []
         super(Module, self).remove()
