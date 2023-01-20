@@ -82,22 +82,23 @@ class Simple(Module):
             self.__system.negateSclaeX = True
 
         self.__system.build()
-
         self.addSystems(self.__system)
+        self._sysJoints = self.__system.joints()
 
     def _connectSystems(self):
         pass
 
-    def _connectOutputs(self):
-        for sysJnt, outJnt in zip(self.__system.joints(), self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])
+    def _buildOutputs(self):
+        if self.__type == Simple.TYPE.FK:
+            self._outJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='out')
+        elif self.__type == Simple.TYPE.SINGLE:
+            self._outJoints = utils.buildNewJoints(self._initJoints, searchStr='init', replaceStr='out')
+        utils.parentKeepHierarchy(self._outJoints, self._outGrp)
 
     def _connectSkeleton(self):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             pm.parentConstraint(outJnt, skelJnt, mo=True)
-            utils.connectTransform(outJnt, skelJnt, ['scale'], ['X', 'Y', 'Z'])
+            outJnt.scale >> skelJnt.scale
 
     def postBuild(self):
         super(Simple, self).postBuild()

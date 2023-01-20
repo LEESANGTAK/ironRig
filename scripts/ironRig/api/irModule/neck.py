@@ -49,6 +49,7 @@ class Neck(Module):
         self.__ikSystem.controllers()[-1].name = 'head_ctrl'.format(self._prefix)
 
         self.addSystems(self.__ikSystem)
+        self._sysJoints = self.__ikSystem.joints()
 
     def __setupTwist(self):
         self.__setupNonroll()
@@ -87,12 +88,6 @@ class Neck(Module):
 
     def _buildControls(self):
         pass
-
-    def _connectOutputs(self):
-        for sysJnt, outJnt in zip(self.__ikSystem.joints(), self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])
 
     def postBuild(self):
         super(Neck, self).postBuild()

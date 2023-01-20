@@ -50,11 +50,7 @@ class Foot(Module):
             self.__blendConstraints.append(blendCnst)
         self.__blendJoints[0].hide()
 
-    def _connectOutputs(self):
-        for sysJnt, outJnt in zip(self.__blendJoints, self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])
+        self._sysJoints = self.__blendJoints
 
     def __buildControls(self):
         moduleCtrl = Controller('{}module_ctrl'.format(self._prefix), Controller.SHAPE.SPHERE)

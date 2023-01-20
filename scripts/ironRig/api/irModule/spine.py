@@ -51,6 +51,8 @@ class Spine(Module):
             ctrl.lockChannels(channels=['translate', 'scale', 'visibility'])
         self.addSystems(self.__fkSystem)
 
+        self._sysJoints = self.__ikSystem.joints()
+
     @staticmethod
     def buildFKJoints(prefix, joints, numFKJoints):
         fkJnts = []
@@ -85,9 +87,3 @@ class Spine(Module):
         pelvisCtrl.lockChannels(['scale', 'visibility'])
         self._controllers.append(pelvisCtrl)
         self.addMembers(pelvisCtrl.controllerNode())
-
-    def _connectOutputs(self):
-        for sysJnt, outJnt in zip(self.__ikSystem.joints(), self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])

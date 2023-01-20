@@ -181,8 +181,9 @@ class String(Module):
                 addNode.output >> coilJnt.rotateZ
 
             for driverJnt, coilJnt in pairDriverCoilJnts:
-                utils.connectTransform(driverJnt, coilJnt, ['translate', 'scale'], 'XYZ')
-            utils.connectTransform(pairDriverCoilJnts[-1][0], pairDriverCoilJnts[-1][1], ['rotate'], 'XYZ')
+                driverJnt.translate >> coilJnt.translate
+                driverJnt.scale >> coilJnt.scale
+            pairDriverCoilJnts[-1][0].rotate >> pairDriverCoilJnts[-1][1].rotate
 
             # Setup control attribute
             coilAttrName = 'coil'
@@ -202,17 +203,11 @@ class String(Module):
 
             self.addMembers(multRemapVal, coilAttrRemap, addNode)
 
-    def _connectOutputs(self):
-        systemJoints = self.__ikSystem.joints()
+        self._sysJoints = self.__ikSystem.joints()
         if self.__fk:
-            systemJoints = self.__blendJoints
+            self._sysJoints = self.__blendJoints
         if self.__coil:
-            systemJoints = self.__coilJoints
-
-        for sysJnt, outJnt in zip(systemJoints, self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])
+            self._sysJoints = self.__coilJoints
 
     def __buildControls(self):
         if self.__fk:

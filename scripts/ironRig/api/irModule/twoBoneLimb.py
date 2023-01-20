@@ -213,6 +213,12 @@ class TwoBoneLimb(Module):
                                mo=True)
             self.__lowerTwistSystem.controllers()[-1].hide()
 
+        self._sysJoints = [self.__nonrollJoints[0]] + self.__blendJoints[1:]
+        if self.__upperTwistSystem:
+            self._sysJoints = self.__upperTwistSystem.joints()[:-1] + self.__blendJoints[1:]
+        if self.__lowerTwistSystem:
+            self._sysJoints = self._sysJoints[:-2] + self.__lowerTwistSystem.joints()[:-1] + [self.__blendJoints[-1]]
+
     def __setupNonroll(self, blendJoint):
         nonrollGrp = pm.createNode('transform', n=blendJoint.replace('_blend', '_nonroll_grp'))
         nonrollGrp.hide()
@@ -249,18 +255,6 @@ class TwoBoneLimb(Module):
             initJoints = initJoints[:-1] + self.__initLowerLimbInbJoints + [self.__initLimbJoints[-1]]
         self._outJoints = utils.buildNewJointChain(initJoints, searchStr='init', replaceStr='out')
         utils.parentKeepHierarchy(self._outJoints, self._outGrp)
-
-    def _connectOutputs(self):
-        systemJoints = [self.__nonrollJoints[0]] + self.__blendJoints[1:]
-        if self.__upperTwistSystem:
-            systemJoints = self.__upperTwistSystem.joints()[:-1] + self.__blendJoints[1:]
-        if self.__lowerTwistSystem:
-            systemJoints = systemJoints[:-2] + self.__lowerTwistSystem.joints()[:-1] + [self.__blendJoints[-1]]
-
-        for sysJnt, outJnt in zip(systemJoints, self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])
 
     def _connectSkeleton(self):
         for outJnt in self._outJoints:

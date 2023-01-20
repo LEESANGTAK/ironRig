@@ -26,15 +26,10 @@ class Clavicle(Module):
         self.__fkSystem.controllers()[0].shapeOffset = shapeOffset
 
         self.addSystems(self.__fkSystem)
+        self._sysJoints = self.__fkSystem.joints()
 
     def _connectSystems(self):
         pass
-
-    def _connectOutputs(self):
-        for sysJnt, outJnt in zip(self.__fkSystem.joints(), self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, channels=['scale'], axes=['X', 'Y', 'Z'])
 
     def _connectSkeleton(self):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):

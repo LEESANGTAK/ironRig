@@ -38,11 +38,7 @@ class Eye(Module):
         self.__fkSystem.controllers()[0].shapeOffset = shapeOffset
         self.addSystems(self.__fkSystem)
 
+        self._sysJoints = self.__fkSystem.joints()
+
     def _connectSystems(self):
         pm.parentConstraint(self.__aimSystem.joints()[0], self.__fkSystem.controllers()[0].zeroGrp())
-
-    def _connectOutputs(self):
-        for fkJnt, outJnt in zip(self.__fkSystem.joints(), self._outJoints):
-            pm.pointConstraint(fkJnt, outJnt, mo=True)
-            pm.orientConstraint(fkJnt, outJnt, mo=True)
-            utils.connectTransform(fkJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])

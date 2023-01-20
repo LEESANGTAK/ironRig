@@ -46,6 +46,8 @@ class Rope(Module):
                 cnst.interpType.set(2)
                 curCtrl.lockChannels(channels=['rotate'], axes=['X', 'Y', 'Z'])
 
+        self._sysJoints = self.__sgSystem.joints()
+
     def _connectSystems(self):
         for sgCtrl in self.__sgSystem.controllers():
             cloestIkJnt = utils.findClosestObject(utils.getWorldPoint(sgCtrl.transform()), self.__ikSystem.joints())
@@ -54,12 +56,6 @@ class Rope(Module):
     def _buildOutputs(self):
         self._outJoints = utils.buildNewJoints(self._initJoints, searchStr='init', replaceStr='out')
         pm.parent(self._outJoints, self._outGrp)
-
-    def _connectOutputs(self):
-        for sysJnt, outJnt in zip(self.__sgSystem.joints(), self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])
 
     def postBuild(self):
         super(Rope, self).postBuild()

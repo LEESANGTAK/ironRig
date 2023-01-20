@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>592</width>
+    <width>749</width>
     <height>597</height>
    </rect>
   </property>
@@ -337,235 +337,233 @@
     <widget class="QGroupBox" name="groupBox_3">
      <property name="geometry">
       <rect>
-       <x>190</x>
+       <x>250</x>
        <y>20</y>
-       <width>261</width>
+       <width>201</width>
        <height>426</height>
       </rect>
      </property>
      <property name="title">
       <string>Settings</string>
      </property>
-     <widget class="QStackedWidget" name="stackedWidget_2">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>24</y>
-        <width>311</width>
-        <height>391</height>
-       </rect>
-      </property>
-      <widget class="QWidget" name="spineSettingsWidget_2">
-       <widget class="QWidget" name="layoutWidget_3">
-        <property name="geometry">
-         <rect>
-          <x>1</x>
-          <y>0</y>
-          <width>251</width>
-          <height>411</height>
-         </rect>
-        </property>
-        <layout class="QFormLayout" name="formLayout_2">
-         <property name="labelAlignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-         <item row="0" column="0">
-          <widget class="QLabel" name="nameLabel_3">
-           <property name="text">
-            <string>Name:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="nameLineEdit_3"/>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="jointsLabel_3">
-           <property name="text">
-            <string>Joints</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="jointsLineEdit_3"/>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="stretchLabel_3">
-           <property name="text">
-            <string>Stretch:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QCheckBox" name="stretchCheckBox_3">
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </widget>
-      <widget class="QWidget" name="twoBoneSettingsWidget_2">
-       <widget class="QWidget" name="formLayoutWidget_2">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>7</y>
-          <width>311</width>
-          <height>411</height>
-         </rect>
-        </property>
-        <layout class="QFormLayout" name="formLayout_4">
-         <property name="labelAlignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-         <item row="0" column="0">
-          <widget class="QLabel" name="nameLabel_4">
-           <property name="text">
-            <string>Name:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="nameLineEdit_4"/>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="jointsLabel_4">
-           <property name="text">
-            <string>Joint1:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="jointsLineEdit_4"/>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="joint2Label_2">
-           <property name="text">
-            <string>Joint2:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QLineEdit" name="joint2LineEdit_2"/>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="joint3Label_2">
-           <property name="text">
-            <string>Joint3:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QLineEdit" name="joint3LineEdit_2"/>
-         </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="pinElbowLabel_2">
-           <property name="text">
-            <string>Pin:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="1">
-          <widget class="QCheckBox" name="pinElbowCheckBox_2"/>
-         </item>
-         <item row="5" column="0">
-          <widget class="QLabel" name="stretchLabel_4">
-           <property name="text">
-            <string>Stretch:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1">
-          <widget class="QCheckBox" name="stretchCheckBox_4">
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="0">
-          <widget class="QLabel" name="twistBendLabel_2">
-           <property name="text">
-            <string>Twist/Bend:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="1">
-          <widget class="QCheckBox" name="twistBendCheckBox_2">
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="9" column="0">
-          <widget class="QLabel" name="numJointsLabel_2">
-           <property name="text">
-            <string>Num Twist Joints:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="9" column="1">
-          <widget class="QLineEdit" name="numJointsLineEdit_2">
-           <property name="text">
-            <string>3</string>
-           </property>
-          </widget>
-         </item>
-         <item row="11" column="0">
-          <widget class="QLabel" name="iKSpacesLabel_2">
-           <property name="text">
-            <string>IK Spaces:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="11" column="1">
-          <widget class="QLineEdit" name="iKSpacesLineEdit_2"/>
-         </item>
-         <item row="12" column="0">
-          <widget class="QLabel" name="poleSpacesLabel_2">
-           <property name="text">
-            <string>Pole Spaces:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="12" column="1">
-          <widget class="QLineEdit" name="poleSpacesLineEdit_2"/>
-         </item>
-        </layout>
-       </widget>
-      </widget>
-     </widget>
      <widget class="QWidget" name="">
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>400</y>
-        <width>251</width>
-        <height>21</height>
+        <y>50</y>
+        <width>201</width>
+        <height>371</height>
        </rect>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <widget class="QPushButton" name="pushButton_3">
-         <property name="text">
-          <string>Pre-Build</string>
-         </property>
+        <widget class="QStackedWidget" name="stackedWidget_2">
+         <widget class="QWidget" name="spineSettingsWidget_2">
+          <widget class="QWidget" name="layoutWidget_3">
+           <property name="geometry">
+            <rect>
+             <x>1</x>
+             <y>0</y>
+             <width>251</width>
+             <height>411</height>
+            </rect>
+           </property>
+           <layout class="QFormLayout" name="formLayout_2">
+            <property name="labelAlignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+            <item row="0" column="0">
+             <widget class="QLabel" name="nameLabel_3">
+              <property name="text">
+               <string>Name:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="nameLineEdit_3"/>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="jointsLabel_3">
+              <property name="text">
+               <string>Joints</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="jointsLineEdit_3"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="stretchLabel_3">
+              <property name="text">
+               <string>Stretch:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QCheckBox" name="stretchCheckBox_3">
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+         <widget class="QWidget" name="twoBoneSettingsWidget_2">
+          <widget class="QWidget" name="formLayoutWidget_2">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>7</y>
+             <width>191</width>
+             <height>211</height>
+            </rect>
+           </property>
+           <layout class="QFormLayout" name="formLayout_4">
+            <property name="labelAlignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+            <item row="0" column="0">
+             <widget class="QLabel" name="nameLabel_4">
+              <property name="text">
+               <string>Name:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="nameLineEdit_4"/>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="jointsLabel_4">
+              <property name="text">
+               <string>Joint1:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="jointsLineEdit_4"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="joint2Label_2">
+              <property name="text">
+               <string>Joint2:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="joint2LineEdit_2"/>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="joint3Label_2">
+              <property name="text">
+               <string>Joint3:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLineEdit" name="joint3LineEdit_2"/>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="pinElbowLabel_2">
+              <property name="text">
+               <string>Pin:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QCheckBox" name="pinElbowCheckBox_2"/>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="stretchLabel_4">
+              <property name="text">
+               <string>Stretch:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QCheckBox" name="stretchCheckBox_4">
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="twistBendLabel_2">
+              <property name="text">
+               <string>Twist/Bend:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="QCheckBox" name="twistBendCheckBox_2">
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="0">
+             <widget class="QLabel" name="numJointsLabel_2">
+              <property name="text">
+               <string>Num Twist Joints:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="1">
+             <widget class="QLineEdit" name="numJointsLineEdit_2">
+              <property name="text">
+               <string>3</string>
+              </property>
+             </widget>
+            </item>
+            <item row="11" column="0">
+             <widget class="QLabel" name="iKSpacesLabel_2">
+              <property name="text">
+               <string>IK Spaces:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="11" column="1">
+             <widget class="QLineEdit" name="iKSpacesLineEdit_2"/>
+            </item>
+            <item row="12" column="0">
+             <widget class="QLabel" name="poleSpacesLabel_2">
+              <property name="text">
+               <string>Pole Spaces:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="12" column="1">
+             <widget class="QLineEdit" name="poleSpacesLineEdit_2"/>
+            </item>
+           </layout>
+          </widget>
+         </widget>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_4">
-         <property name="text">
-          <string>Build</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButton_5">
-         <property name="text">
-          <string>Post-Build</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QPushButton" name="pushButton_3">
+           <property name="text">
+            <string>Pre-Build</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_4">
+           <property name="text">
+            <string>Build</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_5">
+           <property name="text">
+            <string>Post-Build</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>
@@ -583,77 +581,143 @@
       <string>Build All</string>
      </property>
     </widget>
-    <widget class="QGroupBox" name="groupBox_4">
+    <widget class="QWidget" name="">
      <property name="geometry">
       <rect>
-       <x>0</x>
-       <y>20</y>
-       <width>181</width>
+       <x>-10</x>
+       <y>40</y>
+       <width>251</width>
        <height>421</height>
       </rect>
      </property>
-     <property name="title">
-      <string>Structure</string>
-     </property>
-     <widget class="QTreeWidget" name="treeWidget">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>20</y>
-        <width>151</width>
-        <height>391</height>
-       </rect>
-      </property>
-      <property name="dragEnabled">
-       <bool>false</bool>
-      </property>
-      <property name="dragDropOverwriteMode">
-       <bool>false</bool>
-      </property>
-      <property name="dragDropMode">
-       <enum>QAbstractItemView::InternalMove</enum>
-      </property>
-      <property name="columnCount">
-       <number>1</number>
-      </property>
-      <column>
-       <property name="text">
-        <string>1</string>
-       </property>
-      </column>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
-       <property name="text">
-        <string>Base</string>
-       </property>
-       <item>
-        <property name="text">
-         <string>Spine</string>
-        </property>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <property name="text">
-          <string>Neck</string>
-         </property>
-         <item>
-          <property name="text">
-           <string>Head</string>
+         <widget class="QGroupBox" name="groupBox_5">
+          <property name="title">
+           <string>Modules</string>
           </property>
-         </item>
+          <widget class="QListWidget" name="listWidget_2">
+           <property name="geometry">
+            <rect>
+             <x>-20</x>
+             <y>40</y>
+             <width>256</width>
+             <height>192</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
         </item>
         <item>
-         <property name="text">
-          <string>Arm_L</string>
-         </property>
-         <item>
-          <property name="text">
-           <string>Hand_L</string>
+         <widget class="QGroupBox" name="groupBox_6">
+          <property name="title">
+           <string>Templates</string>
           </property>
-         </item>
+          <widget class="QListWidget" name="listWidget_3">
+           <property name="geometry">
+            <rect>
+             <x>-20</x>
+             <y>40</y>
+             <width>256</width>
+             <height>192</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
         </item>
-       </item>
+       </layout>
       </item>
-     </widget>
+      <item>
+       <widget class="QGroupBox" name="groupBox_4">
+        <property name="title">
+         <string>Structure</string>
+        </property>
+        <widget class="QTreeWidget" name="treeWidget">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>20</y>
+           <width>151</width>
+           <height>391</height>
+          </rect>
+         </property>
+         <property name="dragEnabled">
+          <bool>false</bool>
+         </property>
+         <property name="dragDropOverwriteMode">
+          <bool>false</bool>
+         </property>
+         <property name="dragDropMode">
+          <enum>QAbstractItemView::InternalMove</enum>
+         </property>
+         <property name="columnCount">
+          <number>1</number>
+         </property>
+         <column>
+          <property name="text">
+           <string>1</string>
+          </property>
+         </column>
+         <item>
+          <property name="text">
+           <string>Base</string>
+          </property>
+          <item>
+           <property name="text">
+            <string>Spine</string>
+           </property>
+           <item>
+            <property name="text">
+             <string>Neck</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Head</string>
+             </property>
+            </item>
+           </item>
+           <item>
+            <property name="text">
+             <string>Arm_L</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Hand_L</string>
+             </property>
+            </item>
+           </item>
+          </item>
+         </item>
+        </widget>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </widget>
+  </widget>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>2</width>
+     <height>2</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_4"/>
+  </widget>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>2</width>
+     <height>2</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_5"/>
   </widget>
  </widget>
  <resources/>

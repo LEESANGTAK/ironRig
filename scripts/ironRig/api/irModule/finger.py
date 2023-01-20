@@ -25,13 +25,9 @@ class Finger(Module):
         if self._negateScaleX:
             self.__fkSystem.negateSclaeX = True
         self.__fkSystem.build()
+
         self.addSystems(self.__fkSystem)
+        self._sysJoints = self.__fkSystem.joints()
 
     def _connectSystems(self):
         pass
-
-    def _connectOutputs(self):
-        for sysJnt, outJnt in zip(self.__fkSystem.joints(), self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, channels=['scale'], axes=['X', 'Y', 'Z'])

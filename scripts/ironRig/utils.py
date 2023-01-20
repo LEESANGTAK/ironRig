@@ -61,14 +61,6 @@ def findClosestController(searchPoint, controllers):
     return closestCtrl
 
 
-def connectTransform(driver, driven, channels, axes):
-    driver = pm.PyNode(driver)
-    driven = pm.PyNode(driven)
-    attrNames = [ch + axis for ch in channels for axis in axes]
-    for attrName in attrNames:
-        driver.attr(attrName) >> driven.attr(attrName)
-
-
 def buildNewJointChain(joints, prefix='', searchStr='', replaceStr=''):
     newJoints = buildNewJoints(joints, prefix, searchStr, replaceStr)
 

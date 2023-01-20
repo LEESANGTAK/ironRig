@@ -28,6 +28,7 @@ class Module(Container):
         self._oriPlaneLocators = None
         self.__orientPlane = None
         self._initJoints = None
+        self._sysJoints = None
         self._outJoints = None
 
         self._aimSign = None
@@ -307,7 +308,13 @@ class Module(Container):
     def _connectOutputs(self):
         """Connects system joints and attributes to the output joints and attributes of a module.
         """
-        raise NotImplementedError()
+        for sysJnt, outJnt in zip(self._sysJoints, self._outJoints):
+            pm.pointConstraint(sysJnt, outJnt, mo=True)
+            pm.orientConstraint(sysJnt, outJnt, mo=True)
+            scaleMult = pm.createNode('multiplyDivide', n='{}_scale_mult'.format(outJnt))
+            sysJnt.scale >> scaleMult.input1
+            scaleMult.output >> outJnt.scale
+            self.addMembers(scaleMult)
 
     def _connectSkeleton(self):
         """Connects to the skeleton joints and attributes.
@@ -345,16 +352,20 @@ class Module(Container):
         :param module: Other module.
         :type module: Module
         """
+        parentSpace =  None
         if module.__class__.__name__ == 'Spine':
             allModuleCtrls = module.ikSystem().controllers() + module.fkSystem().controllers()[1:] + module.controllers()
-            closestCtrl = utils.findClosestController(utils.getWorldPoint(self._topGrp), allModuleCtrls)
-            pm.matchTransform(self._topGrp, closestCtrl.transform(), pivots=True)
-            pm.parentConstraint(closestCtrl.transform(), self._topGrp, mo=True)
+            parentSpace = utils.findClosestController(utils.getWorldPoint(self._topGrp), allModuleCtrls).transform()
         else:
-            closestOutJnt = utils.findClosestObject(pm.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints())
-            pm.matchTransform(self._topGrp, closestOutJnt, pivots=True)
-            pm.parentConstraint(closestOutJnt, self._topGrp, mo=True)
+            parentSpace = utils.findClosestObject(pm.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints())
+        pm.matchTransform(self._topGrp, parentSpace, pivots=True)
+        pm.parentConstraint(parentSpace, self._topGrp, mo=True)
+        parentSpace.scale >> self._topGrp.scale
+        for outJnt in self._outJoints:
+            scaleMult = outJnt.inputs(type='multiplyDivide')[0]
+            parentSpace.scale >> scaleMult.input2
 
+        # Remove module from the children list of previous parent module when a new parent module provided
         if self._parent and self._parent != module:
             self._parent.children.remove(self)
 

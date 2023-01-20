@@ -23,13 +23,9 @@ class Head(Module):
         self.__fkSystem.controllers()[0].shape = Controller.SHAPE.CUBE
         self.__fkSystem.controllers()[0].scale = utils.getDistance(self._skelJoints[0], self._skelJoints[-1]) * 0.5
         self.__fkSystem.controllers()[0].alignShapeTo(utils.getWorldPoint(self._skelJoints[0]), Controller.SIDE.BOTTOM)
+
         self.addSystems(self.__fkSystem)
+        self._sysJoints = self.__fkSystem.joints()
 
     def _connectSystems(self):
         pass
-
-    def _connectOutputs(self):
-        for sysJnt, outJnt in zip(self.__fkSystem.joints(), self._outJoints):
-            pm.pointConstraint(sysJnt, outJnt, mo=True)
-            pm.orientConstraint(sysJnt, outJnt, mo=True)
-            utils.connectTransform(sysJnt, outJnt, ['scale'], ['X', 'Y', 'Z'])

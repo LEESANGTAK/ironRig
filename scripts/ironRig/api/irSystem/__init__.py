@@ -4,6 +4,7 @@ from . import fk
 from . import splineIK
 from . import ribbonIK
 from . import twoBoneIK
+from . import threeBoneIK
 from . import revFootIK
 from . import aim
 
@@ -13,6 +14,7 @@ reload(fk)
 reload(splineIK)
 reload(ribbonIK)
 reload(twoBoneIK)
+reload(threeBoneIK)
 reload(revFootIK)
 reload(aim)
 
@@ -22,5 +24,6 @@ from .fk import FK
 from .splineIK import SplineIK
 from .ribbonIK import RibbonIK
 from .twoBoneIK import TwoBoneIK
+from .threeBoneIK import ThreeBoneIK
 from .revFootIK import RevFootIK
 from .aim import Aim
