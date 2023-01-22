@@ -98,7 +98,8 @@ class Simple(Module):
     def _connectSkeleton(self):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             pm.parentConstraint(outJnt, skelJnt, mo=True)
-            outJnt.scale >> skelJnt.scale
+            for axis in 'XYZ':
+                outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def postBuild(self):
         super(Simple, self).postBuild()

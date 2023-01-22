@@ -47,7 +47,7 @@ class ThreeBoneIK(System):
         self.__calfRotGrp = pm.createNode('transform', n='{}_rot'.format(self.__calfIkHandle))
         pm.matchTransform(self.__calfRotGrp, self._joints[3])
         pm.parent(calfIkhZeroGrp, self.__calfRotGrp)
-        self.__ankleIkHandle = pm.ikHandle(startJoint=self._joints[2], endEffector=self._joints[3], solver='ikSCsolver', n='{}ankle_ikh'.format(self._prefix))[0]
+        self.__ankleIkHandle = pm.ikHandle(startJoint=self._joints[2], endEffector=self._joints[3], solver='ikRPsolver', n='{}ankle_ikh'.format(self._prefix))[0]
         ankleIkhZeroGrp = utils.makeGroup(self.__ankleIkHandle, '{}_zero'.format(self.__ankleIkHandle))
         self.__ikHandleLoc = pm.spaceLocator(n='{}ikh_loc'.format(self._prefix))
         pm.matchTransform(self.__ikHandleLoc, self._joints[3])
@@ -121,34 +121,42 @@ class ThreeBoneIK(System):
         self._controllerGrp | poleLine
 
     def setupStretch(self):
+        # Setup DAG
         stretchGrp = pm.createNode('transform', n='{}stretch_grp'.format(self._prefix))
         pm.addAttr(self._controllers[0].transform(), at='double', ln='length1', min=0.01, dv=1.0, keyable=True)
         pm.addAttr(self._controllers[0].transform(), at='double', ln='length2', min=0.01, dv=1.0, keyable=True)
+        pm.addAttr(self._controllers[0].transform(), at='double', ln='length3', min=0.01, dv=1.0, keyable=True)
         pm.addAttr(self._controllers[0].transform(), at='double', ln='stretch', min=0.0, max=1.0, dv=1.0, keyable=True)
 
         stretchInputNode = pm.createNode('transform', n='{}stretch_input'.format(self._prefix))
         pm.addAttr(stretchInputNode, at='double', ln='inLength1')
         pm.addAttr(stretchInputNode, at='double', ln='inLength2')
+        pm.addAttr(stretchInputNode, at='double', ln='inLength3')
         pm.addAttr(stretchInputNode, at='double', ln='inStretch')
         pm.addAttr(stretchInputNode, at='double', ln='inCurLength')
         pm.addAttr(stretchInputNode, at='double', ln='inLength1Orig')
         pm.addAttr(stretchInputNode, at='double', ln='inLength2Orig')
+        pm.addAttr(stretchInputNode, at='double', ln='inLength3Orig')
 
         stretchOutputNode = pm.createNode('transform', n='{}stretch_output'.format(self._prefix))
         pm.addAttr(stretchOutputNode, at='double', ln='outLength1')
         pm.addAttr(stretchOutputNode, at='double', ln='outLength2')
+        pm.addAttr(stretchOutputNode, at='double', ln='outLength3')
         jnt0StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self._joints[0]))
         jnt1StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self._joints[1]))
         jnt2StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self._joints[2]))
+        jnt3StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self._joints[3]))
 
         pm.matchTransform(jnt0StretchLoc, self._joints[0])
         pm.matchTransform(jnt1StretchLoc, self._joints[1])
         pm.matchTransform(jnt2StretchLoc, self._joints[2])
+        pm.matchTransform(jnt3StretchLoc, self._joints[3])
 
         pm.parent([stretchInputNode, stretchOutputNode], stretchGrp)
-        stretchGrp | jnt0StretchLoc | jnt1StretchLoc | jnt2StretchLoc
+        stretchGrp | jnt0StretchLoc | jnt1StretchLoc | jnt2StretchLoc | jnt3StretchLoc
         self._blbxGrp | stretchGrp
 
+        # Create DG nodes
         ikhCtrlLocalMtx = pm.createNode('multMatrix', n='{}_local_multMtx'.format(self._controllers[0]))
         ikhCtrlLocalDist = pm.createNode('distanceBetween', n='{}_local_dist'.format(self._controllers[0]))
 
@@ -156,32 +164,114 @@ class ThreeBoneIK(System):
         lenOrigAbsSquare.operation.set(3)
         lenOrigAbsSquare.input2X.set(2)
         lenOrigAbsSquare.input2Y.set(2)
+        lenOrigAbsSquare.input2Z.set(2)
         lenOrigAbsSqrt = pm.createNode('multiplyDivide', n='{}lenOrigAbs_sqrt'.format(self._prefix))
         lenOrigAbsSqrt.operation.set(3)
         lenOrigAbsSqrt.input2X.set(0.5)
         lenOrigAbsSqrt.input2Y.set(0.5)
+        lenOrigAbsSqrt.input2Z.set(0.5)
 
         len1OrigMul = pm.createNode('multDoubleLinear', n='{}length1Orig_mul'.format(self._prefix))
         len2OrigMul = pm.createNode('multDoubleLinear', n='{}length2Orig_mul'.format(self._prefix))
+        len3OrigMul = pm.createNode('multDoubleLinear', n='{}length3Orig_mul'.format(self._prefix))
 
-        len1OrigLen2OrigAdd = pm.createNode('addDoubleLinear', n='{}len1OrigLen2Orig_add'.format(self._prefix))
+        wholeLenOrigAdd = pm.createNode('plusMinusAverage', n='{}wholeLenOrig_add'.format(self._prefix))
 
         stretchFactorDiv = pm.createNode('multiplyDivide', n='{}stretchFactor_div'.format(self._prefix))
         stretchFactorDiv.operation.set(2)
 
         stretchLen1OrigMul = pm.createNode('multDoubleLinear', n='{}stretchLen1Orig_mul'.format(self._prefix))
         stretchLen2OrigMul = pm.createNode('multDoubleLinear', n='{}stretchLen2Orig_mul'.format(self._prefix))
+        stretchLen3OrigMul = pm.createNode('multDoubleLinear', n='{}stretchLen3Orig_mul'.format(self._prefix))
 
         stretchCond = pm.createNode('condition', n='{}stretch_cond'.format(self._prefix))
         stretchCond.operation.set(2)
 
         len1Blend = pm.createNode('blendTwoAttr', n='{}length1_blend'.format(self._prefix))
         len2Blend = pm.createNode('blendTwoAttr', n='{}length2_blend'.format(self._prefix))
+        len3Blend = pm.createNode('blendTwoAttr', n='{}length3_blend'.format(self._prefix))
 
         len1SignMult = pm.createNode('multDoubleLinear', n='{}length1Sign_mult'.format(self._prefix))
         len1SignMult.input1.set(self._aimSign)
         len2SignMult = pm.createNode('multDoubleLinear', n='{}length2Sign_mult'.format(self._prefix))
         len2SignMult.input1.set(self._aimSign)
+        len3SignMult = pm.createNode('multDoubleLinear', n='{}length3Sign_mult'.format(self._prefix))
+        len3SignMult.input1.set(self._aimSign)
+
+        # Connect nodes
+        self.__ikHandleLoc.worldMatrix >> ikhCtrlLocalMtx.matrixIn[0]
+        self._joints[0].getParent().worldInverseMatrix >> ikhCtrlLocalMtx.matrixIn[1]
+        ikhCtrlLocalMtx.matrixSum >> ikhCtrlLocalDist.inMatrix2
+
+        ikhCtrlLocalDist.distance >> stretchInputNode.inCurLength
+        jnt1StretchLoc.attr('translate{}'.format(self._aimAxis)) >> stretchInputNode.inLength1Orig
+        jnt2StretchLoc.attr('translate{}'.format(self._aimAxis)) >> stretchInputNode.inLength2Orig
+        jnt3StretchLoc.attr('translate{}'.format(self._aimAxis)) >> stretchInputNode.inLength3Orig
+        self._controllers[0].transform().length1 >> stretchInputNode.inLength1
+        self._controllers[0].transform().length2 >> stretchInputNode.inLength2
+        self._controllers[0].transform().length3 >> stretchInputNode.inLength3
+        self._controllers[0].transform().stretch >> stretchInputNode.inStretch
+
+        stretchInputNode.inLength1Orig >> lenOrigAbsSquare.input1X
+        stretchInputNode.inLength2Orig >> lenOrigAbsSquare.input1Y
+        stretchInputNode.inLength3Orig >> lenOrigAbsSquare.input1Z
+        lenOrigAbsSquare.outputX >> lenOrigAbsSqrt.input1X
+        lenOrigAbsSquare.outputY >> lenOrigAbsSqrt.input1Y
+        lenOrigAbsSquare.outputZ >> lenOrigAbsSqrt.input1Z
+
+        stretchInputNode.inLength1 >> len1OrigMul.input1
+        lenOrigAbsSqrt.outputX >> len1OrigMul.input2
+        stretchInputNode.inLength2 >> len2OrigMul.input1
+        lenOrigAbsSqrt.outputY >> len2OrigMul.input2
+        stretchInputNode.inLength3 >> len3OrigMul.input1
+        lenOrigAbsSqrt.outputZ >> len3OrigMul.input2
+
+        # Sum all length
+        len1OrigMul.output >> wholeLenOrigAdd.input1D[0]
+        len2OrigMul.output >> wholeLenOrigAdd.input1D[1]
+        len3OrigMul.output >> wholeLenOrigAdd.input1D[2]
+
+        stretchInputNode.inCurLength >> stretchFactorDiv.input1X
+        wholeLenOrigAdd.output1D >> stretchFactorDiv.input2X
+
+        # Scale the orignal length
+        stretchFactorDiv.outputX >> stretchLen1OrigMul.input1
+        len1OrigMul.output >> stretchLen1OrigMul.input2
+        stretchFactorDiv.outputX >> stretchLen2OrigMul.input1
+        len2OrigMul.output >> stretchLen2OrigMul.input2
+        stretchFactorDiv.outputX >> stretchLen3OrigMul.input1
+        len3OrigMul.output >> stretchLen3OrigMul.input2
+
+        stretchInputNode.inCurLength >> stretchCond.firstTerm
+        wholeLenOrigAdd.output1D >> stretchCond.secondTerm
+        stretchLen1OrigMul.output >> stretchCond.colorIfTrueR
+        stretchLen2OrigMul.output >> stretchCond.colorIfTrueG
+        stretchLen3OrigMul.output >> stretchCond.colorIfTrueB
+        len1OrigMul.output >> stretchCond.colorIfFalseR
+        len2OrigMul.output >> stretchCond.colorIfFalseG
+        len3OrigMul.output >> stretchCond.colorIfFalseB
+
+        stretchInputNode.inStretch >> len1Blend.attributesBlender
+        len1OrigMul.output >> len1Blend.input[0]
+        stretchCond.outColorR >> len1Blend.input[1]
+        stretchInputNode.inStretch >> len2Blend.attributesBlender
+        len2OrigMul.output >> len2Blend.input[0]
+        stretchCond.outColorG >> len2Blend.input[1]
+        stretchInputNode.inStretch >> len3Blend.attributesBlender
+        len3OrigMul.output >> len3Blend.input[0]
+        stretchCond.outColorB >> len3Blend.input[1]
+
+        len1Blend.output >> len1SignMult.input2
+        len2Blend.output >> len2SignMult.input2
+        len3Blend.output >> len3SignMult.input2
+
+        len1SignMult.output >> stretchOutputNode.outLength1
+        len2SignMult.output >> stretchOutputNode.outLength2
+        len3SignMult.output >> stretchOutputNode.outLength3
+
+        stretchOutputNode.outLength1 >> self._joints[1].attr('translate{}'.format(self._aimAxis))
+        stretchOutputNode.outLength2 >> self._joints[2].attr('translate{}'.format(self._aimAxis))
+        stretchOutputNode.outLength3 >> self._joints[3].attr('translate{}'.format(self._aimAxis))
 
         self.addMembers(ikhCtrlLocalMtx,
                         ikhCtrlLocalDist,
@@ -189,7 +279,7 @@ class ThreeBoneIK(System):
                         lenOrigAbsSqrt,
                         len1OrigMul,
                         len2OrigMul,
-                        len1OrigLen2OrigAdd,
+                        wholeLenOrigAdd,
                         stretchFactorDiv,
                         stretchLen1OrigMul,
                         stretchLen2OrigMul,
@@ -198,61 +288,6 @@ class ThreeBoneIK(System):
                         len2Blend,
                         len1SignMult,
                         len2SignMult)
-
-        self.__ikHandleLoc.worldMatrix >> ikhCtrlLocalMtx.matrixIn[0]
-        self._joints[0].getParent().worldInverseMatrix >> ikhCtrlLocalMtx.matrixIn[1]
-        ikhCtrlLocalMtx.matrixSum >> ikhCtrlLocalDist.inMatrix2
-
-        ikhCtrlLocalDist.distance >> stretchInputNode.inCurLength
-        jnt1StretchLoc.attr('translate{}'.format(self._aimAxis)) >> stretchInputNode.inLength1Orig
-        jnt2StretchLoc.attr('translate{}'.format(self._aimAxis)) >> stretchInputNode.inLength2Orig
-        self._controllers[0].transform().length1 >> stretchInputNode.inLength1
-        self._controllers[0].transform().length2 >> stretchInputNode.inLength2
-        self._controllers[0].transform().stretch >> stretchInputNode.inStretch
-
-        stretchInputNode.inLength1Orig >> lenOrigAbsSquare.input1X
-        stretchInputNode.inLength2Orig >> lenOrigAbsSquare.input1Y
-        lenOrigAbsSquare.outputX >> lenOrigAbsSqrt.input1X
-        lenOrigAbsSquare.outputY >> lenOrigAbsSqrt.input1Y
-
-        stretchInputNode.inLength1 >> len1OrigMul.input1
-        lenOrigAbsSqrt.outputX >> len1OrigMul.input2
-        stretchInputNode.inLength2 >> len2OrigMul.input1
-        lenOrigAbsSqrt.outputY >> len2OrigMul.input2
-
-        len1OrigMul.output >> len1OrigLen2OrigAdd.input1
-        len2OrigMul.output >> len1OrigLen2OrigAdd.input2
-
-        stretchInputNode.inCurLength >> stretchFactorDiv.input1X
-        len1OrigLen2OrigAdd.output >> stretchFactorDiv.input2X
-
-        stretchFactorDiv.outputX >> stretchLen1OrigMul.input1
-        len1OrigMul.output >> stretchLen1OrigMul.input2
-        stretchFactorDiv.outputX >> stretchLen2OrigMul.input1
-        len2OrigMul.output >> stretchLen2OrigMul.input2
-
-        stretchInputNode.inCurLength >> stretchCond.firstTerm
-        len1OrigLen2OrigAdd.output >> stretchCond.secondTerm
-        stretchLen1OrigMul.output >> stretchCond.colorIfTrueR
-        stretchLen2OrigMul.output >> stretchCond.colorIfTrueG
-        len1OrigMul.output >> stretchCond.colorIfFalseR
-        len2OrigMul.output >> stretchCond.colorIfFalseG
-
-        stretchInputNode.inStretch >> len1Blend.attributesBlender
-        len1OrigMul.output >> len1Blend.input[0]
-        stretchCond.outColorR >> len1Blend.input[1]
-        stretchInputNode.inStretch >> len2Blend.attributesBlender
-        len2OrigMul.output >> len2Blend.input[0]
-        stretchCond.outColorG >> len2Blend.input[1]
-
-        len1Blend.output >> len1SignMult.input2
-        len2Blend.output >> len2SignMult.input2
-
-        len1SignMult.output >> stretchOutputNode.outLength1
-        len2SignMult.output >> stretchOutputNode.outLength2
-
-        stretchOutputNode.outLength1 >> self._joints[1].attr('translate{}'.format(self._aimAxis))
-        stretchOutputNode.outLength2 >> self._joints[2].attr('translate{}'.format(self._aimAxis))
 
     def setupPin(self):
         pm.addAttr(self._controllers[-1].transform(), at='double', ln='pin', min=0.0, max=1.0, dv=0.0, keyable=True)
@@ -273,10 +308,11 @@ class ThreeBoneIK(System):
         jnt0PinLoc = pm.spaceLocator(n='{}_pin_loc'.format(self._joints[0]))
         jnt1PinLoc = pm.spaceLocator(n='{}_pin_loc'.format(self._joints[1]))
         jnt2PinLoc = pm.spaceLocator(n='{}_pin_loc'.format(self._joints[2]))
+        pm.matchTransform(jnt2PinLoc, self._joints[2], position=True)
 
         pm.pointConstraint(self._joints[0].getParent(), jnt0PinLoc, mo=False)
         pm.pointConstraint(self._controllers[-1], jnt1PinLoc, mo=False)
-        pm.pointConstraint(self._controllers[0], jnt2PinLoc, mo=False)
+        pm.pointConstraint(self._controllers[0], jnt2PinLoc, mo=True)
 
         pm.parent([pinInputNode, pinOutputNode], pinGrp)
         pinGrp | jnt0PinLoc | jnt1PinLoc | jnt2PinLoc

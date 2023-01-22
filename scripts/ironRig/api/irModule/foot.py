@@ -92,10 +92,6 @@ class Foot(Module):
             # Connect module controllers
             module.controllers()[0].transform().ik >> self._controllers[0].transform().ik
             self._controllers[0].hide()
-
-            self._parent = module
-            if not self in module.children:
-                module.children.append(self)
         else:
             super(Foot, self).attachTo(module)
 
@@ -104,11 +100,3 @@ class Foot(Module):
 
         self.__ikSystem.controllers()[0].scale = self._controllerScale * 2
         self._controllers[0].scale = self._controllerScale * 0.2
-
-    def remove(self):
-        if self._parent and isinstance(self._parent, TwoBoneLimb):
-            ikHandleCtrl = self._parent.ikSystem().controllers()[0]
-            for attrInfo in RevFootIK.ATTRS_INFO:
-                if ikHandleCtrl.transform().hasAttr(attrInfo['name']):
-                    ikHandleCtrl.transform().attr(attrInfo['name']).delete()
-        super(Foot, self).remove()

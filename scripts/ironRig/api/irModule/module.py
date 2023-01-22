@@ -16,9 +16,6 @@ class Module(Container):
     def __init__(self, prefix='', skeletonJoints=None):
         super(Module, self).__init__(prefix)
 
-        self._parent = None
-        self._children = []
-
         self._geoGrp = None
         self._outGrp = None
         self._systemGrp = None
@@ -41,10 +38,6 @@ class Module(Container):
 
         self._controllerScale = 1
         self._controllerColor = Controller.COLOR.YELLOW
-
-    @property
-    def children(self):
-        return self._children
 
     @property
     def skelJoints(self):
@@ -313,15 +306,17 @@ class Module(Container):
             pm.orientConstraint(sysJnt, outJnt, mo=True)
             scaleMult = pm.createNode('multiplyDivide', n='{}_scale_mult'.format(outJnt))
             sysJnt.scale >> scaleMult.input1
-            scaleMult.output >> outJnt.scale
+            for axis in 'XYZ':
+                scaleMult.attr('output'+axis) >> outJnt.attr('scale'+axis)
             self.addMembers(scaleMult)
 
     def _connectSkeleton(self):
         """Connects to the skeleton joints and attributes.
         """
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
-            pCnst = pm.parentConstraint(outJnt, skelJnt, mo=True)
-            pCnst.interpType.set(2)
+            pm.parentConstraint(outJnt, skelJnt, mo=True)
+            for axis in 'XYZ':
+                outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def __buildGlobalController(self):
         modGlobalCtrl = Controller('{}global_ctrl'.format(self._prefix),
@@ -365,31 +360,16 @@ class Module(Container):
             scaleMult = outJnt.inputs(type='multiplyDivide')[0]
             parentSpace.scale >> scaleMult.input2
 
-        # Remove module from the children list of previous parent module when a new parent module provided
-        if self._parent and self._parent != module:
-            self._parent.children.remove(self)
-
-        self._parent = module
-        if not self in module.children:
-            module.children.append(self)
-
     def remove(self):
         """Remove all nodes realted with a module.
         """
-        if self._children:
-            for child in self._children[:]:
-                child.remove()
-            self._children = []
-
-        if self._parent:
-            self._parent.children.remove(self)
-            self._parent = None
-
         if self._outJoints:
             attrs = [ch + axis for ch in 'trs' for axis in 'xyz']
             for outJnt in self._outJoints:
                 for attrStr in attrs:
                     outJnt.attr(attrStr).disconnect()
+            for skelJnt in self._skelJoints:
+                skelJnt.scale.set(1.0, 1.0, 1.0)
 
         if self._systems:
             for system in self._systems:

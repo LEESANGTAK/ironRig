@@ -9,6 +9,10 @@ class CurveDegree:
     LINEAR = 1
     CUBIC = 3
 
+class StretchType:
+    Translate = 0
+    Scale = 1
+
 
 class SplineIK(System):
     CURVE_DEGREE = CurveDegree

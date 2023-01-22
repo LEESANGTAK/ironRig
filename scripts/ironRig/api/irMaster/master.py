@@ -11,6 +11,7 @@ class Master(Container):
     """
     def __init__(self, prefix=''):
         super(Master, self).__init__(prefix)
+
         self._modules = []
         self._masters = []
         self._modulesGrp = None
@@ -45,7 +46,10 @@ class Master(Container):
 
     def addModules(self, *args):
         modules = sum([module if isinstance(module, list) else [module] for module in args], [])
-        self._modules.extend(modules)
+        for module in modules:
+            if not module in self._modules:
+                self._modules.append(module)
+                module.parent = self
 
     def build(self):
         self._buildSystems()
@@ -68,6 +72,13 @@ class Master(Container):
         closestOutJnt = utils.findClosestObject(pm.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints())
         pm.matchTransform(self._topGrp, closestOutJnt, pivots=True)
         pm.parentConstraint(closestOutJnt, self._topGrp, mo=True)
+        closestOutJnt.scale >> self._topGrp.scale
+        outJnts = []
+        for module in self._modules:
+            outJnts.extend(module.outJoints())
+        for outJnt in outJnts:
+            scaleMult = outJnt.inputs(type='multiplyDivide')[0]
+            closestOutJnt.scale >> scaleMult.input2
 
     def remove(self):
         for module in self._modules:
