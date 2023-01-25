@@ -227,3 +227,9 @@ class String(Module):
                 baseCtrl.transform().ik >> cnst.target[0].targetWeight
                 fkIkRev.outputX >> cnst.target[1].targetWeight
                 baseCtrl.transform().ik >> choice.selector
+
+    def _connectSkeleton(self):
+        for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
+            pm.parentConstraint(outJnt, skelJnt, mo=True)
+            for axis in 'XYZ':
+                outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)

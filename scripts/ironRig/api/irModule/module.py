@@ -226,6 +226,17 @@ class Module(Container):
 
         self._initJoints = initJoints
 
+    def symmeterizeGuide(self):
+        searchStr = '_L'
+        replaceStr = '_R'
+        if '_R' in self._prefix:
+            searchStr = '_R'
+            replaceStr = '_L'
+        for loc in self._oriPlaneLocators:
+            locPos = loc.getTranslation(space='world')
+            oppLoc = pm.PyNode(loc.replace(searchStr, replaceStr))
+            oppLoc.setTranslation((-locPos[0], locPos[1], locPos[2]), space='world')
+
     def build(self):
         """Build module with joints and objects from the initialize step.
         """
@@ -315,8 +326,6 @@ class Module(Container):
         """
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             pm.parentConstraint(outJnt, skelJnt, mo=True)
-            for axis in 'XYZ':
-                outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def __buildGlobalController(self):
         modGlobalCtrl = Controller('{}global_ctrl'.format(self._prefix),
