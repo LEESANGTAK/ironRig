@@ -154,7 +154,7 @@ def createJointsOnSurface(surface, numJoints, prefix):
     return joints
 
 
-def getAimAxisInfo(startJoint, endJoint):
+def getAimAxisInfo(startJoint, endJoint, space='local'):
     startJoint = pm.PyNode(startJoint)
     endJoint = pm.PyNode(endJoint)
 
@@ -163,10 +163,15 @@ def getAimAxisInfo(startJoint, endJoint):
     aimVector = endPnt - startPnt
     aimVector.normalize()
 
-    startJntMtx = startJoint.worldMatrix.get()
-    mtxXVec = pm.dt.Vector(startJntMtx[0][:3])
-    mtxYVec = pm.dt.Vector(startJntMtx[1][:3])
-    mtxZVec = pm.dt.Vector(startJntMtx[2][:3])
+    if space == 'local':
+        startJntMtx = startJoint.worldMatrix.get()
+        mtxXVec = pm.dt.Vector(startJntMtx[0][:3])
+        mtxYVec = pm.dt.Vector(startJntMtx[1][:3])
+        mtxZVec = pm.dt.Vector(startJntMtx[2][:3])
+    elif space == 'world':
+        mtxXVec = pm.dt.Vector.xAxis
+        mtxYVec = pm.dt.Vector.yAxis
+        mtxZVec = pm.dt.Vector.zAxis
 
     aimDotMtxXVecInfo = [round(aimVector * mtxXVec), 1, 'X']
     aimDotMtxNegXVecInfo = [round(aimVector * -mtxXVec), -1, 'X']

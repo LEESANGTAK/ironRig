@@ -4,6 +4,7 @@ from . import spine
 from . import neck
 from . import clavicle
 from . import twoBoneLimb
+from . import threeBoneLimb
 from . import foot
 from . import finger
 from . import head
@@ -18,6 +19,7 @@ reload(spine)
 reload(neck)
 reload(clavicle)
 reload(twoBoneLimb)
+reload(threeBoneLimb)
 reload(foot)
 reload(finger)
 reload(head)
@@ -31,6 +33,7 @@ from .spine import Spine
 from .neck import Neck
 from .clavicle import Clavicle
 from .twoBoneLimb import TwoBoneLimb
+from .threeBoneLimb import ThreeBoneLimb
 from .foot import Foot
 from .finger import Finger
 from .head import Head

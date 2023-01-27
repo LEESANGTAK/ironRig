@@ -2,6 +2,7 @@ import pymel.core as pm
 from ..irGlobal import Controller
 from ... import utils
 from .system import System
+from .twoBoneIK import TwoBoneIK
 
 
 class ThreeBoneIK(System):
@@ -14,13 +15,14 @@ class ThreeBoneIK(System):
 
         self.__hindIkHandle = None
         self.__calfIkHandle = None
+        self.__ankleIkHandle = None
         self.__ikHandleLoc = None
 
         self.__ikHandleController = None
         self.__poleVectorController = None
 
     def ikHandle(self):
-        return self.__calfIkHandle
+        return self.__ankleIkHandle
 
     def ikHandleController(self):
         return self.__ikHandleController
@@ -46,12 +48,14 @@ class ThreeBoneIK(System):
         calfIkhZeroGrp = utils.makeGroup(self.__calfIkHandle, '{}_zero'.format(self.__calfIkHandle))
         self.__calfRotGrp = pm.createNode('transform', n='{}_rot'.format(self.__calfIkHandle))
         pm.matchTransform(self.__calfRotGrp, self._joints[3])
-        pm.parent(calfIkhZeroGrp, self.__calfRotGrp)
+        self.__calfAutoRotGrp = pm.createNode('transform', n='{}_autoRot'.format(self.__calfIkHandle))
+        pm.matchTransform(self.__calfAutoRotGrp, self._joints[3])
+        self.__calfAutoRotGrp | self.__calfRotGrp | calfIkhZeroGrp
         self.__ankleIkHandle = pm.ikHandle(startJoint=self._joints[2], endEffector=self._joints[3], solver='ikRPsolver', n='{}ankle_ikh'.format(self._prefix))[0]
         ankleIkhZeroGrp = utils.makeGroup(self.__ankleIkHandle, '{}_zero'.format(self.__ankleIkHandle))
         self.__ikHandleLoc = pm.spaceLocator(n='{}ikh_loc'.format(self._prefix))
         pm.matchTransform(self.__ikHandleLoc, self._joints[3])
-        pm.parent([self.__calfRotGrp, ankleIkhZeroGrp], self.__ikHandleLoc)
+        pm.parent([self.__calfAutoRotGrp, ankleIkhZeroGrp], self.__ikHandleLoc)
         self._blbxGrp | self.__ikHandleLoc
 
         jnt0Loc = pm.spaceLocator(n='{}_loc'.format(self._joints[0]))
@@ -70,10 +74,10 @@ class ThreeBoneIK(System):
         self.__ikHandleController.lockChannels(['scale', 'visibility'])
         self.addMembers(self.__ikHandleController.controllerNode())
         pm.addAttr(self.__ikHandleController, ln='calfLift', at='double', dv=0.0, keyable=True)
-        self.__ikHandleController.transform().calfLift >> self.__calfRotGrp.rz
+        self.__ikHandleController.transform().calfLift >> self.__calfRotGrp.ry
 
         startToEndVector = utils.getWorldPoint(self._joints[2]) - utils.getWorldPoint(self._joints[0])
-        poleVector = self.getPoleVector(self._joints[0], self._joints[1], self._joints[2])
+        poleVector = TwoBoneIK.getPoleVector(self._joints[0], self._joints[1], self._joints[2])
         polePos = utils.getWorldPoint(self._joints[1]) + (poleVector.normal() * startToEndVector.length())
         if self.__poleVectorPosition:  # Override pole vector position if is given
             polePos = self.__poleVectorPosition
@@ -84,7 +88,7 @@ class ThreeBoneIK(System):
 
         pm.poleVectorConstraint(self.__poleVectorController.transform(), self.__hindIkHandle)
         self.__hindIkHandle.twist.set(180)
-        pm.orientConstraint(self.__hindJoints[1], self.__ikHandleLoc, mo=True)
+        pm.orientConstraint(self.__hindJoints[1], self.__calfAutoRotGrp, mo=True)
 
         pm.poleVectorConstraint(self.__poleVectorController.transform(), self.__calfIkHandle)
         self.__poleVectorController.lockChannels(['rotate', 'scale', 'visibility'])
@@ -92,17 +96,6 @@ class ThreeBoneIK(System):
 
         self._controllers = [self.__ikHandleController, self.__poleVectorController]
         pm.parent([ctrl.zeroGrp() for ctrl in self._controllers], self._controllerGrp)
-
-    @staticmethod
-    def getPoleVector(startObject, midObject, endObject):
-        startVector = pm.dt.Vector(pm.xform(startObject, q=True, rp=True, ws=True))
-        midVector = pm.dt.Vector(pm.xform(midObject, q=True, rp=True, ws=True))
-        endVector = pm.dt.Vector(pm.xform(endObject, q=True, rp=True, ws=True))
-
-        startToEndCenter = (startVector + endVector) * 0.5
-        poleVector = midVector - startToEndCenter
-
-        return poleVector
 
     def __createPoleVectorLine(self):
         midJntDec = pm.createNode('decomposeMatrix', n='{0}_dec'.format(self._joints[1]))

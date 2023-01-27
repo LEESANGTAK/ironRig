@@ -5,6 +5,7 @@ from ..irSystem import FK
 from ..irSystem import RevFootIK
 from .module import Module
 from .twoBoneLimb import TwoBoneLimb
+from .threeBoneLimb import ThreeBoneLimb
 
 
 class Foot(Module):
@@ -71,7 +72,7 @@ class Foot(Module):
         self._controllers.append(moduleCtrl)
 
     def attachTo(self, module):
-        if isinstance(module, TwoBoneLimb):
+        if isinstance(module, TwoBoneLimb) or isinstance(module, ThreeBoneLimb):
             # Connect ik joints
             utils.removeConnections(self.__ikSystem.joints()[0])
             pm.parentConstraint(module.ikSystem().joints()[-1], self.__ikSystem.joints()[0], mo=True)

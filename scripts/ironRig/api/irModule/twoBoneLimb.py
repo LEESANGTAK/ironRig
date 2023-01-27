@@ -178,6 +178,7 @@ class TwoBoneLimb(Module):
             self.__setupNonroll(self.__blendJoints[1])
             blendJnt1LocalMtx = pm.createNode('multMatrix', n='{}_local_multMtx'.format(self.__blendJoints[1]))
             blendJnt1LocalDecMtx = pm.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self.__blendJoints[1]))
+            blendJnt1LocalDecMtx.inputRotateOrder.set(3)  # Set rotate order to xzy since the primary axis of rotation is the Y.
             self.__blendJoints[0].worldMatrix >> blendJnt1LocalMtx.matrixIn[0]
             self.__nonrollJoints[0].worldInverseMatrix >> blendJnt1LocalMtx.matrixIn[1]
             blendJnt1LocalMtx.matrixSum >> blendJnt1LocalDecMtx.inputMatrix
@@ -197,6 +198,7 @@ class TwoBoneLimb(Module):
             blendJnt2NonrollGrp = self.__setupNonroll(self.__blendJoints[2])
             blendJnt2LocalMtx = pm.createNode('multMatrix', n='{}_local_multMtx'.format(self.__blendJoints[2]))
             blendJnt2LocalDecMtx = pm.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self.__blendJoints[2]))
+            blendJnt2LocalDecMtx.inputRotateOrder.set(3)
             self.__blendJoints[-1].worldMatrix >> blendJnt2LocalMtx.matrixIn[0]
             self.__nonrollJoints[-1].worldInverseMatrix >> blendJnt2LocalMtx.matrixIn[1]
             blendJnt2LocalMtx.matrixSum >> blendJnt2LocalDecMtx.inputMatrix

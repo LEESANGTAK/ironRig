@@ -23,7 +23,7 @@ class Module(Container):
         self._skelJoints = [pm.PyNode(jnt) for jnt in skeletonJoints] if skeletonJoints else None
         self._initSkelLocators = None
         self._oriPlaneLocators = None
-        self.__orientPlane = None
+        self._orientPlane = None
         self._initJoints = None
         self._sysJoints = None
         self._outJoints = None
@@ -92,7 +92,9 @@ class Module(Container):
         self._buildInitSkelLocators()
         self._buildOrientPlane()
         self._buildInitJoints()
+
         self._initJoints[0].scale >> self._oriPlaneLocators[1].initJointScale
+        pm.matchTransform(self._oriPlaneLocators[1], self._initJoints[0], rotation=True)
         pm.select(self._oriPlaneLocators[1], r=True)
 
     def _buildGroups(self):
@@ -122,33 +124,33 @@ class Module(Container):
         if not pm.pluginInfo(pluginName, q=True, loaded=True):
             pm.loadPlugin(pluginName)
 
-        self.__orientPlane = pm.createNode(pluginName, n='{}orientPlane'.format(self._prefix))
-        self.addMembers(self.__orientPlane)
+        self._orientPlane = pm.createNode(pluginName, n='{}orientPlane'.format(self._prefix))
+        self.addMembers(self._orientPlane)
 
-        startLocOriPlane = pm.spaceLocator(n='{}start_oriPlane_loc'.format(self._prefix))
-        pm.matchTransform(startLocOriPlane, self._initSkelLocators[0], position=True)
-        midLocOriPlane = self.__createMidLocatorOrientPlane()
-        endLocOriPlane = pm.spaceLocator(n='{}end_oriPlane_loc'.format(self._prefix))
-        pm.matchTransform(endLocOriPlane, self._initSkelLocators[-1], position=True)
-        self._oriPlaneLocators = [startLocOriPlane, midLocOriPlane, endLocOriPlane]
+        startLoc = pm.spaceLocator(n='{}start_oriPlane_loc'.format(self._prefix))
+        pm.matchTransform(startLoc, self._initSkelLocators[0], position=True)
+        midLoc = self._createMidLocator()
+        endLoc = pm.spaceLocator(n='{}end_oriPlane_loc'.format(self._prefix))
+        pm.matchTransform(endLoc, self._initSkelLocators[-1], position=True)
+        self._oriPlaneLocators = [startLoc, midLoc, endLoc]
         pm.parent(self._oriPlaneLocators, self._initGrp)
         for oriPlaneLoc in self._oriPlaneLocators:
             utils.makeGroup(oriPlaneLoc, '{}_zero'.format(oriPlaneLoc))
 
-        startLocOriPlane.worldPosition >> self.__orientPlane.planePoint01
-        midLocOriPlane.worldPosition >> self.__orientPlane.planePoint02
-        endLocOriPlane.worldPosition >> self.__orientPlane.planePoint03
+        startLoc.worldPosition >> self._orientPlane.planePoint01
+        midLoc.worldPosition >> self._orientPlane.planePoint02
+        endLoc.worldPosition >> self._orientPlane.planePoint03
 
-        startToMidLine = Module.__buildOriPlaneLine('{}startToMid_oriPlane_line'.format(self._prefix), startLocOriPlane, midLocOriPlane)
-        midToEndLine = Module.__buildOriPlaneLine('{}midToEnd_oriPlane_line'.format(self._prefix), midLocOriPlane, endLocOriPlane)
-        endToStartLine = Module.__buildOriPlaneLine('{}endToStart_oriPlane_line'.format(self._prefix), endLocOriPlane, startLocOriPlane)
+        startToMidLine = Module.__buildOriPlaneLine('{}startToMid_oriPlane_line'.format(self._prefix), startLoc, midLoc)
+        midToEndLine = Module.__buildOriPlaneLine('{}midToEnd_oriPlane_line'.format(self._prefix), midLoc, endLoc)
+        endToStartLine = Module.__buildOriPlaneLine('{}endToStart_oriPlane_line'.format(self._prefix), endLoc, startLoc)
         pm.parent([startToMidLine, midToEndLine, endToStartLine], self._initGrp)
 
         for index, initSkelLoc in enumerate(self._initSkelLocators):
-            initSkelLoc.worldPosition >> self.__orientPlane.initPoints[index]
+            initSkelLoc.worldPosition >> self._orientPlane.initPoints[index]
 
-    def __createMidLocatorOrientPlane(self):
-        midLocOriPlane = None
+    def _createMidLocator(self):
+        midLoc = None
 
         aimVector = utils.getWorldPoint(self._initSkelLocators[-1]) - utils.getWorldPoint(self._initSkelLocators[0])
         if len(self._initSkelLocators) <= 2:
@@ -165,19 +167,19 @@ class Module(Container):
                     midOriPlaneLocVector = pm.dt.Vector.xNegAxis
             midLocPos = utils.getWorldPoint(midInitSkelLoc) + (midOriPlaneLocVector.normal() * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
 
-        midLocOriPlane = pm.spaceLocator(n='{}mid_oriPlane_loc'.format(self._prefix))
-        midLocOriPlane.overrideEnabled.set(True)
-        midLocOriPlane.overrideColor.set(6)
-        pm.xform(midLocOriPlane, t=midLocPos, ws=True)
+        midLoc = pm.spaceLocator(n='{}mid_oriPlane_loc'.format(self._prefix))
+        midLoc.overrideEnabled.set(True)
+        midLoc.overrideColor.set(6)
+        pm.xform(midLoc, t=midLocPos, ws=True)
 
         negAxisAttrNames = ['negateXAxis', 'negateYAxis', 'negateZAxis', 'swapYZAxis']
         for attrName in negAxisAttrNames:
-            pm.addAttr(midLocOriPlane, ln=attrName, at='bool', dv=False, keyable=True)
-            midLocOriPlane.attr(attrName) >> self.__orientPlane.attr(attrName)
+            pm.addAttr(midLoc, ln=attrName, at='bool', dv=False, keyable=True)
+            midLoc.attr(attrName) >> self._orientPlane.attr(attrName)
 
-        pm.addAttr(midLocOriPlane, ln='initJointScale', type='double3', keyable=True)
+        pm.addAttr(midLoc, ln='initJointScale', type='double3', keyable=True)
 
-        return midLocOriPlane
+        return midLoc
 
     @staticmethod
     def __buildOriPlaneLine(name, oriPlaneLoc1, oriPlaneLoc2):
@@ -208,8 +210,8 @@ class Module(Container):
             if index == 0:
                 parentMatrixAttr = self._initGrp.worldMatrix
             else:
-                parentMatrixAttr = self.__orientPlane.outMatrices[index-1]
-            curOutMtxAttr = self.__orientPlane.outMatrices[index]
+                parentMatrixAttr = self._orientPlane.outMatrices[index-1]
+            curOutMtxAttr = self._orientPlane.outMatrices[index]
             parentInvMtx = pm.createNode('inverseMatrix', n='{}invMtx'.format(utils.getCleanName(parentMatrixAttr.name())))
             multMtx = pm.createNode('multMatrix', n='{}local_multMtx'.format(utils.getCleanName(curOutMtxAttr.name())))
             decMtx = pm.createNode('decomposeMatrix', n='{}decMtx'.format(utils.getCleanName(curOutMtxAttr.name())))
