@@ -339,14 +339,14 @@ armRPvCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(armRMod.ikSystem().poleVectorC
 armRPvCtrlSSBuilder.build(parent=True)
 
 
-footRIkhCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(footLCtrl,
+footLIkhCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(footLCtrl,
                                                      [mainCtrl, pelvisCtrl],
                                                      mainCtrl)
-footRIkhCtrlSSBuilder.build(parent=True)
-legRPvCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(legLMod.ikSystem().poleVectorController(),
+footLIkhCtrlSSBuilder.build(parent=True)
+legLPvCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(legLMod.ikSystem().poleVectorController(),
                                                    [mainCtrl, footLCtrl],
                                                    mainCtrl)
-legRPvCtrlSSBuilder.build(parent=True)
+legLPvCtrlSSBuilder.build(parent=True)
 
 
 footRIkhCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(footRCtrl,

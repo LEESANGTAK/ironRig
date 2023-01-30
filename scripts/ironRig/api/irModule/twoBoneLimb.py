@@ -261,6 +261,7 @@ class TwoBoneLimb(Module):
     def _connectSkeleton(self):
         for outJnt in self._outJoints:
             skelJnt = outJnt.replace(self._prefix+'out_', '')
+            utils.removeConnections(skelJnt)
             pm.parentConstraint(outJnt, skelJnt, mo=True)
 
     def __buildControls(self):

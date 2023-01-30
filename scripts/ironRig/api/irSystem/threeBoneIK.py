@@ -24,6 +24,9 @@ class ThreeBoneIK(System):
     def ikHandle(self):
         return self.__ankleIkHandle
 
+    def ikHandleLocator(self):
+        return self.__ikHandleLoc
+
     def ikHandleController(self):
         return self.__ikHandleController
 

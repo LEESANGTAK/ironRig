@@ -77,12 +77,12 @@ class Foot(Module):
             utils.removeConnections(self.__ikSystem.joints()[0])
             pm.parentConstraint(module.ikSystem().joints()[-1], self.__ikSystem.joints()[0], mo=True)
             # Connect skel joints
-            utils.removeConnections(self._skelJoints[0])
-            pm.parentConstraint(self._outJoints[0], self._skelJoints[0], mo=True)
+            utils.removeConnections(module.skelJoints[-1])
+            pm.parentConstraint(self._outJoints[0], module.skelJoints[-1], mo=True)
             # Connect ik handle
-            moduleIkHandleLoc = module.ikSystem().ikHandle().getParent()
+            moduleIkHandleLoc = module.ikSystem().ikHandleLocator()
             utils.removeConnections(moduleIkHandleLoc)
-            pm.parentConstraint(self.__ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
+            pm.pointConstraint(self.__ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
             # Connect ik controllers
             pm.parentConstraint(module.ikSystem().controllers()[0], self.__ikSystem.controllers()[0], mo=True)
             utils.cloneUserDefinedAttrs(self.__ikSystem.controllers()[0].transform(), module.ikSystem().controllers()[0].transform())

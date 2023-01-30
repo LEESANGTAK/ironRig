@@ -327,6 +327,7 @@ class Module(Container):
         """Connects to the skeleton joints and attributes.
         """
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
+            utils.removeConnections(skelJnt)
             pm.parentConstraint(outJnt, skelJnt, mo=True)
 
     def __buildGlobalController(self):

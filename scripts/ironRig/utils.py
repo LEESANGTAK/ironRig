@@ -261,6 +261,14 @@ def getAffectedVertices(joints, minWeight=0.1):
     return affectedVtxs
 
 
+def filterGroundLevelVertices(vertices, threshold=1.0):
+    groundLevelVertices = []
+    for vtx in vertices:
+        if abs(vtx.getPosition(space='world').y) < threshold:
+            groundLevelVertices.append(vtx)
+    return groundLevelVertices
+
+
 def getFacingFaces(faces, direction, tol=0.5):
     preSel = pm.selected()
     facingFaces = []
@@ -373,7 +381,7 @@ def duplicateFace(faces):
     # Get meshes
     meshes = []
     for face in faces:
-        meshes.append(face.node().getTransform())
+        meshes.append(face.node())
     meshes = list(set(meshes))
 
     # Get faces matching mesh

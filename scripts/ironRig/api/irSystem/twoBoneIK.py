@@ -19,6 +19,9 @@ class TwoBoneIK(System):
     def ikHandle(self):
         return self.__ikHandle
 
+    def ikHandleLocator(self):
+        return self.__ikHandleLoc
+
     def ikHandleController(self):
         return self.__ikHandleController
 

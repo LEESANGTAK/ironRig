@@ -47,7 +47,8 @@ class RevFootIK(System):
     def __buildRevFootJoints(self):
         skelJoints = [pm.PyNode(jnt.replace(self._prefix, '')) for jnt in self._joints]
         afVtxs = utils.getAffectedVertices(skelJoints, minWeight=0.5)
-        pm.select(afVtxs, r=True)
+        groundVtxs = utils.filterGroundLevelVertices(afVtxs, threshold=1.0)
+        pm.select(groundVtxs, r=True)
         pm.mel.ConvertSelectionToFaces()
         fFaces = utils.getFacingFaces(pm.selected(fl=True), pm.dt.Vector.yNegAxis, tol=0.8)
 
