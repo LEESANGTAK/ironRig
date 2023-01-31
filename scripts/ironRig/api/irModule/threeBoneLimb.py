@@ -397,3 +397,47 @@ class ThreeBoneLimb(Module):
         if self.__firstLimbTwistSystem or self.__secondLimbTwistSystem or self.__thirdLimbTwistSystem:
             self._controllers[1].scale = self._controllerScale * 0.9
             self._controllers[2].scale = self._controllerScale * 0.9
+
+    def attachTo(self, module):
+        if module.__class__.__name__ == 'Clavicle':
+            clavicleCtrl = module.fkSystem().controllers()[0]
+
+            aimLoc = pm.spaceLocator(n='{}_aim_loc'.format(clavicleCtrl))
+            staticLoc = pm.spaceLocator(n='{}_static_loc'.format(clavicleCtrl))
+            for loc in [staticLoc, aimLoc]:
+                pm.matchTransform(loc, clavicleCtrl.zeroGrp())
+            pm.parent([staticLoc, aimLoc], module.fkSystem().blackboxGrp())
+            cnst = pm.orientConstraint([aimLoc, staticLoc], clavicleCtrl.zeroGrp(), mo=True)
+            cnst.interpType.set(2)
+
+            pm.addAttr(clavicleCtrl, ln='aim', at='float', min=0.0, max=1.0, dv=0.5, keyable=True)
+            revNode = pm.createNode('reverse', n='{}_aim_rev'.format(clavicleCtrl))
+            clavicleCtrl.aim >> cnst.target[0].targetWeight
+            clavicleCtrl.aim >> revNode.inputX
+            revNode.outputX >> cnst.target[1].targetWeight
+
+            tempPoleVectorLoc = pm.spaceLocator(n='tempPoleVector_loc')
+            tempPoleVectorLocPos = utils.getWorldPoint(clavicleCtrl.zeroGrp()) + (utils.getWorldPoint(self.__ikSystem.poleVectorController()) - utils.getWorldPoint(self.__ikSystem.joints()[1]))
+            pm.xform(tempPoleVectorLoc, t=tempPoleVectorLocPos, ws=True)
+            upAxisInfo = utils.getAimAxisInfo(clavicleCtrl.zeroGrp(), tempPoleVectorLoc)
+            pm.delete(tempPoleVectorLoc)
+            pm.aimConstraint(
+                self.__ikSystem.ikHandleController(), aimLoc,
+                aimVector=self._aimSign*utils.axisToVector(self._aimAxis),
+                upVector=upAxisInfo[0]*utils.axisToVector(upAxisInfo[1]),
+                worldUpType='object',
+                worldUpObject=self.__ikSystem.poleVectorController(),
+                mo=True
+            )
+
+            self.addMembers(revNode)
+
+            if self.__ikStartController:
+                ikStartObject = self.__ikSystem.controllers()[-1].zeroGrp()
+            else:
+                ikStartObject = self.__ikSystem.joints()[0].getParent()
+            pm.parentConstraint(module.outJoints()[-1], ikStartObject, mo=True)
+
+            pm.parentConstraint(module.outJoints()[-1], self.__fkSystem.controllers()[0].zeroGrp(), mo=True)
+        else:
+            super(ThreeBoneLimb, self).attachTo(module)

@@ -44,6 +44,9 @@ class System(Container):
     def aimAxis(self):
         return self._aimAxis
 
+    def blackboxGrp(self):
+        return self._blbxGrp
+
     def joints(self):
         return self._joints
 

@@ -154,20 +154,20 @@ def createJointsOnSurface(surface, numJoints, prefix):
     return joints
 
 
-def getAimAxisInfo(startJoint, endJoint, space='local'):
-    startJoint = pm.PyNode(startJoint)
-    endJoint = pm.PyNode(endJoint)
+def getAimAxisInfo(startObject, endObject, space='local'):
+    startObject = pm.PyNode(startObject)
+    endObject = pm.PyNode(endObject)
 
-    startPnt = pm.dt.Point(pm.xform(startJoint, q=True, rp=True, ws=True))
-    endPnt = pm.dt.Point(pm.xform(endJoint, q=True, rp=True, ws=True))
+    startPnt = pm.dt.Point(pm.xform(startObject, q=True, rp=True, ws=True))
+    endPnt = pm.dt.Point(pm.xform(endObject, q=True, rp=True, ws=True))
     aimVector = endPnt - startPnt
     aimVector.normalize()
 
     if space == 'local':
-        startJntMtx = startJoint.worldMatrix.get()
-        mtxXVec = pm.dt.Vector(startJntMtx[0][:3])
-        mtxYVec = pm.dt.Vector(startJntMtx[1][:3])
-        mtxZVec = pm.dt.Vector(startJntMtx[2][:3])
+        startObjectMtx = startObject.worldMatrix.get()
+        mtxXVec = pm.dt.Vector(startObjectMtx[0][:3])
+        mtxYVec = pm.dt.Vector(startObjectMtx[1][:3])
+        mtxZVec = pm.dt.Vector(startObjectMtx[2][:3])
     elif space == 'world':
         mtxXVec = pm.dt.Vector.xAxis
         mtxYVec = pm.dt.Vector.yAxis

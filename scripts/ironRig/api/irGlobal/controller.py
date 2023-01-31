@@ -101,6 +101,9 @@ class Controller(object):
         pm.parent(other.zeroGrp(), self.__transform)
         return other
 
+    def __getattr__(self, name):
+        return self.__transform.attr(name)
+
     @property
     def name(self):
         """

@@ -3,6 +3,7 @@ from ... import utils
 from ..irGlobal import Controller
 from ..irSystem import FK
 from ..irSystem import RevFootIK
+from ..irSystem import TwoBoneIK
 from .module import Module
 from .twoBoneLimb import TwoBoneLimb
 from .threeBoneLimb import ThreeBoneLimb
@@ -17,6 +18,26 @@ class Foot(Module):
 
         self.__blendJoints = []
         self.__blendConstraints = []
+
+    def _createMidLocator(self):
+        midLoc = None
+
+        midInitSkelLoc = self._initSkelLocators[int(len(self._initSkelLocators)*0.5)]
+        midLocPos = utils.getWorldPoint(midInitSkelLoc) + (pm.dt.Vector.yAxis * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
+
+        midLoc = pm.spaceLocator(n='{}mid_oriPlane_loc'.format(self._prefix))
+        midLoc.overrideEnabled.set(True)
+        midLoc.overrideColor.set(6)
+        pm.xform(midLoc, t=midLocPos, ws=True)
+
+        negAxisAttrNames = ['negateXAxis', 'negateYAxis', 'negateZAxis', 'swapYZAxis']
+        for attrName in negAxisAttrNames:
+            pm.addAttr(midLoc, ln=attrName, at='bool', dv=False, keyable=True)
+            midLoc.attr(attrName) >> self._orientPlane.attr(attrName)
+
+        pm.addAttr(midLoc, ln='initJointScale', type='double3', keyable=True)
+
+        return midLoc
 
     def build(self):
         super(Foot, self).build()

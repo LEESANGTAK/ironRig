@@ -5,8 +5,6 @@ from ironRig.api import irMaster
 from ironRig.api import irModule
 
 
-
-
 globalMst = irMaster.GlobalMaster(skeletonRoot='skeleton', cogJoint='Hip_joint')
 globalMst.build()
 globalMst.controllerScale = 50
@@ -110,14 +108,29 @@ backFootRMod.attachTo(backLegRMod)
 globalMst.addModules(backFootLMod)
 #backFootRMod.remove()
 
+prefix = 'clavicle_L_'
+joints = [u'L_Front_Scapula', u'L_Front_Shoulder']
+LclaMod = irModule.Clavicle(prefix, joints)
+LclaMod.preBuild()
+LclaMod.build()
+LclaMod.controllerColor = irGlobal.Controller.COLOR.BLUE
+LclaMod.controllerScale = 7
+LclaMod.postBuild()
+LclaMod.attachTo(spineMod)
+globalMst.addModules(LclaMod)
+#LclaMod.remove()
+
 prefix = 'frontLeg_L_'
 joints = [u'L_Front_Shoulder', u'L_Front_Knee', u'L_Front_Fetlock', u'L_Front_Ankle']
 frontLegLMod = irModule.ThreeBoneLimb(prefix, joints)
 frontLegLMod.preBuild()
+frontLegLMod.ikStartController = True
 frontLegLMod.build()
+frontLegLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
 frontLegLMod.controllerScale = 5
 frontLegLMod.postBuild()
-globalMst.addModules(backFootLMod)
+frontLegLMod.attachTo(LclaMod)
+globalMst.addModules(frontLegLMod)
 #frontLegLMod.remove()
 
 prefix = 'frontFoot_L_'
@@ -132,14 +145,29 @@ frontFootLMod.attachTo(frontLegLMod)
 globalMst.addModules(backFootLMod)
 #frontFootLMod.remove()
 
+prefix = 'clavicle_R_'
+joints = [u'R_Front_Scapula', u'R_Front_Shoulder']
+RclaMod = irModule.Clavicle(prefix, joints)
+RclaMod.preBuild()
+RclaMod.negateScaleX = True
+RclaMod.build()
+RclaMod.controllerColor = irGlobal.Controller.COLOR.RED
+RclaMod.controllerScale = 7
+RclaMod.postBuild()
+RclaMod.attachTo(spineMod)
+globalMst.addModules(RclaMod)
+#RclaMod.remove()
+
 prefix = 'frontLeg_R_'
 joints = [u'R_Front_Shoulder', u'R_Front_Knee', u'R_Front_Fetlock', u'R_Front_Ankle']
 frontLegRMod = irModule.ThreeBoneLimb(prefix, joints)
 frontLegRMod.preBuild()
 frontLegRMod.negateScaleX = True
 frontLegRMod.build()
+frontLegRMod.controllerColor = irGlobal.Controller.COLOR.RED
 frontLegRMod.controllerScale = 5
 frontLegRMod.postBuild()
+frontLegRMod.attachTo(RclaMod)
 globalMst.addModules(backFootLMod)
 #frontLegRMod.remove()
 
@@ -158,30 +186,7 @@ globalMst.addModules(backFootLMod)
 
 # ------------------------------------------------------------------------------
 
-prefix = 'clavicle_L_'
-joints = [u'SK_L_Clavicle', u'SK_L_Shoulder']
-LclaMod = irModule.Clavicle(prefix, joints)
-LclaMod.preBuild()
-LclaMod.build()
-LclaMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-LclaMod.controllerScale = 7
-LclaMod.postBuild()
-LclaMod.attachTo(spineMod)
-globalMst.addModules(LclaMod)
-#LclaMod.remove()
 
-prefix = 'clavicle_R_'
-joints = [u'SK_R_Clavicle', u'SK_R_Shoulder']
-RclaMod = irModule.Clavicle(prefix, joints)
-RclaMod.preBuild()
-RclaMod.negateScaleX = True
-RclaMod.build()
-RclaMod.controllerColor = irGlobal.Controller.COLOR.RED
-RclaMod.controllerScale = 7
-RclaMod.postBuild()
-RclaMod.attachTo(spineMod)
-globalMst.addModules(RclaMod)
-#RclaMod.remove()
 
 # ---------------- Space Switch Setup ---------------------
 mainCtrl = globalMst.mainController()
