@@ -40,6 +40,12 @@ class RevFootIK(System):
         self._joints[0] | ballJnt | self._joints[1]
         self._joints.insert(1, ballJnt)
 
+    def joints(self):
+        if self.__isSingleBone:
+            return self.__origJoints
+        else:
+            super(RevFootIK, self).joints()
+
     def revFootJoints(self):
         return self.__revFootJoints
 
@@ -177,7 +183,7 @@ class RevFootIK(System):
         pm.xform(self.__footCtrl.zeroGrp(), t=[jointsMidVec.x, 0, jointsMidVec.z], ws=True)
         if self._negateScaleX:
             self.__footCtrl.zeroGrp().sx.set(-1)
-        self.__footCtrl.constraint(self._blbxGrp, parent=True)
+        pm.parentConstraint(self.__footCtrl, self._blbxGrp, mo=True)
         pm.parent(self.__footCtrl.zeroGrp(), self._controllerGrp)
         self.__footCtrl.lockHideChannels(['visibility'])
         self._controllers.append(self.__footCtrl)

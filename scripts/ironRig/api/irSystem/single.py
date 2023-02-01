@@ -19,11 +19,11 @@ class Single(System):
 
         for jnt in self._joints:
             ctrl = Controller('{}_ctrl'.format(jnt), color=Controller.COLOR.SKYBLUE)
-            ctrl.matchTo(jnt, position=True, rotation=True)
+            pm.matchTransform(ctrl.zeroGrp(), jnt, position=True, rotation=True)
             if self._negateScaleX and utils.getWorldPoint(ctrl).x < 0.0:
                 ctrl.zeroGrp().sx.set(-1)
-            ctrl.constraint(jnt, parent=True)
-            ctrl.connect(jnt, scale=True)
+            pm.parentConstraint(ctrl, jnt, mo=True)
+            ctrl.scale >> jnt.scale
             ctrl.lockHideChannels(['visibility'])
             ctrls.append(ctrl)
             self.addMembers(ctrl.controllerNode())

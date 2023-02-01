@@ -254,45 +254,6 @@ class Controller(object):
                 curve.cv[i].setPosition(pm.dt.Vector(cvPos) + moveVector, space='world')
             curve.updateCurve()
 
-    def setPosition(self, position):
-        """Set controller zero group position.
-
-        :param position: World position
-        :type position: list
-        """
-        pm.xform(self.__zeroGrp, t=position, ws=True)
-
-    def setOrientation(self, orientation):
-        pm.xform(self.__zeroGrp, ro=orientation, ws=True)
-
-    def matchTo(self, target, position=False, rotation=False, scale=False):
-        pm.matchTransform(self.__zeroGrp, target, pos=position, rot=rotation, scl=scale)
-
-    def constraint(self, target, parent=False, point=False, orient=False, scale=False):
-        cnsts = []
-        if parent:
-            cnsts.append(pm.parentConstraint(self.__transform, target, mo=True))
-        else:
-            if point:
-                cnsts.append(pm.pointConstraint(self.__transform, target, mo=True))
-            if orient:
-                cnsts.append(pm.orientConstraint(self.__transform, target, mo=True))
-        if scale:
-            cnsts.append(pm.scaleConstraint(self.__transform, target, mo=True))
-        return cnsts
-
-    def connect(self, target, translate=False, rotate=False, scale=False):
-        channels = ''
-        if translate:
-            channels += 't'
-        if rotate:
-            channels += 'r'
-        if scale:
-            channels += 's'
-
-        for attrName in [ch + axis for ch in channels for axis in 'xyz']:
-            self.__transform.attr(attrName) >> target.attr(attrName)
-
     def lockHideChannels(self, channels=['visibility'], axes=['X', 'Y', 'Z']):
         attrNames = list(set([ch + axis if ch in ['translate', 'rotate', 'scale'] else ch for ch in channels for axis in axes]))
         for attrName in attrNames:

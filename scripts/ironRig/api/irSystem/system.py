@@ -97,7 +97,11 @@ class System(Container):
         self._buildControls()
 
     def _getAimAxisInfo(self):
-        self._aimSign, self._aimAxis = utils.getAimAxisInfo(self._joints[0], self._joints[1])
+        if len(self.joints()) == 1:
+            self._aimSign = 1
+            self._aimAxis = 'Z'
+        else:
+            self._aimSign, self._aimAxis = utils.getAimAxisInfo(self._joints[0], self._joints[1])
 
     def _buildSystems(self):
         self._blbxGrp | self._joints[0]

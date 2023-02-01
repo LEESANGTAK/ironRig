@@ -106,6 +106,7 @@ class Foot(Module):
             pm.pointConstraint(self.__ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
             # Connect ik controllers
             pm.parentConstraint(module.ikSystem().controllers()[0], self.__ikSystem.controllers()[0], mo=True)
+            print(self.__ikSystem.controllers()[0])
             utils.cloneUserDefinedAttrs(self.__ikSystem.controllers()[0], module.ikSystem().controllers()[0])
             self.__ikSystem.controllers()[0].hide()
             # Connect fk controllers

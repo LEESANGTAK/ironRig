@@ -75,12 +75,12 @@ class Spine(Module):
         return fkJnts
 
     def _connectSystems(self):
-        self.__fkSystem.controllers()[-1].constraint(self.__ikSystem.controllers()[-1].zeroGrp(), parent=True)
+        pm.parentConstraint(self.__fkSystem.controllers()[-1], self.__ikSystem.controllers()[-1].zeroGrp(), mo=True)
 
     def __buildControls(self):
         pelvisCtrl = Controller('pelvis_ctrl', Controller.SHAPE.CUBE)
-        pelvisCtrl.matchTo(self.__ikSystem.joints()[1], position=True, rotation=True)
-        pelvisCtrl.constraint(self.__ikSystem.controllers()[0], parent=True)
+        pm.matchTransform(pelvisCtrl.zeroGrp(), self.__ikSystem.joints()[1], position=True, rotation=True)
+        pm.parentConstraint(pelvisCtrl, self.__ikSystem.controllers()[0], mo=True)
         shapeOffset = utils.getDistance(self.__ikSystem.joints()[0], self.__ikSystem.joints()[1]) * (-self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis()))
         pelvisCtrl.shapeOffset = shapeOffset
         pm.parent(pelvisCtrl.zeroGrp(), self.__controllerGrp)

@@ -286,7 +286,7 @@ class TwoBoneLimb(Module):
         if self.__upperTwistSystem or self.__lowerTwistSystem:
             pm.addAttr(moduleCtrl, ln='bendCtrlVis', at='bool', dv=False, keyable=True)
             moduleTwistCtrl = Controller('{}twist_ctrl'.format(self._prefix))
-            moduleTwistCtrl.matchTo(self.__blendJoints[1], position=True)
+            pm.matchTransform(moduleTwistCtrl.zeroGrp(), self.__blendJoints[1], position=True)
             pm.pointConstraint(self.__blendJoints[1], moduleTwistCtrl.zeroGrp(), mo=False)
             oCnst = pm.orientConstraint(self.__blendJoints[0], self.__blendJoints[1], moduleTwistCtrl.zeroGrp(), mo=False)
             oCnst.interpType.set(2)
@@ -298,7 +298,7 @@ class TwoBoneLimb(Module):
             upAxis = list(set(['X', 'Y', 'Z']) - set(self._aimAxis))[0]
             if self.__upperTwistSystem:
                 moduleCtrl.bendCtrlVis >> self.__upperTwistSystem.topGrp().visibility
-                moduleTwistCtrl.constraint(self.__upperTwistSystem.controllers()[-1].zeroGrp(), parent=True)
+                pm.parentConstraint(moduleTwistCtrl, self.__upperTwistSystem.controllers()[-1].zeroGrp(), mo=True)
                 pm.aimConstraint(moduleTwistCtrl,
                                 self.__upperTwistSystem.controllers()[1].zeroGrp(),
                                 aimVector=self._aimSign * utils.axisToVector(self._aimAxis),
@@ -309,7 +309,7 @@ class TwoBoneLimb(Module):
                 self.__upperTwistSystem.controllers()[-1].hide()
             if self.__lowerTwistSystem:
                 moduleCtrl.bendCtrlVis >> self.__lowerTwistSystem.topGrp().visibility
-                moduleTwistCtrl.constraint(self.__lowerTwistSystem.controllers()[0].zeroGrp(), parent=True)
+                pm.parentConstraint(moduleTwistCtrl, self.__lowerTwistSystem.controllers()[0].zeroGrp(), mo=True)
                 pm.aimConstraint(moduleTwistCtrl,
                                 self.__lowerTwistSystem.controllers()[1].zeroGrp(),
                                 aimVector=-self._aimSign * utils.axisToVector(self._aimAxis),

@@ -68,12 +68,12 @@ class ThreeBoneIK(System):
 
     def _buildControls(self):
         self.__ikHandleController = Controller('{0}_ctrl'.format(self.__ankleIkHandle), shape=Controller.SHAPE.CUBE)
-        self.__ikHandleController.matchTo(self._joints[-1], position=True, rotation=True)
+        pm.matchTransform(self.__ikHandleController.zeroGrp(), self._joints[-1], position=True, rotation=True)
         if self._negateScaleX:
             self.__ikHandleController.zeroGrp().sx.set(-1)
-        self.__ikHandleController.constraint(self.__ikHandleLoc, point=True)
-        self.__ikHandleController.constraint(self.__hindIkHandle.getParent(), point=True)
-        self.__ikHandleController.constraint(self._joints[-1], orient=True)
+        pm.pointConstraint(self.__ikHandleController, self.__ikHandleLoc, mo=True)
+        pm.pointConstraint(self.__ikHandleController, self.__hindIkHandle.getParent(), mo=True)
+        pm.orientConstraint(self.__ikHandleController, self._joints[-1], mo=True)
         self.__ikHandleController.lockHideChannels(['scale', 'visibility'])
         self.addMembers(self.__ikHandleController.controllerNode())
         pm.addAttr(self.__ikHandleController, ln='calfLift', at='double', dv=0.0, keyable=True)
@@ -440,9 +440,9 @@ class ThreeBoneIK(System):
 
     def buildStartController(self):
         startCtrl = Controller('{}_ctrl'.format(self._joints[0]), shape=Controller.SHAPE.SPHERE)
-        startCtrl.matchTo(self._joints[0], position=True)
-        startCtrl.matchTo(self.__ikHandleController, rotation=True, scale=True)
-        startCtrl.constraint(self._joints[0].getParent(), parent=True)
+        pm.matchTransform(startCtrl.zeroGrp(), self._joints[0], position=True)
+        pm.matchTransform(startCtrl.zeroGrp(), self.__ikHandleController, rotation=True, scale=True)
+        pm.parentConstraint(startCtrl, self._joints[0].getParent(), mo=True)
         startCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
         self._controllers.append(startCtrl)
         pm.parent(startCtrl.zeroGrp(), self._controllerGrp)

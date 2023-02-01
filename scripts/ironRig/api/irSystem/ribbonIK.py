@@ -68,10 +68,10 @@ class RibbonIK(System):
         for srfcJnt in self.__surfaceJoints:
             ctrl = Controller(name=srfcJnt.replace('srfcJnt', 'ctrl'), shape=Controller.SHAPE.CUBE, color=self.controllerColor)
             ctrl.lockHideChannels(['scale', 'visibility'])
-            ctrl.matchTo(srfcJnt, position=True, rotation=True)
+            pm.matchTransform(ctrl.zeroGrp(), srfcJnt, position=True, rotation=True)
             if self._negateScaleX:
                 ctrl.zeroGrp().sx.set(-1)
-            ctrl.constraint(srfcJnt, parent=True)
+            pm.parentConstraint(ctrl, srfcJnt, mo=True)
             ctrls.append(ctrl)
             self.addMembers(ctrl.controllerNode())
         pm.parent([ctrl.zeroGrp() for ctrl in ctrls], self._controllerGrp)

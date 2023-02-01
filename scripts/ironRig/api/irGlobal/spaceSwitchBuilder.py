@@ -34,22 +34,25 @@ class SpaceSwitchBuilder(object):
         allDriverCtrls.insert(0, self.__defaultDriverController)
 
         # Create driver locators
-        driverLocs = []
+        spaceLocs = []
         for driverCtrl in allDriverCtrls:
-            driverLoc = pm.spaceLocator(n='{}_{}_space_loc'.format(self.__drivenController, driverCtrl))
-            driverLocs.append(driverLoc)
-            pm.matchTransform(driverLoc, self.__drivenController)
-            driverLocZeroGrp = utils.makeGroup(driverLoc, '{}_zero'.format(driverLoc))
-            topGrp | driverLocZeroGrp
-            driverCtrl.constraint(driverLocZeroGrp, parent=parent, orient=orient)
+            spaceLoc = pm.spaceLocator(n='{}_{}_space_loc'.format(self.__drivenController, driverCtrl))
+            spaceLocs.append(spaceLoc)
+            pm.matchTransform(spaceLoc, self.__drivenController)
+            spaceLocZeroGrp = utils.makeGroup(spaceLoc, '{}_zero'.format(spaceLoc))
+            topGrp | spaceLocZeroGrp
+            if parent:
+                pm.parentConstraint(driverCtrl, spaceLocZeroGrp, mo=True)
+            elif orient:
+                pm.orientConstraint(driverCtrl, spaceLocZeroGrp, mo=True)
         pm.parent(topGrp, SpaceSwitchBuilder.SPACE_SWITCH_GRP)
 
         # Constraint driven controller sapce group
         spaceGrp = utils.makeGroup(self.__drivenController.extraGrp(), '{}_space'.format(self.__drivenController))
         if parent:
-            cnst = pm.parentConstraint(driverLocs, spaceGrp, mo=True)
+            cnst = pm.parentConstraint(spaceLocs, spaceGrp, mo=True)
         elif orient:
-            cnst = pm.orientConstraint(driverLocs, spaceGrp, mo=True)
+            cnst = pm.orientConstraint(spaceLocs, spaceGrp, mo=True)
 
         # Add attributes and connect to constraint weights
         defaultSpaceAttr = None

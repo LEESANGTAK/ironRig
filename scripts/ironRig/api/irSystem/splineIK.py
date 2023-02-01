@@ -77,14 +77,14 @@ class SplineIK(System):
         for crvJnt in self.__curveJoints:
             ctrl = Controller(name=crvJnt.replace('crvJnt', 'ctrl'), shape=Controller.SHAPE.CUBE, color=self.controllerColor)
             ctrl.lockHideChannels(['scale', 'visibility'])
-            ctrl.matchTo(crvJnt, position=True, rotation=True)
+            pm.matchTransform(ctrl.zeroGrp(), crvJnt, position=True, rotation=True)
             if self._negateScaleX:
                 ctrl.zeroGrp().sx.set(-1)
-            ctrl.constraint(crvJnt, parent=True)
+            pm.parentConstraint(ctrl, crvJnt, mo=True)
             ctrls.append(ctrl)
             self.addMembers(ctrl.controllerNode())
         pm.parent([ctrl.zeroGrp() for ctrl in ctrls], self._controllerGrp)
-        ctrls[-1].constraint(self._joints[-1], orient=True)
+        pm.orientConstraint(ctrls[-1], self._joints[-1], mo=True)
         self._controllers = ctrls
 
     def setupStretch(self):

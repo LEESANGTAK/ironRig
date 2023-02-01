@@ -320,7 +320,7 @@ class ThreeBoneLimb(Module):
         if self.__firstLimbTwistSystem or self.__secondLimbTwistSystem or self.__thirdLimbTwistSystem:
             pm.addAttr(moduleCtrl, ln='bendCtrlVis', at='bool', dv=False, keyable=True)
             moduleFirstTwistCtrl = Controller('{}firstTwist_ctrl'.format(self._prefix))
-            moduleFirstTwistCtrl.matchTo(self.__blendJoints[1], position=True)
+            pm.matchTransform(moduleFirstTwistCtrl.zeroGrp(), self.__blendJoints[1], position=True)
             pm.pointConstraint(self.__blendJoints[1], moduleFirstTwistCtrl.zeroGrp(), mo=False)
             oCnst = pm.orientConstraint(self.__blendJoints[0], self.__blendJoints[1], moduleFirstTwistCtrl.zeroGrp(), mo=False)
             oCnst.interpType.set(2)
@@ -332,7 +332,7 @@ class ThreeBoneLimb(Module):
             moduleFirstTwistCtrl.worldMatrix >> pvLineDecMtx.inputMatrix
 
             moduleSecondTwistCtrl = Controller('{}secondTwist_ctrl'.format(self._prefix))
-            moduleSecondTwistCtrl.matchTo(self.__blendJoints[2], position=True)
+            pm.matchTransform(moduleSecondTwistCtrl.zeroGrp(), self.__blendJoints[2], position=True)
             pm.pointConstraint(self.__blendJoints[2], moduleSecondTwistCtrl.zeroGrp(), mo=False)
             oCnst = pm.orientConstraint(self.__blendJoints[1], self.__blendJoints[2], moduleSecondTwistCtrl.zeroGrp(), mo=False)
             oCnst.interpType.set(2)
@@ -343,7 +343,7 @@ class ThreeBoneLimb(Module):
             upAxis = list(set(['X', 'Y', 'Z']) - set(self._aimAxis))[0]
             if self.__firstLimbTwistSystem:
                 moduleCtrl.bendCtrlVis >> self.__firstLimbTwistSystem.topGrp().visibility
-                moduleFirstTwistCtrl.constraint(self.__firstLimbTwistSystem.controllers()[-1].zeroGrp(), parent=True)
+                pm.parentConstraint(moduleFirstTwistCtrl, self.__firstLimbTwistSystem.controllers()[-1].zeroGrp(), mo=True)
                 pm.aimConstraint(moduleFirstTwistCtrl,
                                 self.__firstLimbTwistSystem.controllers()[1].zeroGrp(),
                                 aimVector=self._aimSign * utils.axisToVector(self._aimAxis),
@@ -353,8 +353,8 @@ class ThreeBoneLimb(Module):
                                 worldUpObject=moduleFirstTwistCtrl)
             if self.__secondLimbTwistSystem:
                 moduleCtrl.bendCtrlVis >> self.__secondLimbTwistSystem.topGrp().visibility
-                moduleFirstTwistCtrl.constraint(self.__secondLimbTwistSystem.controllers()[0].zeroGrp(), parent=True)
-                moduleSecondTwistCtrl.constraint(self.__secondLimbTwistSystem.controllers()[-1].zeroGrp(), parent=True)
+                pm.parentConstraint(moduleFirstTwistCtrl, self.__secondLimbTwistSystem.controllers()[0].zeroGrp(), mo=True)
+                pm.parentConstraint(moduleSecondTwistCtrl, self.__secondLimbTwistSystem.controllers()[-1].zeroGrp(), mo=True)
                 pm.aimConstraint(moduleFirstTwistCtrl,
                                 self.__secondLimbTwistSystem.controllers()[1].zeroGrp(),
                                 aimVector=-self._aimSign * utils.axisToVector(self._aimAxis),
@@ -364,7 +364,7 @@ class ThreeBoneLimb(Module):
                                 worldUpObject=moduleFirstTwistCtrl)
             if self.__thirdLimbTwistSystem:
                 moduleCtrl.bendCtrlVis >> self.__thirdLimbTwistSystem.topGrp().visibility
-                moduleSecondTwistCtrl.constraint(self.__thirdLimbTwistSystem.controllers()[0].zeroGrp(), parent=True)
+                pm.parentConstraint(moduleSecondTwistCtrl, self.__thirdLimbTwistSystem.controllers()[0].zeroGrp(), mo=True)
                 pm.aimConstraint(moduleSecondTwistCtrl,
                                 self.__thirdLimbTwistSystem.controllers()[1].zeroGrp(),
                                 aimVector=-self._aimSign * utils.axisToVector(self._aimAxis),
@@ -399,27 +399,27 @@ class ThreeBoneLimb(Module):
             self._controllers[2].size = self._controllerSize * 0.9
 
     def attachTo(self, module):
-        if module.__class__.__name__ == 'Clavicle':
-            clavicleCtrl = module.fkSystem().controllers()[0]
+        if module.__class__.__name__ == 'LimbBase':
+            limbBaseCtrl = module.fkSystem().controllers()[0]
 
-            aimLoc = pm.spaceLocator(n='{}_aim_loc'.format(clavicleCtrl))
-            staticLoc = pm.spaceLocator(n='{}_static_loc'.format(clavicleCtrl))
+            aimLoc = pm.spaceLocator(n='{}_aim_loc'.format(limbBaseCtrl))
+            staticLoc = pm.spaceLocator(n='{}_static_loc'.format(limbBaseCtrl))
             for loc in [staticLoc, aimLoc]:
-                pm.matchTransform(loc, clavicleCtrl.zeroGrp())
+                pm.matchTransform(loc, limbBaseCtrl.zeroGrp())
             pm.parent([staticLoc, aimLoc], module.fkSystem().blackboxGrp())
-            cnst = pm.orientConstraint([aimLoc, staticLoc], clavicleCtrl.zeroGrp(), mo=True)
+            cnst = pm.orientConstraint([aimLoc, staticLoc], limbBaseCtrl.zeroGrp(), mo=True)
             cnst.interpType.set(2)
 
-            pm.addAttr(clavicleCtrl, ln='aim', at='float', min=0.0, max=1.0, dv=0.5, keyable=True)
-            revNode = pm.createNode('reverse', n='{}_aim_rev'.format(clavicleCtrl))
-            clavicleCtrl.aim >> cnst.target[0].targetWeight
-            clavicleCtrl.aim >> revNode.inputX
+            pm.addAttr(limbBaseCtrl, ln='aim', at='float', min=0.0, max=1.0, dv=0.5, keyable=True)
+            revNode = pm.createNode('reverse', n='{}_aim_rev'.format(limbBaseCtrl))
+            limbBaseCtrl.aim >> cnst.target[0].targetWeight
+            limbBaseCtrl.aim >> revNode.inputX
             revNode.outputX >> cnst.target[1].targetWeight
 
             tempPoleVectorLoc = pm.spaceLocator(n='tempPoleVector_loc')
-            tempPoleVectorLocPos = utils.getWorldPoint(clavicleCtrl.zeroGrp()) + (utils.getWorldPoint(self.__ikSystem.poleVectorController()) - utils.getWorldPoint(self.__ikSystem.joints()[1]))
+            tempPoleVectorLocPos = utils.getWorldPoint(limbBaseCtrl.zeroGrp()) + (utils.getWorldPoint(self.__ikSystem.poleVectorController()) - utils.getWorldPoint(self.__ikSystem.joints()[1]))
             pm.xform(tempPoleVectorLoc, t=tempPoleVectorLocPos, ws=True)
-            upAxisInfo = utils.getAimAxisInfo(clavicleCtrl.zeroGrp(), tempPoleVectorLoc)
+            upAxisInfo = utils.getAimAxisInfo(limbBaseCtrl.zeroGrp(), tempPoleVectorLoc)
             pm.delete(tempPoleVectorLoc)
             pm.aimConstraint(
                 self.__ikSystem.ikHandleController(), aimLoc,

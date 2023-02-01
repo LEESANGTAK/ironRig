@@ -20,7 +20,7 @@ class EyesMaster(Master):
         aimCtrlsCenterPnt = utils.getCenterVector(modulesAimCtrlZeroGrps)
         pm.xform(self.__controller.zeroGrp(), t=aimCtrlsCenterPnt, ws=True)
         for aimCtrlZeroGrp in modulesAimCtrlZeroGrps:
-            self.__controller.constraint(aimCtrlZeroGrp, parent=True)
+            pm.parentConstraint(self.__controller, aimCtrlZeroGrp, mo=True)
 
         self._topGrp | self.__controller.zeroGrp()
         self.addMembers(self.__controller.controllerNode())

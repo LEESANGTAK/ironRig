@@ -281,7 +281,11 @@ class Module(Container):
         self._initJoints = initJoints
 
     def _getAimAxisInfo(self):
-        self._aimSign, self._aimAxis = utils.getAimAxisInfo(self._initJoints[0], self._initJoints[1])
+        if len(self._skelJoints) == 1:
+            self._aimSign = 1
+            self._aimAxis = 'Z'
+        else:
+            self._aimSign, self._aimAxis = utils.getAimAxisInfo(self._initJoints[0], self._initJoints[1])
 
     def _buildSystems(self):
         """Create systems and set systems state.
@@ -335,7 +339,7 @@ class Module(Container):
                                    Controller.SHAPE.CUBE,
                                    Controller.COLOR.LIGHTGREEN,
                                    utils.getDistance(self._initJoints[0], self._initJoints[-1]))
-        modGlobalCtrl.matchTo(self._initJoints[0], position=True, rotation=True)
+        pm.matchTransform(modGlobalCtrl.zeroGrp(), self._initJoints[0], position=True, rotation=True)
         modGlobalCtrl.lockHideChannels(['scale', 'visibility'], 'XYZ')
         self._topGrp | modGlobalCtrl.zeroGrp()
         pm.parent([self._geoGrp, self._initGrp, self._systemGrp, self._outGrp], modGlobalCtrl)

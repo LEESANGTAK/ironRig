@@ -8,7 +8,27 @@ class Aim(System):
     def __init__(self, prefix='', joints=[]):
         super(Aim, self).__init__(prefix, joints)
 
+        self.__isSingleJoint = False
+        self.__origJoints = None
         self.__aimLoc = None
+
+        if len(joints) == 1:
+            self.__isSingleJoint = True
+            self.__origJoints = joints
+            self.__addEndJoint()
+
+    def __addEndJoint(self):
+        endJoint = pm.createNode('joint', n='{}_end'.format(self._joints[0]))
+        endJntPos = utils.getWorldPoint(self._joints[0]) + (pm.dt.Vector.zAxis * 3)
+        pm.xform(endJoint, t=endJntPos, ws=True)
+        self._joints[0] | endJoint
+        self._joints.insert(1, endJoint)
+
+    def joints(self):
+        if self.__isSingleJoint:
+            return self.__origJoints
+        else:
+            super(Aim, self).joints()
 
     def _buildSystems(self):
         super(Aim, self)._buildSystems()
@@ -32,10 +52,10 @@ class Aim(System):
 
     def _buildControls(self):
         aimCtrl = Controller('{}aim_ctrl'.format(self._prefix), Controller.SHAPE.LOCATOR)
-        aimCtrl.matchTo(self.__aimLoc, position=True)
+        pm.matchTransform(aimCtrl.zeroGrp(), self.__aimLoc, position=True)
         if self._negateScaleX:
             aimCtrl.zeroGrp().sx.set(-1)
-        aimCtrl.constraint(self.__aimLoc, point=True)
+        pm.pointConstraint(aimCtrl, self.__aimLoc, mo=True)
         aimCtrl.lockHideChannels(['rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
 
         self._controllers.append(aimCtrl)

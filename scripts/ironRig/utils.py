@@ -506,8 +506,8 @@ def getCleanName(name):
     return cleanName
 
 
-def cloneUserDefinedAttrs(sourceNode, targetNode):
-    for attr in sourceNode.listAttr(ud=True):
+def cloneUserDefinedAttrs(sourceNode, targetNode, keyable=True):
+    for attr in sourceNode.listAttr(ud=True, keyable=keyable):
         attrName = attr.attrName()
         attrType = attr.type()
         minVal = attr.getMin()

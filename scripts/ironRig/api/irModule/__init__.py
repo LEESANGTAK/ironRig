@@ -2,7 +2,7 @@ from . import module
 from . import simple
 from . import spine
 from . import neck
-from . import clavicle
+from . import limbBase
 from . import twoBoneLimb
 from . import threeBoneLimb
 from . import foot
@@ -17,7 +17,7 @@ reload(module)
 reload(simple)
 reload(spine)
 reload(neck)
-reload(clavicle)
+reload(limbBase)
 reload(twoBoneLimb)
 reload(threeBoneLimb)
 reload(foot)
@@ -31,7 +31,7 @@ reload(rope)
 from .simple import Simple
 from .spine import Spine
 from .neck import Neck
-from .clavicle import Clavicle
+from .limbBase import LimbBase
 from .twoBoneLimb import TwoBoneLimb
 from .threeBoneLimb import ThreeBoneLimb
 from .foot import Foot

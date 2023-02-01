@@ -56,14 +56,14 @@ class GlobalMaster(Master):
         self.__mainController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.__cogController = Controller(name='cog_ctrl', shape=Controller.SHAPE.ARROW_QUAD, color=self._controllerColor, direction=Controller.DIRECTION.Y)
         self.__cogController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
-        self.__cogController.matchTo(self.__cogJoint, position=True)
+        pm.matchTransform(self.__cogController.zeroGrp(), self.__cogJoint, position=True)
         self._controllers = [self.__globalController, self.__mainController, self.__cogController]
 
         self.__globalController | self.__mainController | self.__cogController
         pm.parent(self.__globalController.zeroGrp(), self._topGrp)
 
-        self.__globalController.connect(self.__skeletonRoot, scale=True)
-        self.__mainController.constraint(self.__skeletonRoot, parent=True)
+        self.__globalController.scale >> self.__skeletonRoot.scale
+        pm.parentConstraint(self.__mainController, self.__skeletonRoot, mo=True)
 
         self.addMembers(self.__globalController.controllerNode(), self.__mainController.controllerNode(), self.__cogController.controllerNode())
 

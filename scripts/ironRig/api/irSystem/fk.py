@@ -1,3 +1,4 @@
+import pymel.core as pm
 from ... import utils
 from ..irGlobal import Controller
 from .system import System
@@ -26,11 +27,11 @@ class FK(System):
                 break
             ctrl = Controller('{}_ctrl'.format(jnt))
             ctrl.direction = utils.axisToVector(self._aimAxis)
-            ctrl.matchTo(jnt, position=True, rotation=True)
+            pm.matchTransform(ctrl.zeroGrp(), jnt, position=True, rotation=True)
             if self._negateScaleX and utils.getWorldPoint(ctrl).x < 0.0:
                 ctrl.zeroGrp().sx.set(-1)
-            ctrl.constraint(jnt, parent=True)
-            ctrl.connect(jnt, scale=True)
+            pm.parentConstraint(ctrl, jnt, mo=True)
+            ctrl.scale >> jnt.scale
             ctrl.lockHideChannels(['scale', 'visibility'], ['X', 'Y', 'Z'])
             ctrls.append(ctrl)
             self.addMembers(ctrl.controllerNode())
