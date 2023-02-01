@@ -104,8 +104,8 @@ class SplineIK(System):
         zeroScalePreventCond = pm.createNode('condition', n='{}zeroScalePrevent_cond'.format(self._prefix))
         zeroScalePreventCond.colorIfTrueR.set(0.001)
 
-        pm.addAttr(self._controllers[-1].transform(), longName='stretchOnOff', attributeType='double', min=0.0, max=1.0, dv=1.0, keyable=True)
-        pm.addAttr(self._controllers[-1].transform(), longName='shrink', attributeType='double', min=0.0, max=maxShrinkVal, dv=0.0, keyable=True)
+        pm.addAttr(self._controllers[-1], longName='stretchOnOff', attributeType='double', min=0.0, max=1.0, dv=1.0, keyable=True)
+        pm.addAttr(self._controllers[-1], longName='shrink', attributeType='double', min=0.0, max=maxShrinkVal, dv=0.0, keyable=True)
 
         self.__curve.worldSpace >> crvInfo.inputCurve
         scaleCrv.worldSpace >> scaleCrvInfo.inputCurve
@@ -113,8 +113,8 @@ class SplineIK(System):
         crvInfo.arcLength >> stretchRatioDiv.input1X
         scaleCrvInfo.arcLength >> stretchRatioDiv.input2X
 
-        self._controllers[-1].transform().stretchOnOff >> stertchOnOffBlend.blender
-        self._controllers[-1].transform().shrink >> shrinkValNormalize.input1
+        self._controllers[-1].stretchOnOff >> stertchOnOffBlend.blender
+        self._controllers[-1].shrink >> shrinkValNormalize.input1
         shrinkValNormalize.output >> shrinkReverse.inputX
 
         stretchRatioDiv.outputX >> stertchOnOffBlend.color1R
@@ -138,8 +138,8 @@ class SplineIK(System):
         pm.parent(scaleCrv, self._blbxGrp)
 
     def setupTwist(self):
-        pm.addAttr(self._controllers[-1].transform(), at='double', ln='twist', dv=0.0, keyable=True)
-        self._controllers[-1].transform().twist >> self.__ikHandle.twist
+        pm.addAttr(self._controllers[-1], at='double', ln='twist', dv=0.0, keyable=True)
+        self._controllers[-1].twist >> self.__ikHandle.twist
 
     def setupAdvancedTwist(self):
         aimAxisInfo = {'1X': 0,
@@ -156,16 +156,16 @@ class SplineIK(System):
         self.__ikHandle.dWorldUpVectorZ.set(-1)
         self.__ikHandle.dWorldUpVectorEndY.set(0)
         self.__ikHandle.dWorldUpVectorEndZ.set(-1)
-        self._controllers[0].transform().worldMatrix >> self.__ikHandle.dWorldUpMatrix
-        self._controllers[-1].transform().worldMatrix >> self.__ikHandle.dWorldUpMatrixEnd
+        self._controllers[0].worldMatrix >> self.__ikHandle.dWorldUpMatrix
+        self._controllers[-1].worldMatrix >> self.__ikHandle.dWorldUpMatrixEnd
 
     def setupHybridIK(self):
         for i in range(1, self.__numControllers):
             curCtrl = self._controllers[i]
             parentCtrl = self._controllers[i-1]
             pm.parent(curCtrl.zeroGrp(), parentCtrl.zeroGrp())
-            pm.matchTransform(curCtrl.zeroGrp(), parentCtrl.transform(), pivots=True)
-            pm.orientConstraint(parentCtrl.transform(), curCtrl.zeroGrp(), mo=True)
+            pm.matchTransform(curCtrl.zeroGrp(), parentCtrl, pivots=True)
+            pm.orientConstraint(parentCtrl, curCtrl.zeroGrp(), mo=True)
 
     def setupWave(self):
         crv = pm.duplicate(self.__curve, n='{0}wave_crv'.format(self._prefix))[0]
@@ -210,12 +210,12 @@ class SplineIK(System):
         pm.matchTransform(sineHandleSpace, sineHandle, pos=True, rot=True, scale=True)
         pm.parent(sineHandle, sineHandleSpace)
 
-        cmds.connectAttr('{}.waveOnOff'.format(self._controllers[-1].transform()), '{}.envelope'.format(sine))
-        self._controllers[-1].transform().waveOnOff >> blendshape.attr(crv.name())
-        self._controllers[-1].transform().waveAmplitude >> sineHandle.amplitude
-        self._controllers[-1].transform().waveLength >> sineHandle.wavelength
-        self._controllers[-1].transform().waveOffset >> sineHandle.offset
-        self._controllers[-1].transform().waveOrient >> sineHandle.rotateY
+        cmds.connectAttr('{}.waveOnOff'.format(self._controllers[-1]), '{}.envelope'.format(sine))
+        self._controllers[-1].waveOnOff >> blendshape.attr(crv.name())
+        self._controllers[-1].waveAmplitude >> sineHandle.amplitude
+        self._controllers[-1].waveLength >> sineHandle.wavelength
+        self._controllers[-1].waveOffset >> sineHandle.offset
+        self._controllers[-1].waveOrient >> sineHandle.rotateY
 
         self.addMembers(blendshape)
         pm.parent(crv, sineHandleSpace, self._blbxGrp)
@@ -229,16 +229,16 @@ class SplineIK(System):
             {'waveOrient': {'type': 'double', 'defaultValue': 0.0, 'keyable': True}},
         ]
         # Add dvider
-        pm.addAttr(self._controllers[-1].transform(), ln='wave', at='enum', en='---------------:')
-        pm.setAttr('{}.{}'.format(self._controllers[-1].transform(), 'wave'), channelBox=True)
+        pm.addAttr(self._controllers[-1], ln='wave', at='enum', en='---------------:')
+        pm.setAttr('{}.{}'.format(self._controllers[-1], 'wave'), channelBox=True)
 
         # Add attributes
         for attrInfo in ATTRIBUTES_INFO:
             for attrName, attrProperties in attrInfo.items():
-                pm.addAttr(self._controllers[-1].transform(), ln=attrName, at=attrProperties['type'], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
+                pm.addAttr(self._controllers[-1], ln=attrName, at=attrProperties['type'], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
 
         # Set default value
-        self._controllers[-1].transform().waveOnOff.setRange(0, 1)
+        self._controllers[-1].waveOnOff.setRange(0, 1)
 
     def setupDynamic(self):
         # Nodes setup
@@ -305,19 +305,19 @@ class SplineIK(System):
 
         dynCrv.worldSpace >> self.__ikHandle.inCurve
 
-        self._controllers[-1].transform().enable >> nucleus.enable
-        self._controllers[-1].transform().enable >> hairSystem.active
-        self._controllers[-1].transform().enable >> enableCond.firstTerm
+        self._controllers[-1].enable >> nucleus.enable
+        self._controllers[-1].enable >> hairSystem.active
+        self._controllers[-1].enable >> enableCond.firstTerm
         enableCond.outColorR >> hairSystem.simulationMethod
 
-        self._controllers[-1].transform().startFrame >> nucleus.startFrame
-        self._controllers[-1].transform().subSteps >> nucleus.subSteps
-        self._controllers[-1].transform().bendResistance >> hairSystem.bendResistance
-        self._controllers[-1].transform().stiffness >> hairSystem.stiffness
-        self._controllers[-1].transform().damp >> hairSystem.damp
-        self._controllers[-1].transform().drag >> hairSystem.drag
-        self._controllers[-1].transform().startCurveAttract >> hairSystem.startCurveAttract
-        self._controllers[-1].transform().attractionDamp >> hairSystem.attractionDamp
+        self._controllers[-1].startFrame >> nucleus.startFrame
+        self._controllers[-1].subSteps >> nucleus.subSteps
+        self._controllers[-1].bendResistance >> hairSystem.bendResistance
+        self._controllers[-1].stiffness >> hairSystem.stiffness
+        self._controllers[-1].damp >> hairSystem.damp
+        self._controllers[-1].drag >> hairSystem.drag
+        self._controllers[-1].startCurveAttract >> hairSystem.startCurveAttract
+        self._controllers[-1].attractionDamp >> hairSystem.attractionDamp
 
         self.__setupBakeLocators(dynCrv)
 
@@ -354,16 +354,16 @@ class SplineIK(System):
         ]
 
         # Add dvider
-        pm.addAttr(self._controllers[-1].transform(), ln='dynamic', at='enum', en='---------------:')
-        pm.setAttr('{}.{}'.format(self._controllers[-1].transform(), 'dynamic'), channelBox=True)
+        pm.addAttr(self._controllers[-1], ln='dynamic', at='enum', en='---------------:')
+        pm.setAttr('{}.{}'.format(self._controllers[-1], 'dynamic'), channelBox=True)
 
         # Add attributes
         for attrInfo in ATTRIBUTES_INFO:
             for attrName, attrProperties in attrInfo.items():
                 if attrProperties.has_key('range'):
-                    pm.addAttr(self._controllers[-1].transform(), ln=attrName, at=attrProperties['type'], min=attrProperties['range'][0], max=attrProperties['range'][1], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
+                    pm.addAttr(self._controllers[-1], ln=attrName, at=attrProperties['type'], min=attrProperties['range'][0], max=attrProperties['range'][1], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
                 else:
-                    pm.addAttr(self._controllers[-1].transform(), ln=attrName, at=attrProperties['type'], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
+                    pm.addAttr(self._controllers[-1], ln=attrName, at=attrProperties['type'], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
 
     @staticmethod
     def findMultiAttributeEmptyIndex(node, attribute):
@@ -376,7 +376,7 @@ class SplineIK(System):
     def __setupBakeLocators(self, dynCrv):
         crvMaxRange = dynCrv.maxValue.get()
         for ctrl in self._controllers:
-            ctrlPnt = pm.xform(ctrl.transform(), q=True, rp=True, ws=True)
+            ctrlPnt = pm.xform(ctrl, q=True, rp=True, ws=True)
             closestPnt = self.__curve.closestPoint(ctrlPnt, space='world')
             param = self.__curve.getParamAtPoint(closestPnt, space='world')
             pointOnCrvInfo = pm.createNode('pointOnCurveInfo', n='{}_pntOnCrvInfo'.format(ctrl))

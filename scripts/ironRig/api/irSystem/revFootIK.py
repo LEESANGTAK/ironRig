@@ -146,7 +146,7 @@ class RevFootIK(System):
         return revFootJoints
 
     def _buildControls(self):
-        footCtrl = Controller('{0}ctrl'.format(self._prefix), Controller.SHAPE.FOOT, scale=5, direction=Controller.DIRECTION.Y)
+        footCtrl = Controller('{0}ctrl'.format(self._prefix), Controller.SHAPE.FOOT, size=5, direction=Controller.DIRECTION.Y)
         jointsMidVec = (utils.getWorldPoint(self._joints[0]) + utils.getWorldPoint(self._joints[-1])) * 0.5
         pm.xform(footCtrl.zeroGrp(), t=[jointsMidVec.x, 0, jointsMidVec.z], ws=True)
         if self._negateScaleX:
@@ -163,7 +163,7 @@ class RevFootIK(System):
         self._connectAttributes()
 
         if self._negateScaleX:
-            toeUnitConversion = footCtrl.transform().toe.outputs(type='unitConversion')[0]
+            toeUnitConversion = footCtrl.toe.outputs(type='unitConversion')[0]
             toeUnitConversion.conversionFactor.set(-toeUnitConversion.conversionFactor.get())
 
     def _connectAttributes(self):
@@ -213,44 +213,44 @@ class RevFootIK(System):
         self.addMembers(rollRemap, rollBallClamp, ballMult, ballAdd, ballClamp, rollRev, toeTipMult, toeTipAdd, toeTipClamp, rollHeelClamp, heelAdd, heelClamp, bankInv, inBankClamp, outBankClamp)
 
         # Roll and Lift connections #
-        footCtrl.transform().roll >> rollRemap.inputValue
-        footCtrl.transform().toeLiftStartAngle >> rollRemap.inputMin
+        footCtrl.roll >> rollRemap.inputValue
+        footCtrl.toeLiftStartAngle >> rollRemap.inputMin
 
         # Ball connections
-        footCtrl.transform().roll >> rollBallClamp.inputR
+        footCtrl.roll >> rollBallClamp.inputR
         rollBallClamp.outputR >> ballMult.input1
         rollRemap.outValue >> ballMult.input2
         ballMult.output >> ballAdd.input1
-        footCtrl.transform().ballLift >> ballAdd.input2
+        footCtrl.ballLift >> ballAdd.input2
         ballAdd.output >> ballClamp.inputR
         ballClamp.outputR >> ballJnt.rx
 
         # ToeTip connections
         rollRemap.outValue >> rollRev.inputX
-        footCtrl.transform().roll >> toeTipMult.input1
+        footCtrl.roll >> toeTipMult.input1
         rollRev.outputX >> toeTipMult.input2
         toeTipMult.output >> toeTipAdd.input1
-        footCtrl.transform().toeLift >> toeTipAdd.input2
+        footCtrl.toeLift >> toeTipAdd.input2
         toeTipAdd.output >> toeTipClamp.inputR
         toeTipClamp.outputR >> toeTipJnt.rx
 
         # Heel connections
-        footCtrl.transform().roll >> rollHeelClamp.inputR
+        footCtrl.roll >> rollHeelClamp.inputR
         rollHeelClamp.outputR >> heelAdd.input1
-        footCtrl.transform().heelLift >> heelAdd.input2
+        footCtrl.heelLift >> heelAdd.input2
         heelAdd.output >> heelClamp.inputR
         heelClamp.outputR >> heelJnt.rx
 
         # Twist connections #
-        footCtrl.transform().heelTwist >> heelJnt.ry
-        footCtrl.transform().ballTwist >> toeJnt.ry
-        footCtrl.transform().toeTwist >> toeTipJnt.ry
+        footCtrl.heelTwist >> heelJnt.ry
+        footCtrl.ballTwist >> toeJnt.ry
+        footCtrl.toeTwist >> toeTipJnt.ry
 
         # Toe connections #
-        footCtrl.transform().toe >> self.__toeIKPivotTrsf.ry
+        footCtrl.toe >> self.__toeIKPivotTrsf.ry
 
         # Bank connections #
-        footCtrl.transform().bank >> bankInv.input1
+        footCtrl.bank >> bankInv.input1
         bankInv.output >> inBankClamp.inputR
         inBankClamp.outputR >> inBankJnt.rz
         bankInv.output >> outBankClamp.inputR

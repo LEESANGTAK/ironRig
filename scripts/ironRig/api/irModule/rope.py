@@ -42,7 +42,7 @@ class Rope(Module):
         ikCtrls = self.__ikSystem.controllers()
         for index, curCtrl in enumerate(ikCtrls):
             if utils.isOddNumber(index):
-                cnst = pm.parentConstraint(ikCtrls[index-1].transform(), ikCtrls[index+1].transform(), curCtrl.zeroGrp(), mo=True)
+                cnst = pm.parentConstraint(ikCtrls[index-1], ikCtrls[index+1], curCtrl.zeroGrp(), mo=True)
                 cnst.interpType.set(2)
                 curCtrl.lockChannels(channels=['rotate'], axes=['X', 'Y', 'Z'])
 
@@ -50,7 +50,7 @@ class Rope(Module):
 
     def _connectSystems(self):
         for sgCtrl in self.__sgSystem.controllers():
-            cloestIkJnt = utils.findClosestObject(utils.getWorldPoint(sgCtrl.transform()), self.__ikSystem.joints())
+            cloestIkJnt = utils.findClosestObject(utils.getWorldPoint(sgCtrl), self.__ikSystem.joints())
             pm.parentConstraint(cloestIkJnt, sgCtrl.zeroGrp(), mo=True)
 
     def _buildOutputs(self):
@@ -59,5 +59,5 @@ class Rope(Module):
 
     def postBuild(self):
         super(Rope, self).postBuild()
-        self.__sgSystem.controllerScale = self._controllerScale * 0.5
+        self.__sgSystem.controllerSize = self._controllerSize * 0.5
         self.__sgSystem.controllerColor = Controller.COLOR.SKYBLUE

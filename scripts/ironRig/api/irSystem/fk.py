@@ -27,7 +27,7 @@ class FK(System):
             ctrl = Controller('{}_ctrl'.format(jnt))
             ctrl.direction = utils.axisToVector(self._aimAxis)
             ctrl.matchTo(jnt, position=True, rotation=True)
-            if self._negateScaleX and utils.getWorldPoint(ctrl.transform()).x < 0.0:
+            if self._negateScaleX and utils.getWorldPoint(ctrl).x < 0.0:
                 ctrl.zeroGrp().sx.set(-1)
             ctrl.constraint(jnt, parent=True)
             ctrl.connect(jnt, scale=True)

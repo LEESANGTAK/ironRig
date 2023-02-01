@@ -191,15 +191,15 @@ class String(Module):
             otherCtrls = self.__ikSystem.controllers()[:-1]
             if self.__fk:
                 otherCtrls.extend(self.__fkSystem.controllers())
-            pm.addAttr(baseCtrl.transform(), ln=coilAttrName, at='float', min=0.0, max=1.0, dv=0.0, keyable=True)
+            pm.addAttr(baseCtrl, ln=coilAttrName, at='float', min=0.0, max=1.0, dv=0.0, keyable=True)
             for ctrl in otherCtrls:
-                pm.addAttr(ctrl.transform(), ln=coilAttrName, proxy='{0}.{1}'.format(baseCtrl.transform(), coilAttrName))
+                pm.addAttr(ctrl, ln=coilAttrName, proxy='{0}.{1}'.format(baseCtrl, coilAttrName))
             coilAttrRemap = pm.createNode('remapValue', n='{}coil_remap'.format(self._prefix))
             coilAttrRemap.outputMin.set(endIndex)
             coilAttrRemap.outputMax.set(0.0)
-            baseCtrl.transform().coil >> coilAttrRemap.inputValue
+            baseCtrl.coil >> coilAttrRemap.inputValue
             coilAttrRemap.outValue >> multRemapVal.inputMin
-            baseCtrl.transform().coil >> multRemapVal.value[1].value_FloatValue
+            baseCtrl.coil >> multRemapVal.value[1].value_FloatValue
 
             self.addMembers(multRemapVal, coilAttrRemap, addNode)
 
@@ -215,18 +215,18 @@ class String(Module):
             ikAttrName = 'ik'
             baseCtrl = self.__ikSystem.controllers()[-1]
             otherCtrls = self.__ikSystem.controllers()[:-1] + self.__fkSystem.controllers()
-            pm.addAttr(baseCtrl.transform(), ln=ikAttrName, at='float', min=0.0, max=1.0, dv=1.0, keyable=True)
+            pm.addAttr(baseCtrl, ln=ikAttrName, at='float', min=0.0, max=1.0, dv=1.0, keyable=True)
             for ctrl in otherCtrls:
-                pm.addAttr(ctrl.transform(), ln=ikAttrName, proxy='{0}.{1}'.format(baseCtrl.transform(), ikAttrName))
+                pm.addAttr(ctrl, ln=ikAttrName, proxy='{0}.{1}'.format(baseCtrl, ikAttrName))
 
             fkIkRev = pm.createNode('reverse', n='{}fkIk_rev'.format(self._prefix))
-            baseCtrl.transform().ik >> self.__ikSystem.topGrp().visibility
-            baseCtrl.transform().ik >> fkIkRev.inputX
+            baseCtrl.ik >> self.__ikSystem.topGrp().visibility
+            baseCtrl.ik >> fkIkRev.inputX
             fkIkRev.outputX >> self.__fkSystem.topGrp().visibility
             for cnst, choice in zip(self.__blendConstraints, self.__scaleChoices):
-                baseCtrl.transform().ik >> cnst.target[0].targetWeight
+                baseCtrl.ik >> cnst.target[0].targetWeight
                 fkIkRev.outputX >> cnst.target[1].targetWeight
-                baseCtrl.transform().ik >> choice.selector
+                baseCtrl.ik >> choice.selector
 
     def _connectSkeleton(self):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):

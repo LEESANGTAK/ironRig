@@ -76,11 +76,11 @@ class Controller(object):
         )
     }
 
-    def __init__(self, name='new_ctrl', shape=SHAPE.CIRCLE, color=COLOR.YELLOW, scale=1.0, direction=DIRECTION.X):
+    def __init__(self, name='new_ctrl', shape=SHAPE.CIRCLE, color=COLOR.YELLOW, size=1.0, direction=DIRECTION.X):
         self.__name = name
         self.__shape = shape
         self.__color = color
-        self.__scale = scale
+        self.__size = size
         self.__direction = direction
 
         self.__curves = []
@@ -97,12 +97,15 @@ class Controller(object):
     def __str__(self):
         return self.__transform.name()
 
+    def __repr__(self):
+        return "ironRig.api.irGlobal.Controller('{}')".format(self.__name)
+
     def __or__(self, other):
         pm.parent(other.zeroGrp(), self.__transform)
         return other
 
     def __getattr__(self, name):
-        return self.__transform.attr(name)
+        return getattr(self.__transform, name)
 
     @property
     def name(self):
@@ -123,7 +126,7 @@ class Controller(object):
 
     @property
     def shape(self):
-        return self.__shape
+        return os.path.basename(self.__shape).split('.')[0].capitalize()
 
     @shape.setter
     def shape(self, shape):
@@ -145,12 +148,12 @@ class Controller(object):
             crv.overrideColorRGB.set(self.__color)
 
     @property
-    def scale(self):
-        return self.__scale
+    def size(self):
+        return self.__size
 
-    @scale.setter
-    def scale(self, val):
-        self.__scale = val
+    @size.setter
+    def size(self, val):
+        self.__size = val
         self.__transformCurve()
 
     @property
@@ -171,17 +174,11 @@ class Controller(object):
         self.__shapeOffset = offset
         self.__transformCurve()
 
-    def transform(self):
-        return self.__transform
-
     def zeroGrp(self):
         return self.__zeroGrp
 
     def extraGrp(self):
         return self.__extraGrp
-
-    def message(self):
-        return self.__transform.message
 
     def curves(self):
         return self.__curves
@@ -192,7 +189,7 @@ class Controller(object):
     def __transformCurve(self):
         for shape, cvsPos in self.__initCVsPosInfo.items():
             for i, cvPos in enumerate(cvsPos):
-                shape.cv[i].setPosition(pm.dt.Vector(cvPos) * self.__scale * Controller.ROTATE_MATRIX_INFO[str(self.__direction)] + pm.dt.Vector(self.__shapeOffset))
+                shape.cv[i].setPosition(pm.dt.Vector(cvPos) * self.__size * Controller.ROTATE_MATRIX_INFO[str(self.__direction)] + pm.dt.Vector(self.__shapeOffset))
             shape.updateCurve()
 
     def __initController(self):
@@ -230,7 +227,7 @@ class Controller(object):
     def __update(self):
         self.name = self.__name
         self.color = self.__color
-        self.scale = self.__scale
+        self.size = self.__size
         self.direction = self.__direction
         pm.select(cl=True)
 

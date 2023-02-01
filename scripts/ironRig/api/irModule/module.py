@@ -36,7 +36,7 @@ class Module(Container):
 
         self.__globalController = False
 
-        self._controllerScale = 1
+        self._controllerSize = 1
         self._controllerColor = Controller.COLOR.YELLOW
 
     @property
@@ -70,12 +70,12 @@ class Module(Container):
         return self._controllers
 
     @property
-    def controllerScale(self):
-        return self._controllerScale
+    def controllerSize(self):
+        return self._controllerSize
 
-    @controllerScale.setter
-    def controllerScale(self, scale):
-        self._controllerScale = scale
+    @controllerSize.setter
+    def controllerSize(self, size):
+        self._controllerSize = size
 
     @property
     def controllerColor(self):
@@ -338,7 +338,7 @@ class Module(Container):
         modGlobalCtrl.matchTo(self._initJoints[0], position=True, rotation=True)
         modGlobalCtrl.lockChannels(['scale', 'visibility'], 'XYZ')
         self._topGrp | modGlobalCtrl.zeroGrp()
-        pm.parent([self._geoGrp, self._initGrp, self._systemGrp, self._outGrp], modGlobalCtrl.transform())
+        pm.parent([self._geoGrp, self._initGrp, self._systemGrp, self._outGrp], modGlobalCtrl)
 
     def postBuild(self):
         """Edit controllers states of color and shape.
@@ -351,7 +351,7 @@ class Module(Container):
 
         for ctrl in allCtrls:
             ctrl.color = self._controllerColor
-            ctrl.scale = self._controllerScale
+            ctrl.size = self._controllerSize
 
     def attachTo(self, module):
         """Attach a module to the other module.
@@ -362,7 +362,7 @@ class Module(Container):
         parentSpace =  None
         if module.__class__.__name__ == 'Spine':
             allModuleCtrls = module.ikSystem().controllers() + module.fkSystem().controllers()[1:] + module.controllers()
-            parentSpace = utils.findClosestController(utils.getWorldPoint(self._topGrp), allModuleCtrls).transform()
+            parentSpace = utils.findClosestController(utils.getWorldPoint(self._topGrp), allModuleCtrls)
         else:
             parentSpace = utils.findClosestObject(pm.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints())
         pm.matchTransform(self._topGrp, parentSpace, pivots=True)

@@ -23,9 +23,9 @@ class FingersMaster(Master):
         masterCtrl.shapeOffset = [0, 5, 0]
         for module in self._modules:
             attrStr = module.prefix.split('_')[0]
-            pm.addAttr(masterCtrl.transform(), ln='{}_curl'.format(attrStr), at='double', dv=0.0, keyable=True)
+            pm.addAttr(masterCtrl, ln='{}_curl'.format(attrStr), at='double', dv=0.0, keyable=True)
             for fkCtrl in module.fkSystem().controllers():
-                masterCtrl.transform().attr('{}_curl'.format(attrStr)) >> fkCtrl.extraGrp().rotateZ
+                masterCtrl.attr('{}_curl'.format(attrStr)) >> fkCtrl.extraGrp().rotateZ
 
         pm.xform(masterCtrl.zeroGrp(), t=self._getModulesCenter(), ws=True)
         self._topGrp | masterCtrl.zeroGrp()

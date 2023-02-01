@@ -80,7 +80,7 @@ class Spine(Module):
     def __buildControls(self):
         pelvisCtrl = Controller('pelvis_ctrl', Controller.SHAPE.CUBE)
         pelvisCtrl.matchTo(self.__ikSystem.joints()[1], position=True, rotation=True)
-        pelvisCtrl.constraint(self.__ikSystem.controllers()[0].transform(), parent=True)
+        pelvisCtrl.constraint(self.__ikSystem.controllers()[0], parent=True)
         shapeOffset = utils.getDistance(self.__ikSystem.joints()[0], self.__ikSystem.joints()[1]) * (-self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis()))
         pelvisCtrl.shapeOffset = shapeOffset
         pm.parent(pelvisCtrl.zeroGrp(), self.__controllerGrp)

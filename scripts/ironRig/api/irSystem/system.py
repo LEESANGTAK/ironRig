@@ -23,7 +23,7 @@ class System(Container):
 
         self.__controllerColor = Controller.COLOR.YELLOW
         self.__controllerShape = Controller.SHAPE.CIRCLE
-        self.__controllerScale = 10
+        self.__controllerSize = 10
 
         self.__createGroups()
 
@@ -72,14 +72,14 @@ class System(Container):
             ctrl.shape = self.__controllerShape
 
     @property
-    def controllerScale(self):
-        return self.__controllerScale
+    def controllerSize(self):
+        return self.__controllerSize
 
-    @controllerScale.setter
-    def controllerScale(self, scale):
-        self.__controllerScale = scale
+    @controllerSize.setter
+    def controllerSize(self, size):
+        self.__controllerSize = size
         for ctrl in self._controllers:
-            ctrl.scale = self.__controllerScale
+            ctrl.size = self.__controllerSize
 
     @property
     def controllerColor(self):

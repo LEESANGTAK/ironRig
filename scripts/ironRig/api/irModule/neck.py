@@ -55,7 +55,7 @@ class Neck(Module):
         self.__setupNonroll()
         headCtrlLocalMtx = pm.createNode('multMatrix', n='{}_local_multMtx'.format(self.__ikSystem.controllers()[-1]))
         headCtrlLocalDecMtx = pm.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self.__ikSystem.controllers()[-1]))
-        self.__ikSystem.controllers()[-1].transform().worldMatrix >> headCtrlLocalMtx.matrixIn[0]
+        self.__ikSystem.controllers()[-1].worldMatrix >> headCtrlLocalMtx.matrixIn[0]
         self.__nonrollJoints[0].worldInverseMatrix >> headCtrlLocalMtx.matrixIn[1]
         headCtrlLocalMtx.matrixSum >> headCtrlLocalDecMtx.inputMatrix
         headCtrlLocalDecMtx.outputRotateX >> self.__ikSystem.ikHandle().twist

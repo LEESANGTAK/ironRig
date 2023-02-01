@@ -52,7 +52,7 @@ def findClosestController(searchPoint, controllers):
 
     minDist = 100000.0
     for ctrl in controllers:
-        ctrlPnt = pm.dt.Point(pm.xform(ctrl.transform(), q=True, rp=True, ws=True))
+        ctrlPnt = pm.dt.Point(pm.xform(ctrl, q=True, rp=True, ws=True))
         delta = ctrlPnt - searchPoint
         if delta.length() < minDist:
             closestCtrl = ctrl

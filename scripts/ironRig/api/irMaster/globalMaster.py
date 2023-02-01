@@ -50,7 +50,7 @@ class GlobalMaster(Master):
 
     def _buildControls(self):
         self.__globalController = Controller(name='global_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
-        GlobalMaster.setupGlobalScaleAttr(self.__globalController.transform())
+        GlobalMaster.setupGlobalScaleAttr(self.__globalController)
         self.__globalController.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.__mainController = Controller(name='main_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
         self.__mainController.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
@@ -70,7 +70,7 @@ class GlobalMaster(Master):
     def postBuild(self):
         super(GlobalMaster, self).postBuild()
         self.__globalController.color = Controller.COLOR.YELLOW
-        self.__mainController.scale = self._controllerScale * 0.85
+        self.__mainController.size = self._controllerSize * 0.85
 
     @staticmethod
     def setupGlobalScaleAttr(transform):

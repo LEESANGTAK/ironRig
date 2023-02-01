@@ -146,7 +146,7 @@ class ThreeBoneLimb(Module):
             self.__firstLimbTwistSystem.setupTwist()
             self.__firstLimbTwistSystem.setupStretch()
             self.__firstLimbTwistSystem.controllerShape = Controller.SHAPE.CIRCLE
-            self.__firstLimbTwistSystem.controllerScale = 5
+            self.__firstLimbTwistSystem.controllerSize = 5
             self.addSystems(self.__firstLimbTwistSystem)
 
         if self.__secondLimbInbSkelJoints:
@@ -157,7 +157,7 @@ class ThreeBoneLimb(Module):
             self.__secondLimbTwistSystem.setupTwist()
             self.__secondLimbTwistSystem.setupStretch()
             self.__secondLimbTwistSystem.controllerShape = Controller.SHAPE.CIRCLE
-            self.__secondLimbTwistSystem.controllerScale = 5
+            self.__secondLimbTwistSystem.controllerSize = 5
             self.addSystems(self.__secondLimbTwistSystem)
 
         if self.__thirdLimbInbSkelJoints:
@@ -168,7 +168,7 @@ class ThreeBoneLimb(Module):
             self.__thirdLimbTwistSystem.setupTwist()
             self.__thirdLimbTwistSystem.setupStretch()
             self.__thirdLimbTwistSystem.controllerShape = Controller.SHAPE.CIRCLE
-            self.__thirdLimbTwistSystem.controllerScale = 5
+            self.__thirdLimbTwistSystem.controllerSize = 5
             self.addSystems(self.__thirdLimbTwistSystem)
 
     def _connectSystems(self):
@@ -190,13 +190,13 @@ class ThreeBoneLimb(Module):
             self.__blendJoints[0].worldMatrix >> blendJnt1LocalMtx.matrixIn[0]
             self.__nonrollJoints[0].worldInverseMatrix >> blendJnt1LocalMtx.matrixIn[1]
             blendJnt1LocalMtx.matrixSum >> blendJnt1LocalDecMtx.inputMatrix
-            blendJnt1LocalDecMtx.outputRotateX >> self.__firstLimbTwistSystem.controllers()[-1].transform().twist
-            firstLimbTwistUnitConversion = self.__firstLimbTwistSystem.controllers()[-1].transform().twist.inputs()[0]
+            blendJnt1LocalDecMtx.outputRotateX >> self.__firstLimbTwistSystem.controllers()[-1].twist
+            firstLimbTwistUnitConversion = self.__firstLimbTwistSystem.controllers()[-1].twist.inputs()[0]
             firstLimbTwistUnitConversion.conversionFactor.set(self._aimSign * firstLimbTwistUnitConversion.conversionFactor.get())
             pm.parentConstraint(self.__nonrollJoints[0], self.__firstLimbTwistSystem.topGrp(), mo=True)
-            pm.parentConstraint(self.__blendJoints[0], self.__firstLimbTwistSystem.controllers()[0].transform(), mo=True)
-            pm.pointConstraint(self.__firstLimbTwistSystem.controllers()[0].transform(),
-                               self.__firstLimbTwistSystem.controllers()[2].transform(),
+            pm.parentConstraint(self.__blendJoints[0], self.__firstLimbTwistSystem.controllers()[0], mo=True)
+            pm.pointConstraint(self.__firstLimbTwistSystem.controllers()[0],
+                               self.__firstLimbTwistSystem.controllers()[2],
                                self.__firstLimbTwistSystem.controllers()[1].zeroGrp(),
                                mo=True)
             self.__firstLimbTwistSystem.controllers()[0].hide()
@@ -211,12 +211,12 @@ class ThreeBoneLimb(Module):
             self.__blendJoints[1].worldMatrix >> blendJnt2LocalMtx.matrixIn[0]
             self.__nonrollJoints[1].worldInverseMatrix >> blendJnt2LocalMtx.matrixIn[1]
             blendJnt2LocalMtx.matrixSum >> blendJnt2LocalDecMtx.inputMatrix
-            blendJnt2LocalDecMtx.outputRotateX >> self.__secondLimbTwistSystem.controllers()[-1].transform().twist
-            secondLimbTwistUnitConversion = self.__secondLimbTwistSystem.controllers()[-1].transform().twist.inputs()[0]
+            blendJnt2LocalDecMtx.outputRotateX >> self.__secondLimbTwistSystem.controllers()[-1].twist
+            secondLimbTwistUnitConversion = self.__secondLimbTwistSystem.controllers()[-1].twist.inputs()[0]
             secondLimbTwistUnitConversion.conversionFactor.set(self._aimSign * secondLimbTwistUnitConversion.conversionFactor.get())
             pm.parentConstraint(self.__blendJoints[1], self.__secondLimbTwistSystem.topGrp(), mo=True)
-            pm.pointConstraint(self.__secondLimbTwistSystem.controllers()[0].transform(),
-                               self.__secondLimbTwistSystem.controllers()[2].transform(),
+            pm.pointConstraint(self.__secondLimbTwistSystem.controllers()[0],
+                               self.__secondLimbTwistSystem.controllers()[2],
                                self.__secondLimbTwistSystem.controllers()[1].zeroGrp(),
                                mo=True)
             self.__secondLimbTwistSystem.controllers()[0].hide()
@@ -231,14 +231,14 @@ class ThreeBoneLimb(Module):
             self.__blendJoints[-1].worldMatrix >> blendJnt3LocalMtx.matrixIn[0]
             self.__nonrollJoints[-1].worldInverseMatrix >> blendJnt3LocalMtx.matrixIn[1]
             blendJnt3LocalMtx.matrixSum >> blendJnt3LocalDecMtx.inputMatrix
-            blendJnt3LocalDecMtx.outputRotateX >> self.__thirdLimbTwistSystem.controllers()[-1].transform().twist
-            thirdLimbTwistUnitConversion = self.__thirdLimbTwistSystem.controllers()[-1].transform().twist.inputs()[0]
+            blendJnt3LocalDecMtx.outputRotateX >> self.__thirdLimbTwistSystem.controllers()[-1].twist
+            thirdLimbTwistUnitConversion = self.__thirdLimbTwistSystem.controllers()[-1].twist.inputs()[0]
             thirdLimbTwistUnitConversion.conversionFactor.set(self._aimSign * thirdLimbTwistUnitConversion.conversionFactor.get())
             pm.parentConstraint(self.__blendJoints[2], self.__thirdLimbTwistSystem.topGrp(), mo=True)
             pm.parentConstraint(self.__blendJoints[2], blendJnt3NonrollGrp, mo=True)
-            pm.parentConstraint(self.__blendJoints[-1], self.__thirdLimbTwistSystem.controllers()[-1].transform(), mo=True)
-            pm.pointConstraint(self.__thirdLimbTwistSystem.controllers()[0].transform(),
-                               self.__thirdLimbTwistSystem.controllers()[2].transform(),
+            pm.parentConstraint(self.__blendJoints[-1], self.__thirdLimbTwistSystem.controllers()[-1], mo=True)
+            pm.pointConstraint(self.__thirdLimbTwistSystem.controllers()[0],
+                               self.__thirdLimbTwistSystem.controllers()[2],
                                self.__thirdLimbTwistSystem.controllers()[1].zeroGrp(),
                                mo=True)
             self.__thirdLimbTwistSystem.controllers()[0].hide()
@@ -301,16 +301,16 @@ class ThreeBoneLimb(Module):
     def __buildControls(self):
         moduleCtrl = Controller('{}module_ctrl'.format(self._prefix), Controller.SHAPE.SPHERE)
         moduleCtrl.lockChannels(['translate', 'rotate', 'scale', 'visibility'])
-        pm.addAttr(moduleCtrl.transform(), ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
+        pm.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         pm.parentConstraint(self.__blendJoints[-1], moduleCtrl.zeroGrp(), mo=False)
         moduleCtrl.shapeOffset = [0, self._aimSign*-10, 0]
 
         fkIkRev = pm.createNode('reverse', n='{}fkIk_rev'.format(self._prefix))
-        moduleCtrl.transform().ik >> self.__ikSystem.topGrp().visibility
-        moduleCtrl.transform().ik >> fkIkRev.inputX
+        moduleCtrl.ik >> self.__ikSystem.topGrp().visibility
+        moduleCtrl.ik >> fkIkRev.inputX
         fkIkRev.outputX >> self.__fkSystem.topGrp().visibility
         for cnst in self.__blendConstraints:
-            moduleCtrl.transform().ik >> cnst.target[0].targetWeight
+            moduleCtrl.ik >> cnst.target[0].targetWeight
             fkIkRev.outputX >> cnst.target[1].targetWeight
 
         pm.parent(moduleCtrl.zeroGrp(), self.__controllerGrp)
@@ -318,7 +318,7 @@ class ThreeBoneLimb(Module):
         self.addMembers(moduleCtrl.controllerNode())
 
         if self.__firstLimbTwistSystem or self.__secondLimbTwistSystem or self.__thirdLimbTwistSystem:
-            pm.addAttr(moduleCtrl.transform(), ln='bendCtrlVis', at='bool', dv=False, keyable=True)
+            pm.addAttr(moduleCtrl, ln='bendCtrlVis', at='bool', dv=False, keyable=True)
             moduleFirstTwistCtrl = Controller('{}firstTwist_ctrl'.format(self._prefix))
             moduleFirstTwistCtrl.matchTo(self.__blendJoints[1], position=True)
             pm.pointConstraint(self.__blendJoints[1], moduleFirstTwistCtrl.zeroGrp(), mo=False)
@@ -329,7 +329,7 @@ class ThreeBoneLimb(Module):
             moduleFirstTwistCtrl.lockChannels(['rotate', 'scale', 'visibility'])
 
             pvLineDecMtx = self.__ikSystem.joints()[1].worldMatrix.outputs(type='decomposeMatrix')[0]
-            moduleFirstTwistCtrl.transform().worldMatrix >> pvLineDecMtx.inputMatrix
+            moduleFirstTwistCtrl.worldMatrix >> pvLineDecMtx.inputMatrix
 
             moduleSecondTwistCtrl = Controller('{}secondTwist_ctrl'.format(self._prefix))
             moduleSecondTwistCtrl.matchTo(self.__blendJoints[2], position=True)
@@ -342,36 +342,36 @@ class ThreeBoneLimb(Module):
 
             upAxis = list(set(['X', 'Y', 'Z']) - set(self._aimAxis))[0]
             if self.__firstLimbTwistSystem:
-                moduleCtrl.transform().bendCtrlVis >> self.__firstLimbTwistSystem.topGrp().visibility
+                moduleCtrl.bendCtrlVis >> self.__firstLimbTwistSystem.topGrp().visibility
                 moduleFirstTwistCtrl.constraint(self.__firstLimbTwistSystem.controllers()[-1].zeroGrp(), parent=True)
-                pm.aimConstraint(moduleFirstTwistCtrl.transform(),
+                pm.aimConstraint(moduleFirstTwistCtrl,
                                 self.__firstLimbTwistSystem.controllers()[1].zeroGrp(),
                                 aimVector=self._aimSign * utils.axisToVector(self._aimAxis),
                                 upVector=utils.axisToVector(upAxis),
                                 worldUpType='objectrotation',
                                 worldUpVector=utils.axisToVector(upAxis),
-                                worldUpObject=moduleFirstTwistCtrl.transform())
+                                worldUpObject=moduleFirstTwistCtrl)
             if self.__secondLimbTwistSystem:
-                moduleCtrl.transform().bendCtrlVis >> self.__secondLimbTwistSystem.topGrp().visibility
+                moduleCtrl.bendCtrlVis >> self.__secondLimbTwistSystem.topGrp().visibility
                 moduleFirstTwistCtrl.constraint(self.__secondLimbTwistSystem.controllers()[0].zeroGrp(), parent=True)
                 moduleSecondTwistCtrl.constraint(self.__secondLimbTwistSystem.controllers()[-1].zeroGrp(), parent=True)
-                pm.aimConstraint(moduleFirstTwistCtrl.transform(),
+                pm.aimConstraint(moduleFirstTwistCtrl,
                                 self.__secondLimbTwistSystem.controllers()[1].zeroGrp(),
                                 aimVector=-self._aimSign * utils.axisToVector(self._aimAxis),
                                 upVector=utils.axisToVector(upAxis),
                                 worldUpType='objectrotation',
                                 worldUpVector=utils.axisToVector(upAxis),
-                                worldUpObject=moduleFirstTwistCtrl.transform())
+                                worldUpObject=moduleFirstTwistCtrl)
             if self.__thirdLimbTwistSystem:
-                moduleCtrl.transform().bendCtrlVis >> self.__thirdLimbTwistSystem.topGrp().visibility
+                moduleCtrl.bendCtrlVis >> self.__thirdLimbTwistSystem.topGrp().visibility
                 moduleSecondTwistCtrl.constraint(self.__thirdLimbTwistSystem.controllers()[0].zeroGrp(), parent=True)
-                pm.aimConstraint(moduleSecondTwistCtrl.transform(),
+                pm.aimConstraint(moduleSecondTwistCtrl,
                                 self.__thirdLimbTwistSystem.controllers()[1].zeroGrp(),
                                 aimVector=-self._aimSign * utils.axisToVector(self._aimAxis),
                                 upVector=utils.axisToVector(upAxis),
                                 worldUpType='objectrotation',
                                 worldUpVector=utils.axisToVector(upAxis),
-                                worldUpObject=moduleSecondTwistCtrl.transform())
+                                worldUpObject=moduleSecondTwistCtrl)
 
     def postBuild(self):
         super(ThreeBoneLimb, self).postBuild()
@@ -386,17 +386,17 @@ class ThreeBoneLimb(Module):
             self._controllers[1].color = tuple(pm.dt.Vector(self._controllerColor) + 0.5)
             self._controllers[2].color = tuple(pm.dt.Vector(self._controllerColor) + 0.5)
 
-        self._controllers[0].scale = self._controllerScale * 0.1  # Set scale of module controller
-        self.__ikSystem.controllers()[1].scale = self._controllerScale * 0.3  # Set scale of pole vector controller
+        self._controllers[0].size = self._controllerSize * 0.1  # Set scale of module controller
+        self.__ikSystem.controllers()[1].size = self._controllerSize * 0.3  # Set scale of pole vector controller
         if self.__firstLimbTwistSystem:
-            self.__firstLimbTwistSystem.controllerScale = self._controllerScale * 0.9
+            self.__firstLimbTwistSystem.controllerSize = self._controllerSize * 0.9
         if self.__secondLimbTwistSystem:
-            self.__secondLimbTwistSystem.controllerScale = self._controllerScale * 0.9
+            self.__secondLimbTwistSystem.controllerSize = self._controllerSize * 0.9
         if self.__thirdLimbTwistSystem:
-            self.__thirdLimbTwistSystem.controllerScale = self._controllerScale * 0.9
+            self.__thirdLimbTwistSystem.controllerSize = self._controllerSize * 0.9
         if self.__firstLimbTwistSystem or self.__secondLimbTwistSystem or self.__thirdLimbTwistSystem:
-            self._controllers[1].scale = self._controllerScale * 0.9
-            self._controllers[2].scale = self._controllerScale * 0.9
+            self._controllers[1].size = self._controllerSize * 0.9
+            self._controllers[2].size = self._controllerSize * 0.9
 
     def attachTo(self, module):
         if module.__class__.__name__ == 'Clavicle':

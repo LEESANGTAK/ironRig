@@ -77,7 +77,7 @@ class ThreeBoneIK(System):
         self.__ikHandleController.lockChannels(['scale', 'visibility'])
         self.addMembers(self.__ikHandleController.controllerNode())
         pm.addAttr(self.__ikHandleController, ln='calfLift', at='double', dv=0.0, keyable=True)
-        self.__ikHandleController.transform().calfLift >> self.__calfRotGrp.ry
+        self.__ikHandleController.calfLift >> self.__calfRotGrp.ry
 
         startToEndVector = utils.getWorldPoint(self._joints[2]) - utils.getWorldPoint(self._joints[0])
         poleVector = TwoBoneIK.getPoleVector(self._joints[0], self._joints[1], self._joints[2])
@@ -89,11 +89,11 @@ class ThreeBoneIK(System):
         if self._negateScaleX:
             self.__poleVectorController.zeroGrp().sx.set(-1)
 
-        pm.poleVectorConstraint(self.__poleVectorController.transform(), self.__hindIkHandle)
+        pm.poleVectorConstraint(self.__poleVectorController, self.__hindIkHandle)
         self.__hindIkHandle.twist.set(180)
         pm.orientConstraint(self.__hindJoints[1], self.__calfAutoRotGrp, mo=True)
 
-        pm.poleVectorConstraint(self.__poleVectorController.transform(), self.__calfIkHandle)
+        pm.poleVectorConstraint(self.__poleVectorController, self.__calfIkHandle)
         self.__poleVectorController.lockChannels(['rotate', 'scale', 'visibility'])
         self.addMembers(self.__poleVectorController.controllerNode())
 
@@ -109,7 +109,7 @@ class ThreeBoneIK(System):
         poleLine.overrideDisplayType.set(2)
 
         self._joints[1].worldMatrix >> midJntDec.inputMatrix
-        self._controllers[-1].transform().worldMatrix >> poleCtrlDec.inputMatrix
+        self._controllers[-1].worldMatrix >> poleCtrlDec.inputMatrix
         midJntDec.outputTranslate >> poleLine.controlPoints[0]
         poleCtrlDec.outputTranslate >> poleLine.controlPoints[1]
 
@@ -119,10 +119,10 @@ class ThreeBoneIK(System):
     def setupStretch(self):
         # Setup DAG
         stretchGrp = pm.createNode('transform', n='{}stretch_grp'.format(self._prefix))
-        pm.addAttr(self._controllers[0].transform(), at='double', ln='length1', min=0.01, dv=1.0, keyable=True)
-        pm.addAttr(self._controllers[0].transform(), at='double', ln='length2', min=0.01, dv=1.0, keyable=True)
-        pm.addAttr(self._controllers[0].transform(), at='double', ln='length3', min=0.01, dv=1.0, keyable=True)
-        pm.addAttr(self._controllers[0].transform(), at='double', ln='stretch', min=0.0, max=1.0, dv=1.0, keyable=True)
+        pm.addAttr(self._controllers[0], at='double', ln='length1', min=0.01, dv=1.0, keyable=True)
+        pm.addAttr(self._controllers[0], at='double', ln='length2', min=0.01, dv=1.0, keyable=True)
+        pm.addAttr(self._controllers[0], at='double', ln='length3', min=0.01, dv=1.0, keyable=True)
+        pm.addAttr(self._controllers[0], at='double', ln='stretch', min=0.0, max=1.0, dv=1.0, keyable=True)
 
         stretchInputNode = pm.createNode('transform', n='{}stretch_input'.format(self._prefix))
         pm.addAttr(stretchInputNode, at='double', ln='inLength1')
@@ -235,10 +235,10 @@ class ThreeBoneIK(System):
         jnt3StretchLoc.attr('translate{}'.format(self._aimAxis)) >> stretchInputNode.inLength3Orig
         hindJnt1StretchLoc.attr('translate{}'.format(self._aimAxis)) >> stretchInputNode.inHindLength1Orig
         hindJnt2StretchLoc.attr('translate{}'.format(self._aimAxis)) >> stretchInputNode.inHindLength2Orig
-        self._controllers[0].transform().length1 >> stretchInputNode.inLength1
-        self._controllers[0].transform().length2 >> stretchInputNode.inLength2
-        self._controllers[0].transform().length3 >> stretchInputNode.inLength3
-        self._controllers[0].transform().stretch >> stretchInputNode.inStretch
+        self._controllers[0].length1 >> stretchInputNode.inLength1
+        self._controllers[0].length2 >> stretchInputNode.inLength2
+        self._controllers[0].length3 >> stretchInputNode.inLength3
+        self._controllers[0].stretch >> stretchInputNode.inStretch
 
         # Convert negative value to positive value
         stretchInputNode.inLength1Orig >> lenOrigAbsSquare.input1X
@@ -358,7 +358,7 @@ class ThreeBoneIK(System):
                         hindLen2SignMult)
 
     def setupPin(self):
-        pm.addAttr(self._controllers[-1].transform(), at='double', ln='pin', min=0.0, max=1.0, dv=0.0, keyable=True)
+        pm.addAttr(self._controllers[-1], at='double', ln='pin', min=0.0, max=1.0, dv=0.0, keyable=True)
 
         pinGrp = pm.createNode('transform', n='{}pin_grp'.format(self._prefix))
 
@@ -419,7 +419,7 @@ class ThreeBoneIK(System):
             jnt2Inputs[0] >> pinInputNode.inLength2
         else:
             pinInputNode.inLength2.set(self._joints[2].attr('translate{}'.format(self._aimAxis)).get())
-        self._controllers[-1].transform().pin >> pinInputNode.inPin
+        self._controllers[-1].pin >> pinInputNode.inPin
 
         pinInputNode.inLength1Pin >> len1PinSignMult.input2
         pinInputNode.inLength2Pin >> len2PinSignMult.input2
@@ -441,7 +441,7 @@ class ThreeBoneIK(System):
     def buildStartController(self):
         startCtrl = Controller('{}_ctrl'.format(self._joints[0]), shape=Controller.SHAPE.SPHERE)
         startCtrl.matchTo(self._joints[0], position=True)
-        startCtrl.matchTo(self.__ikHandleController.transform(), rotation=True, scale=True)
+        startCtrl.matchTo(self.__ikHandleController, rotation=True, scale=True)
         startCtrl.constraint(self._joints[0].getParent(), parent=True)
         startCtrl.lockChannels(['rotate', 'scale', 'visibility'])
         self._controllers.append(startCtrl)

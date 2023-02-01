@@ -77,16 +77,16 @@ class Foot(Module):
     def __buildControls(self):
         moduleCtrl = Controller('{}module_ctrl'.format(self._prefix), Controller.SHAPE.SPHERE)
         moduleCtrl.lockChannels(['translate', 'rotate', 'scale', 'visibility'])
-        pm.addAttr(moduleCtrl.transform(), ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
+        pm.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         pm.parentConstraint(self.__blendJoints[1], moduleCtrl.zeroGrp(), mo=False)
         moduleCtrl.shapeOffset = [0, self._aimSign*10, 0]
 
         fkIkRev = pm.createNode('reverse', n='{}fkIk_rev'.format(self._prefix))
-        moduleCtrl.transform().ik >> self.__ikSystem.topGrp().visibility
-        moduleCtrl.transform().ik >> fkIkRev.inputX
+        moduleCtrl.ik >> self.__ikSystem.topGrp().visibility
+        moduleCtrl.ik >> fkIkRev.inputX
         fkIkRev.outputX >> self.__fkSystem.topGrp().visibility
         for cnst in self.__blendConstraints:
-            moduleCtrl.transform().ik >> cnst.target[0].targetWeight
+            moduleCtrl.ik >> cnst.target[0].targetWeight
             fkIkRev.outputX >> cnst.target[1].targetWeight
 
         pm.parent(moduleCtrl.zeroGrp(), self.__controllerGrp)
@@ -106,13 +106,13 @@ class Foot(Module):
             pm.pointConstraint(self.__ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
             # Connect ik controllers
             pm.parentConstraint(module.ikSystem().controllers()[0], self.__ikSystem.controllers()[0], mo=True)
-            utils.cloneUserDefinedAttrs(self.__ikSystem.controllers()[0].transform(), module.ikSystem().controllers()[0].transform())
+            utils.cloneUserDefinedAttrs(self.__ikSystem.controllers()[0], module.ikSystem().controllers()[0])
             self.__ikSystem.controllers()[0].hide()
             # Connect fk controllers
             pm.parentConstraint(module.fkSystem().controllers()[-1], self.__fkSystem.controllers()[0], mo=True)
             self.__fkSystem.controllers()[0].hide()
             # Connect module controllers
-            module.controllers()[0].transform().ik >> self._controllers[0].transform().ik
+            module.controllers()[0].ik >> self._controllers[0].ik
             self._controllers[0].hide()
         else:
             super(Foot, self).attachTo(module)
@@ -120,5 +120,5 @@ class Foot(Module):
     def postBuild(self):
         super(Foot, self).postBuild()
 
-        self.__ikSystem.controllers()[0].scale = self._controllerScale * 2
-        self._controllers[0].scale = self._controllerScale * 0.2
+        self.__ikSystem.controllers()[0].size = self._controllerSize * 2
+        self._controllers[0].size = self._controllerSize * 0.2

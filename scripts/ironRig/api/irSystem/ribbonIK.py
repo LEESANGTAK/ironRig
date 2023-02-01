@@ -82,8 +82,8 @@ class RibbonIK(System):
             curCtrl = self._controllers[i]
             parentCtrl = self._controllers[i-1]
             pm.parent(curCtrl.zeroGrp(), parentCtrl.zeroGrp())
-            pm.matchTransform(curCtrl.zeroGrp(), parentCtrl.transform(), pivots=True)
-            pm.orientConstraint(parentCtrl.transform(), curCtrl.zeroGrp(), mo=True)
+            pm.matchTransform(curCtrl.zeroGrp(), parentCtrl, pivots=True)
+            pm.orientConstraint(parentCtrl, curCtrl.zeroGrp(), mo=True)
 
     def setupWave(self):
         srfc = pm.duplicate(self.__surface, n='{0}wave_srfc'.format(self._prefix))[0]
@@ -126,12 +126,12 @@ class RibbonIK(System):
         pm.matchTransform(sineHandleSpace, sineHandle, pos=True, rot=True, scale=True)
         pm.parent(sineHandle, sineHandleSpace)
 
-        self._controllers[-1].transform().waveOnOff >> sine.envelope
-        self._controllers[-1].transform().waveOnOff >> blendshape.attr(srfc.name())
-        self._controllers[-1].transform().waveAmplitude >> sineHandle.amplitude
-        self._controllers[-1].transform().waveLength >> sineHandle.wavelength
-        self._controllers[-1].transform().waveOffset >> sineHandle.offset
-        self._controllers[-1].transform().waveOrient >> sineHandle.rotateY
+        self._controllers[-1].waveOnOff >> sine.envelope
+        self._controllers[-1].waveOnOff >> blendshape.attr(srfc.name())
+        self._controllers[-1].waveAmplitude >> sineHandle.amplitude
+        self._controllers[-1].waveLength >> sineHandle.wavelength
+        self._controllers[-1].waveOffset >> sineHandle.offset
+        self._controllers[-1].waveOrient >> sineHandle.rotateY
 
         self.addMembers(blendshape)
         pm.parent(srfc, sineHandleSpace, self._blbxGrp)
@@ -145,13 +145,13 @@ class RibbonIK(System):
             {'waveOrient': {'type': 'double', 'defaultValue': 0.0, 'keyable': True}},
         ]
         # Add dvider
-        pm.addAttr(self._controllers[-1].transform(), ln='wave', at='enum', en='---------------:')
-        pm.setAttr('{}.{}'.format(self._controllers[-1].transform(), 'wave'), channelBox=True)
+        pm.addAttr(self._controllers[-1], ln='wave', at='enum', en='---------------:')
+        pm.setAttr('{}.{}'.format(self._controllers[-1], 'wave'), channelBox=True)
 
         # Add attributes
         for attrInfo in ATTRIBUTES_INFO:
             for attrName, attrProperties in attrInfo.items():
-                pm.addAttr(self._controllers[-1].transform(), ln=attrName, at=attrProperties['type'], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
+                pm.addAttr(self._controllers[-1], ln=attrName, at=attrProperties['type'], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
 
         # Set default value
-        self._controllers[-1].transform().waveOnOff.setRange(0, 1)
+        self._controllers[-1].waveOnOff.setRange(0, 1)

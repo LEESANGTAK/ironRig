@@ -21,7 +21,7 @@ class Head(Module):
             self.__fkSystem.negateSclaeX = True
         self.__fkSystem.build()
         self.__fkSystem.controllers()[0].shape = Controller.SHAPE.CUBE
-        self.__fkSystem.controllers()[0].scale = utils.getDistance(self._skelJoints[0], self._skelJoints[-1]) * 0.5
+        self.__fkSystem.controllers()[0].size = utils.getDistance(self._skelJoints[0], self._skelJoints[-1]) * 0.5
         self.__fkSystem.controllers()[0].alignShapeTo(utils.getWorldPoint(self._skelJoints[0]), Controller.SIDE.BOTTOM)
 
         self.addSystems(self.__fkSystem)

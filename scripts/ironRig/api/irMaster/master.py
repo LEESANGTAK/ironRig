@@ -19,7 +19,7 @@ class Master(Container):
         self._controllers = []
 
         self._controllerColor = Controller.COLOR.GREEN
-        self._controllerScale = 1
+        self._controllerSize = 1
 
         self._createGroups()
 
@@ -32,12 +32,12 @@ class Master(Container):
         self._controllerColor = color
 
     @property
-    def controllerScale(self):
-        return self._controllerScale
+    def controllerSize(self):
+        return self._controllerSize
 
-    @controllerScale.setter
-    def controllerScale(self, scale):
-        self._controllerScale = scale
+    @controllerSize.setter
+    def controllerSize(self, size):
+        self._controllerSize = size
 
     def _createGroups(self):
         self._topGrp.rename('{}master'.format(self._prefix))
@@ -66,7 +66,7 @@ class Master(Container):
     def postBuild(self):
         for ctrl in self._controllers:
             ctrl.color = self._controllerColor
-            ctrl.scale = self._controllerScale
+            ctrl.size = self._controllerSize
 
     def attachTo(self, module):
         closestOutJnt = utils.findClosestObject(pm.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints())
