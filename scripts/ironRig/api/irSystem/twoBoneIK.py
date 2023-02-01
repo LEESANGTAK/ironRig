@@ -51,7 +51,7 @@ class TwoBoneIK(System):
             self.__ikHandleController.zeroGrp().sx.set(-1)
         self.__ikHandleController.constraint(self.__ikHandle.getParent(), point=True)
         self.__ikHandleController.constraint(self._joints[-1], orient=True)
-        self.__ikHandleController.lockChannels(['scale', 'visibility'])
+        self.__ikHandleController.lockHideChannels(['scale', 'visibility'])
         self.addMembers(self.__ikHandleController.controllerNode())
 
         startToEndVector = utils.getWorldPoint(self._joints[2]) - utils.getWorldPoint(self._joints[0])
@@ -64,7 +64,7 @@ class TwoBoneIK(System):
         if self._negateScaleX:
             self.__poleVectorController.zeroGrp().sx.set(-1)
         pm.poleVectorConstraint(self.__poleVectorController, self.__ikHandle)
-        self.__poleVectorController.lockChannels(['rotate', 'scale', 'visibility'])
+        self.__poleVectorController.lockHideChannels(['rotate', 'scale', 'visibility'])
         self.addMembers(self.__poleVectorController.controllerNode())
 
         self._controllers = [self.__ikHandleController, self.__poleVectorController]
@@ -316,6 +316,6 @@ class TwoBoneIK(System):
         startCtrl.matchTo(self._joints[0], position=True)
         startCtrl.matchTo(self.__ikHandleController, rotation=True, scale=True)
         startCtrl.constraint(self._joints[0].getParent(), parent=True)
-        startCtrl.lockChannels(['rotate', 'scale', 'visibility'])
+        startCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
         self._controllers.append(startCtrl)
         pm.parent(startCtrl.zeroGrp(), self._controllerGrp)

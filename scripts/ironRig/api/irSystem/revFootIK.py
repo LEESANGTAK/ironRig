@@ -22,10 +22,32 @@ class RevFootIK(System):
     def __init__(self, prefix='', joints=[]):
         super(RevFootIK, self).__init__(prefix, joints)
 
+        self.__isSingleBone = False
+        self.__origJoints = None
         self.__revFootJoints = None
+        self.__footCtrl = None
+
+        if len(joints) == 2:
+            self.__isSingleBone = True
+            self.__origJoints = joints
+            self.__addBallJoint()
+
+    def __addBallJoint(self):
+        ballJntPos = utils.getWorldPoint(self._joints[0]) + (utils.getWorldPoint(self._joints[1]) - utils.getWorldPoint(self._joints[0])) * 0.75
+        ballJnt = pm.createNode('joint', n='{}ball_ik'.format(self._prefix))
+        pm.xform(ballJnt, t=ballJntPos, ws=True)
+        pm.matchTransform(ballJnt, self._joints[0], rotation=True)
+        self._joints[0] | ballJnt | self._joints[1]
+        self._joints.insert(1, ballJnt)
 
     def revFootJoints(self):
         return self.__revFootJoints
+
+    def build(self):
+        super(RevFootIK, self).build()
+        if self.__isSingleBone:
+            self.__footCtrl.toeLiftStartAngle.set(0)
+            self.__footCtrl.lockHideChannels(['toeLiftStartAngle', 'ballLift', 'ballTwist', 'toe'])
 
     def _buildSystems(self):
         super(RevFootIK, self)._buildSystems()
@@ -33,19 +55,12 @@ class RevFootIK(System):
         self.__createIKs()
         pm.parentConstraint(self.__revFootJoints[-1], self._joints[0], mo=True)
 
-    def __createIKs(self):
-        ballIK = pm.ikHandle(solver='ikSCsolver', n='{0}ball_ikh'.format(self._prefix), startJoint=self._joints[0], ee=self._joints[1])[0]
-        toeIK = pm.ikHandle(solver='ikSCsolver', n='{0}toe_ikh'.format(self._prefix), startJoint=self._joints[1], ee=self._joints[2])[0]
-
-        self.__toeIKPivotTrsf = pm.createNode('transform', n='{0}_pivot'.format(toeIK))
-        pm.matchTransform(self.__toeIKPivotTrsf, self._joints[1])
-        toeIKPivotTrsfZero = pm.duplicate(self.__toeIKPivotTrsf, n='{0}_zero'.format(toeIK))[0]
-
-        self.__revFootJoints[-3] | toeIKPivotTrsfZero | self.__toeIKPivotTrsf | toeIK
-        self.__revFootJoints[-2] | ballIK
-
     def __buildRevFootJoints(self):
-        skelJoints = [pm.PyNode(jnt.replace(self._prefix, '')) for jnt in self._joints]
+        if self.__isSingleBone:
+            skelJoints = [pm.PyNode(jnt.replace(self._prefix, '')) for jnt in self.__origJoints]
+        else:
+            skelJoints = [pm.PyNode(jnt.replace(self._prefix, '')) for jnt in self._joints]
+
         afVtxs = utils.getAffectedVertices(skelJoints, minWeight=0.5)
         groundVtxs = utils.filterGroundLevelVertices(afVtxs, threshold=1.0)
         pm.select(groundVtxs, r=True)
@@ -145,25 +160,36 @@ class RevFootIK(System):
 
         return revFootJoints
 
+    def __createIKs(self):
+        ballIK = pm.ikHandle(solver='ikSCsolver', n='{0}ball_ikh'.format(self._prefix), startJoint=self._joints[0], ee=self._joints[1])[0]
+        toeIK = pm.ikHandle(solver='ikSCsolver', n='{0}toe_ikh'.format(self._prefix), startJoint=self._joints[1], ee=self._joints[2])[0]
+
+        self.__toeIKPivotTrsf = pm.createNode('transform', n='{0}_pivot'.format(toeIK))
+        pm.matchTransform(self.__toeIKPivotTrsf, self._joints[1])
+        toeIKPivotTrsfZero = pm.duplicate(self.__toeIKPivotTrsf, n='{0}_zero'.format(toeIK))[0]
+
+        self.__revFootJoints[-3] | toeIKPivotTrsfZero | self.__toeIKPivotTrsf | toeIK
+        self.__revFootJoints[-2] | ballIK
+
     def _buildControls(self):
-        footCtrl = Controller('{0}ctrl'.format(self._prefix), Controller.SHAPE.FOOT, size=5, direction=Controller.DIRECTION.Y)
+        self.__footCtrl = Controller('{0}ctrl'.format(self._prefix), Controller.SHAPE.FOOT, size=5, direction=Controller.DIRECTION.Y)
         jointsMidVec = (utils.getWorldPoint(self._joints[0]) + utils.getWorldPoint(self._joints[-1])) * 0.5
-        pm.xform(footCtrl.zeroGrp(), t=[jointsMidVec.x, 0, jointsMidVec.z], ws=True)
+        pm.xform(self.__footCtrl.zeroGrp(), t=[jointsMidVec.x, 0, jointsMidVec.z], ws=True)
         if self._negateScaleX:
-            footCtrl.zeroGrp().sx.set(-1)
-        footCtrl.constraint(self._blbxGrp, parent=True)
-        pm.parent(footCtrl.zeroGrp(), self._controllerGrp)
-        footCtrl.lockChannels(['visibility'])
-        self._controllers.append(footCtrl)
-        self.addMembers(footCtrl.controllerNode())
+            self.__footCtrl.zeroGrp().sx.set(-1)
+        self.__footCtrl.constraint(self._blbxGrp, parent=True)
+        pm.parent(self.__footCtrl.zeroGrp(), self._controllerGrp)
+        self.__footCtrl.lockHideChannels(['visibility'])
+        self._controllers.append(self.__footCtrl)
+        self.addMembers(self.__footCtrl.controllerNode())
 
         for attrInfo in RevFootIK.ATTRS_INFO:
-            pm.addAttr(footCtrl, ln=attrInfo['name'], at='float', min=attrInfo['min'], max=attrInfo['max'], dv=attrInfo['default'], keyable=True)
+            pm.addAttr(self.__footCtrl, ln=attrInfo['name'], at='float', min=attrInfo['min'], max=attrInfo['max'], dv=attrInfo['default'], keyable=True)
 
         self._connectAttributes()
 
         if self._negateScaleX:
-            toeUnitConversion = footCtrl.toe.outputs(type='unitConversion')[0]
+            toeUnitConversion = self.__footCtrl.toe.outputs(type='unitConversion')[0]
             toeUnitConversion.conversionFactor.set(-toeUnitConversion.conversionFactor.get())
 
     def _connectAttributes(self):

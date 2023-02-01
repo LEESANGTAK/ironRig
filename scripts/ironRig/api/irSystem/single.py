@@ -24,7 +24,7 @@ class Single(System):
                 ctrl.zeroGrp().sx.set(-1)
             ctrl.constraint(jnt, parent=True)
             ctrl.connect(jnt, scale=True)
-            ctrl.lockChannels(['visibility'])
+            ctrl.lockHideChannels(['visibility'])
             ctrls.append(ctrl)
             self.addMembers(ctrl.controllerNode())
 

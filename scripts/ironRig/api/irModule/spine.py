@@ -48,7 +48,7 @@ class Spine(Module):
         self.__fkSystem.build()
         self.__fkSystem.controllers()[0].hide()
         for ctrl in self.__fkSystem.controllers():
-            ctrl.lockChannels(channels=['translate', 'scale', 'visibility'])
+            ctrl.lockHideChannels(channels=['translate', 'scale', 'visibility'])
         self.addSystems(self.__fkSystem)
 
         self._sysJoints = self.__ikSystem.joints()
@@ -84,6 +84,6 @@ class Spine(Module):
         shapeOffset = utils.getDistance(self.__ikSystem.joints()[0], self.__ikSystem.joints()[1]) * (-self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis()))
         pelvisCtrl.shapeOffset = shapeOffset
         pm.parent(pelvisCtrl.zeroGrp(), self.__controllerGrp)
-        pelvisCtrl.lockChannels(['scale', 'visibility'])
+        pelvisCtrl.lockHideChannels(['scale', 'visibility'])
         self._controllers.append(pelvisCtrl)
         self.addMembers(pelvisCtrl.controllerNode())

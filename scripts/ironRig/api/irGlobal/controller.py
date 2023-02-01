@@ -293,7 +293,7 @@ class Controller(object):
         for attrName in [ch + axis for ch in channels for axis in 'xyz']:
             self.__transform.attr(attrName) >> target.attr(attrName)
 
-    def lockChannels(self, channels=['visibility'], axes=['X', 'Y', 'Z']):
+    def lockHideChannels(self, channels=['visibility'], axes=['X', 'Y', 'Z']):
         attrNames = list(set([ch + axis if ch in ['translate', 'rotate', 'scale'] else ch for ch in channels for axis in axes]))
         for attrName in attrNames:
             self.__transform.attr(attrName).lock()

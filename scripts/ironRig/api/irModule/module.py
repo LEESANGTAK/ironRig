@@ -336,7 +336,7 @@ class Module(Container):
                                    Controller.COLOR.LIGHTGREEN,
                                    utils.getDistance(self._initJoints[0], self._initJoints[-1]))
         modGlobalCtrl.matchTo(self._initJoints[0], position=True, rotation=True)
-        modGlobalCtrl.lockChannels(['scale', 'visibility'], 'XYZ')
+        modGlobalCtrl.lockHideChannels(['scale', 'visibility'], 'XYZ')
         self._topGrp | modGlobalCtrl.zeroGrp()
         pm.parent([self._geoGrp, self._initGrp, self._systemGrp, self._outGrp], modGlobalCtrl)
 

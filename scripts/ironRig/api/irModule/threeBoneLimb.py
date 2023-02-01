@@ -300,7 +300,7 @@ class ThreeBoneLimb(Module):
 
     def __buildControls(self):
         moduleCtrl = Controller('{}module_ctrl'.format(self._prefix), Controller.SHAPE.SPHERE)
-        moduleCtrl.lockChannels(['translate', 'rotate', 'scale', 'visibility'])
+        moduleCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'])
         pm.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         pm.parentConstraint(self.__blendJoints[-1], moduleCtrl.zeroGrp(), mo=False)
         moduleCtrl.shapeOffset = [0, self._aimSign*-10, 0]
@@ -326,7 +326,7 @@ class ThreeBoneLimb(Module):
             oCnst.interpType.set(2)
             pm.parent(moduleFirstTwistCtrl.zeroGrp(), self.__controllerGrp)
             self._controllers.append(moduleFirstTwistCtrl)
-            moduleFirstTwistCtrl.lockChannels(['rotate', 'scale', 'visibility'])
+            moduleFirstTwistCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
 
             pvLineDecMtx = self.__ikSystem.joints()[1].worldMatrix.outputs(type='decomposeMatrix')[0]
             moduleFirstTwistCtrl.worldMatrix >> pvLineDecMtx.inputMatrix
@@ -338,7 +338,7 @@ class ThreeBoneLimb(Module):
             oCnst.interpType.set(2)
             pm.parent(moduleSecondTwistCtrl.zeroGrp(), self.__controllerGrp)
             self._controllers.append(moduleSecondTwistCtrl)
-            moduleSecondTwistCtrl.lockChannels(['rotate', 'scale', 'visibility'])
+            moduleSecondTwistCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
 
             upAxis = list(set(['X', 'Y', 'Z']) - set(self._aimAxis))[0]
             if self.__firstLimbTwistSystem:

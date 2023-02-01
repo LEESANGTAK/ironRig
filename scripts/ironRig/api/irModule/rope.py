@@ -44,7 +44,7 @@ class Rope(Module):
             if utils.isOddNumber(index):
                 cnst = pm.parentConstraint(ikCtrls[index-1], ikCtrls[index+1], curCtrl.zeroGrp(), mo=True)
                 cnst.interpType.set(2)
-                curCtrl.lockChannels(channels=['rotate'], axes=['X', 'Y', 'Z'])
+                curCtrl.lockHideChannels(channels=['rotate'], axes=['X', 'Y', 'Z'])
 
         self._sysJoints = self.__sgSystem.joints()
 

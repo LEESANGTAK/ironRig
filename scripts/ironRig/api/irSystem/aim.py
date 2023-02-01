@@ -36,7 +36,7 @@ class Aim(System):
         if self._negateScaleX:
             aimCtrl.zeroGrp().sx.set(-1)
         aimCtrl.constraint(self.__aimLoc, point=True)
-        aimCtrl.lockChannels(['rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
+        aimCtrl.lockHideChannels(['rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
 
         self._controllers.append(aimCtrl)
         self._controllerGrp | aimCtrl.zeroGrp()

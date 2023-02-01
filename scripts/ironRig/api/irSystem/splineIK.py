@@ -76,7 +76,7 @@ class SplineIK(System):
         ctrls = []
         for crvJnt in self.__curveJoints:
             ctrl = Controller(name=crvJnt.replace('crvJnt', 'ctrl'), shape=Controller.SHAPE.CUBE, color=self.controllerColor)
-            ctrl.lockChannels(['scale', 'visibility'])
+            ctrl.lockHideChannels(['scale', 'visibility'])
             ctrl.matchTo(crvJnt, position=True, rotation=True)
             if self._negateScaleX:
                 ctrl.zeroGrp().sx.set(-1)

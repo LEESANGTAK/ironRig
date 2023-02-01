@@ -51,11 +51,11 @@ class GlobalMaster(Master):
     def _buildControls(self):
         self.__globalController = Controller(name='global_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
         GlobalMaster.setupGlobalScaleAttr(self.__globalController)
-        self.__globalController.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        self.__globalController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.__mainController = Controller(name='main_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
-        self.__mainController.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        self.__mainController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.__cogController = Controller(name='cog_ctrl', shape=Controller.SHAPE.ARROW_QUAD, color=self._controllerColor, direction=Controller.DIRECTION.Y)
-        self.__cogController.lockChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        self.__cogController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.__cogController.matchTo(self.__cogJoint, position=True)
         self._controllers = [self.__globalController, self.__mainController, self.__cogController]
 

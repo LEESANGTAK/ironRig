@@ -31,7 +31,7 @@ class FK(System):
                 ctrl.zeroGrp().sx.set(-1)
             ctrl.constraint(jnt, parent=True)
             ctrl.connect(jnt, scale=True)
-            ctrl.lockChannels(['scale', 'visibility'], ['X', 'Y', 'Z'])
+            ctrl.lockHideChannels(['scale', 'visibility'], ['X', 'Y', 'Z'])
             ctrls.append(ctrl)
             self.addMembers(ctrl.controllerNode())
 

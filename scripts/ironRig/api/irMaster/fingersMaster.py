@@ -19,7 +19,7 @@ class FingersMaster(Master):
 
     def _buildControls(self):
         masterCtrl = Controller('{}ctrl'.format(self._prefix), Controller.SHAPE.CUBE, Controller.COLOR.GREEN)
-        masterCtrl.lockChannels(['translate', 'rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
+        masterCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
         masterCtrl.shapeOffset = [0, 5, 0]
         for module in self._modules:
             attrStr = module.prefix.split('_')[0]

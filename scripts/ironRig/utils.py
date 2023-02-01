@@ -220,42 +220,42 @@ def getAffectedVertices(joints, minWeight=0.1):
     for jnt in joints:
         jnt = pm.PyNode(jnt)
         skinClusters = jnt.worldMatrix.outputs(type='skinCluster')
+        if skinClusters:
+            selLs = om.MSelectionList()
+            jntDagPath = om.MDagPath()
 
-        selLs = om.MSelectionList()
-        jntDagPath = om.MDagPath()
+            for skinCluster in skinClusters:
+                # Get skin cluster function
+                skinNode = om.MObject()
+                selLs.add(skinCluster.name())
+                selLs.getDependNode(0, skinNode)
+                if not skinNode.hasFn(om.MFn.kSkinClusterFilter):
+                    continue
+                skinFn = oma.MFnSkinCluster(skinNode)
 
-        for skinCluster in skinClusters:
-            # Get skin cluster function
-            skinNode = om.MObject()
-            selLs.add(skinCluster.name())
-            selLs.getDependNode(0, skinNode)
-            if not skinNode.hasFn(om.MFn.kSkinClusterFilter):
-                continue
-            skinFn = oma.MFnSkinCluster(skinNode)
+                # Get affected points
+                selLs.add(jnt.name())
+                selLs.getDagPath(1, jntDagPath)
+                componentsSelLs = om.MSelectionList()
+                weights = om.MDoubleArray()
+                skinFn.getPointsAffectedByInfluence(jntDagPath, componentsSelLs, weights)
 
-            # Get affected points
-            selLs.add(jnt.name())
-            selLs.getDagPath(1, jntDagPath)
-            componentsSelLs = om.MSelectionList()
-            weights = om.MDoubleArray()
-            skinFn.getPointsAffectedByInfluence(jntDagPath, componentsSelLs, weights)
+                # Select vertices
+                geoDagPath = om.MDagPath()
+                vertices = om.MObject()
+                if componentsSelLs.length() >= 1:
+                    componentsSelLs.getDagPath(0, geoDagPath, vertices)
+                    fnAllWeightedVtxs = om.MFnSingleIndexedComponent(vertices)
+                    allWeightedVtxs = om.MIntArray()
+                    fnAllWeightedVtxs.getElements(allWeightedVtxs)
+                    fnFilteredWeightedVtxs = om.MFnSingleIndexedComponent()
+                    filteredVtxs = fnFilteredWeightedVtxs.create(om.MFn.kMeshVertComponent)
+                    for vtxId, weight in zip(allWeightedVtxs, weights):
+                        if weight > minWeight:
+                            fnFilteredWeightedVtxs.addElement(vtxId)
+                    om.MGlobal.select(geoDagPath, filteredVtxs, om.MGlobal.kAddToList)
 
-            # Select vertices
-            geoDagPath = om.MDagPath()
-            vertices = om.MObject()
-            if componentsSelLs.length() >= 1:
-                componentsSelLs.getDagPath(0, geoDagPath, vertices)
-                fnAllWeightedVtxs = om.MFnSingleIndexedComponent(vertices)
-                allWeightedVtxs = om.MIntArray()
-                fnAllWeightedVtxs.getElements(allWeightedVtxs)
-                fnFilteredWeightedVtxs = om.MFnSingleIndexedComponent()
-                filteredVtxs = fnFilteredWeightedVtxs.create(om.MFn.kMeshVertComponent)
-                for vtxId, weight in zip(allWeightedVtxs, weights):
-                    if weight > minWeight:
-                        fnFilteredWeightedVtxs.addElement(vtxId)
-                om.MGlobal.select(geoDagPath, filteredVtxs, om.MGlobal.kAddToList)
-
-            selLs.clear()
+                selLs.clear()
     affectedVtxs = pm.selected(fl=True)
     pm.select(preSels, r=True)
     return affectedVtxs

@@ -74,7 +74,7 @@ class ThreeBoneIK(System):
         self.__ikHandleController.constraint(self.__ikHandleLoc, point=True)
         self.__ikHandleController.constraint(self.__hindIkHandle.getParent(), point=True)
         self.__ikHandleController.constraint(self._joints[-1], orient=True)
-        self.__ikHandleController.lockChannels(['scale', 'visibility'])
+        self.__ikHandleController.lockHideChannels(['scale', 'visibility'])
         self.addMembers(self.__ikHandleController.controllerNode())
         pm.addAttr(self.__ikHandleController, ln='calfLift', at='double', dv=0.0, keyable=True)
         self.__ikHandleController.calfLift >> self.__calfRotGrp.ry
@@ -94,7 +94,7 @@ class ThreeBoneIK(System):
         pm.orientConstraint(self.__hindJoints[1], self.__calfAutoRotGrp, mo=True)
 
         pm.poleVectorConstraint(self.__poleVectorController, self.__calfIkHandle)
-        self.__poleVectorController.lockChannels(['rotate', 'scale', 'visibility'])
+        self.__poleVectorController.lockHideChannels(['rotate', 'scale', 'visibility'])
         self.addMembers(self.__poleVectorController.controllerNode())
 
         self._controllers = [self.__ikHandleController, self.__poleVectorController]
@@ -443,6 +443,6 @@ class ThreeBoneIK(System):
         startCtrl.matchTo(self._joints[0], position=True)
         startCtrl.matchTo(self.__ikHandleController, rotation=True, scale=True)
         startCtrl.constraint(self._joints[0].getParent(), parent=True)
-        startCtrl.lockChannels(['rotate', 'scale', 'visibility'])
+        startCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
         self._controllers.append(startCtrl)
         pm.parent(startCtrl.zeroGrp(), self._controllerGrp)
