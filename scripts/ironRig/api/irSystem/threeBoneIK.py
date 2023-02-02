@@ -54,7 +54,7 @@ class ThreeBoneIK(System):
         self.__calfAutoRotGrp = pm.createNode('transform', n='{}_autoRot'.format(self.__calfIkHandle))
         pm.matchTransform(self.__calfAutoRotGrp, self._joints[3])
         self.__calfAutoRotGrp | self.__calfRotGrp | calfIkhZeroGrp
-        self.__ankleIkHandle = pm.ikHandle(startJoint=self._joints[2], endEffector=self._joints[3], solver='ikRPsolver', n='{}ankle_ikh'.format(self._prefix))[0]
+        self.__ankleIkHandle = pm.ikHandle(startJoint=self._joints[2], endEffector=self._joints[3], solver='ikSCsolver', n='{}ankle_ikh'.format(self._prefix))[0]
         ankleIkhZeroGrp = utils.makeGroup(self.__ankleIkHandle, '{}_zero'.format(self.__ankleIkHandle))
         self.__ikHandleLoc = pm.spaceLocator(n='{}ikh_loc'.format(self._prefix))
         pm.matchTransform(self.__ikHandleLoc, self._joints[3])
@@ -68,7 +68,7 @@ class ThreeBoneIK(System):
 
     def _buildControls(self):
         self.__ikHandleController = Controller('{0}_ctrl'.format(self.__ankleIkHandle), shape=Controller.SHAPE.CUBE)
-        pm.matchTransform(self.__ikHandleController.zeroGrp(), self._joints[-1], position=True, rotation=True)
+        pm.matchTransform(self.__ikHandleController.zeroGrp(), self._joints[-1], position=True)
         if self._negateScaleX:
             self.__ikHandleController.zeroGrp().sx.set(-1)
         pm.pointConstraint(self.__ikHandleController, self.__ikHandleLoc, mo=True)
@@ -328,34 +328,36 @@ class ThreeBoneIK(System):
         stretchOutputNode.outHindLength1 >> self.__hindJoints[1].attr('translate{}'.format(self._aimAxis))
         stretchOutputNode.outHindLength2 >> self.__hindJoints[2].attr('translate{}'.format(self._aimAxis))
 
-        self.addMembers(ikhCtrlLocalMtx,
-                        ikhCtrlLocalDist,
-                        lenOrigAbsSquare,
-                        lenOrigAbsSqrt,
-                        hindLenOrigAbsSquare,
-                        hindLenOrigAbsSqrt,
-                        len1OrigMul,
-                        len2OrigMul,
-                        len3OrigMul,
-                        wholeLenOrigAdd,
-                        stretchFactorDiv,
-                        stretchLen1OrigMul,
-                        stretchLen2OrigMul,
-                        stretchLen3OrigMul,
-                        stretchHindLen1OrigMul,
-                        stretchHindLen2OrigMul,
-                        stretchCond,
-                        hindStretchCond,
-                        len1Blend,
-                        len2Blend,
-                        len3Blend,
-                        hindLen1Blend,
-                        hindLen2Blend,
-                        len1SignMult,
-                        len2SignMult,
-                        len3SignMult,
-                        hindLen1SignMult,
-                        hindLen2SignMult)
+        self.addMembers(
+            ikhCtrlLocalMtx,
+            ikhCtrlLocalDist,
+            lenOrigAbsSquare,
+            lenOrigAbsSqrt,
+            hindLenOrigAbsSquare,
+            hindLenOrigAbsSqrt,
+            len1OrigMul,
+            len2OrigMul,
+            len3OrigMul,
+            wholeLenOrigAdd,
+            stretchFactorDiv,
+            stretchLen1OrigMul,
+            stretchLen2OrigMul,
+            stretchLen3OrigMul,
+            stretchHindLen1OrigMul,
+            stretchHindLen2OrigMul,
+            stretchCond,
+            hindStretchCond,
+            len1Blend,
+            len2Blend,
+            len3Blend,
+            hindLen1Blend,
+            hindLen2Blend,
+            len1SignMult,
+            len2SignMult,
+            len3SignMult,
+            hindLen1SignMult,
+            hindLen2SignMult
+        )
 
     def setupPin(self):
         pm.addAttr(self._controllers[-1], at='double', ln='pin', min=0.0, max=1.0, dv=0.0, keyable=True)
@@ -397,12 +399,14 @@ class ThreeBoneIK(System):
         len1StretchPinBlend = pm.createNode('blendTwoAttr', n='{}len1StretchPin_blend'.format(self._prefix))
         len2StretchPinBlend = pm.createNode('blendTwoAttr', n='{}len2StretchPin_blend'.format(self._prefix))
 
-        self.addMembers(len1PinLocalDist,
-                        len2PinLocalDist,
-                        len1PinSignMult,
-                        len2PinSignMult,
-                        len1StretchPinBlend,
-                        len2StretchPinBlend)
+        self.addMembers(
+            len1PinLocalDist,
+            len2PinLocalDist,
+            len1PinSignMult,
+            len2PinSignMult,
+            len1StretchPinBlend,
+            len2StretchPinBlend
+        )
 
         jnt1PinLoc.matrix >> len1PinLocalDist.inMatrix2
         jnt2PinLoc.matrix >> len2PinLocalDist.inMatrix2

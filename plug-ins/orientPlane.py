@@ -178,13 +178,16 @@ class OrientPlane(OpenMayaMPx.MPxNode):
 
                 if negXAxis:
                     aimVector *= -1
+                    upVector *= -1
                 if negYAxis:
                     upVector *= -1
+                    perpVector *= -1
                 if negZAxis:
                     perpVector *= -1
-
+                    upVector *= -1
                 if swapYZAxis:
                     upVector, perpVector = perpVector, upVector
+                    upVector *= -1
 
                 matrix = OrientPlane.buildMatrix(aimVector, upVector, perpVector, projCurPoint, swapYZAxis)
 

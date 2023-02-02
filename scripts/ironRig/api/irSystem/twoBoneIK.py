@@ -46,7 +46,7 @@ class TwoBoneIK(System):
 
     def _buildControls(self):
         self.__ikHandleController = Controller('{0}_ctrl'.format(self.__ikHandle), shape=Controller.SHAPE.CUBE)
-        pm.matchTransform(self.__ikHandleController.zeroGrp(), self._joints[-1], position=True, rotation=True)
+        pm.matchTransform(self.__ikHandleController.zeroGrp(), self._joints[-1], position=True)
         if self._negateScaleX:
             self.__ikHandleController.zeroGrp().sx.set(-1)
         pm.pointConstraint(self.__ikHandleController, self.__ikHandle.getParent(), mo=True)

@@ -30,12 +30,10 @@ class Foot(Module):
         midLoc.overrideColor.set(6)
         pm.xform(midLoc, t=midLocPos, ws=True)
 
-        negAxisAttrNames = ['negateXAxis', 'negateYAxis', 'negateZAxis', 'swapYZAxis']
+        negAxisAttrNames = ['negateXAxis', 'negateZAxis', 'swapYZAxis']
         for attrName in negAxisAttrNames:
             pm.addAttr(midLoc, ln=attrName, at='bool', dv=False, keyable=True)
             midLoc.attr(attrName) >> self._orientPlane.attr(attrName)
-
-        pm.addAttr(midLoc, ln='initJointScale', type='double3', keyable=True)
 
         return midLoc
 

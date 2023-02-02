@@ -93,7 +93,6 @@ class Module(Container):
         self._buildOrientPlane()
         self._buildInitJoints()
 
-        self._initJoints[0].scale >> self._oriPlaneLocators[1].initJointScale
         pm.matchTransform(self._oriPlaneLocators[1], self._initJoints[0], rotation=True)
         pm.select(self._oriPlaneLocators[1], r=True)
 
@@ -172,12 +171,10 @@ class Module(Container):
         midLoc.overrideColor.set(6)
         pm.xform(midLoc, t=midLocPos, ws=True)
 
-        negAxisAttrNames = ['negateXAxis', 'negateYAxis', 'negateZAxis', 'swapYZAxis']
+        negAxisAttrNames = ['negateXAxis', 'negateZAxis', 'swapYZAxis']
         for attrName in negAxisAttrNames:
             pm.addAttr(midLoc, ln=attrName, at='bool', dv=False, keyable=True)
             midLoc.attr(attrName) >> self._orientPlane.attr(attrName)
-
-        pm.addAttr(midLoc, ln='initJointScale', type='double3', keyable=True)
 
         return midLoc
 
