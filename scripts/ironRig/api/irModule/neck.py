@@ -91,4 +91,6 @@ class Neck(Module):
 
     def postBuild(self):
         super(Neck, self).postBuild()
-        self.__ikSystem.controllers()[-1].alignShapeTo(utils.getWorldPoint(self._initJoints[-1]), Controller.SIDE.BOTTOM)
+        shapeOffset = (self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis())) * self._controllerSize
+        self.__ikSystem.controllers()[-1].shapeOffset = shapeOffset
+        # self.__ikSystem.controllers()[-1].alignShapeTo(utils.getWorldPoint(self._initJoints[-1]), Controller.SIDE.BOTTOM)

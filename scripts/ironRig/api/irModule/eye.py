@@ -16,6 +16,29 @@ class Eye(Module):
     def aimSystem(self):
         return self.__aimSystem
 
+    def preBuild(self):
+        if len(self._skelJoints) == 1:
+            self._buildGroups()
+            self._buildInitSkelLocators()
+            self._buildInitJoints()
+        else:
+            super(Eye, self).preBuild()
+
+    def _buildInitJoints(self):
+        if len(self._skelJoints) == 1:
+            initJoints = []
+            for initSkelLoc in self._initSkelLocators:
+                initJnt = pm.createNode('joint', n=initSkelLoc.replace('_loc', ''))
+                pm.matchTransform(initJnt, initSkelLoc)
+                initJnt.segmentScaleCompensate.set(False)
+                initJnt.displayLocalAxis.set(True)
+                self._initGrp | initJnt
+                initJoints.append(initJnt)
+
+            self._initJoints = initJoints
+        else:
+            super(Eye, self)._buildInitJoints()
+
     def orientInitJoints(self):
         upVector = utils.getWorldPoint(self.midLocPlane) - utils.getWorldPoint(self._initJoints[0])
         if round(utils.getWorldPoint(self._initJoints[0]).x) < 0.0:  # The orientation of right eye is same as left eye has.

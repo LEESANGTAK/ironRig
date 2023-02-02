@@ -300,8 +300,9 @@ class ThreeBoneLimb(Module):
         moduleCtrl = Controller('{}module_ctrl'.format(self._prefix), Controller.SHAPE.SPHERE)
         moduleCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'])
         pm.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
-        pm.parentConstraint(self.__blendJoints[-1], moduleCtrl.zeroGrp(), mo=False)
-        moduleCtrl.shapeOffset = [0, self._aimSign*-10, 0]
+        pm.matchTransform(moduleCtrl.zeroGrp(), self.__blendJoints[-1], position=True)
+        pm.parentConstraint(self.__blendJoints[-1], moduleCtrl.zeroGrp(), mo=True)
+        moduleCtrl.shapeOffset = [0, 0, self._aimSign*-2]
 
         fkIkRev = pm.createNode('reverse', n='{}fkIk_rev'.format(self._prefix))
         moduleCtrl.ik >> self.__ikSystem.topGrp().visibility

@@ -362,7 +362,7 @@ class Module(Container):
         """
         parentSpace =  None
         if module.__class__.__name__ == 'Spine':
-            allModuleCtrls = module.ikSystem().controllers() + module.fkSystem().controllers()[1:] + module.controllers()
+            allModuleCtrls = module.ikSystem().controllers() + module.controllers()
             parentSpace = utils.findClosestController(utils.getWorldPoint(self._topGrp), allModuleCtrls)
         else:
             parentSpace = utils.findClosestObject(pm.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints())

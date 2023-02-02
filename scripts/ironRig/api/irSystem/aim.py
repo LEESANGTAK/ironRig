@@ -28,7 +28,7 @@ class Aim(System):
         if self.__isSingleJoint:
             return self.__origJoints
         else:
-            super(Aim, self).joints()
+            return self._joints
 
     def _buildSystems(self):
         super(Aim, self)._buildSystems()
