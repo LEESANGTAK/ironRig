@@ -39,6 +39,14 @@ class ThreeBoneIK(System):
 
     def _buildSystems(self):
         super(ThreeBoneIK, self)._buildSystems()
+
+        orientY = self._joints[1].jointOrientY.get()
+        if abs(orientY) <= 0.02:  # IK does not working if jointOrient has too small value in case straight joint chain
+            if orientY > 0:
+                self._joints[1].preferredAngleY.set(90)
+            elif orientY < 0:
+                self._joints[1].preferredAngleY.set(-90)
+
         self.__hindJoints = utils.duplicateJointChain([self._joints[0], self._joints[1], self._joints[3]], prefix='hind_')
         self.__hindJoints[1].tx.set(self._joints[2].tx.get())
         self.__hindJoints[2].tx.set(self._joints[1].tx.get() + self._joints[3].tx.get())

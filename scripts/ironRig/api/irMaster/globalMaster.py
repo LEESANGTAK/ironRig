@@ -4,14 +4,13 @@ from .master import Master
 
 
 class GlobalMaster(Master):
-    def __init__(self, prefix='controlRig_', skeletonRoot=None, cogJoint=None):
+    def __init__(self, prefix='controlRig_', rootJoint=None, cogJoint=None):
         self.__mastersGrp = None
 
         super(GlobalMaster, self).__init__(prefix)
 
-        self.__skeletonRoot = pm.PyNode(skeletonRoot)
-        self.__cogJoint = pm.PyNode(cogJoint)
-        self.__cogJoint.segmentScaleCompensate.set(False)
+        self.__rootJoint = pm.PyNode(rootJoint)
+        self.__cogJoint = pm.PyNode(cogJoint) if cogJoint else self.__rootJoint
         self.__globalController = None
         self.__mainController = None
         self.__cogController = None
@@ -37,6 +36,9 @@ class GlobalMaster(Master):
         super(GlobalMaster, self).build()
         pm.parent([self._modulesGrp, self.__mastersGrp], self.__cogController)
 
+        for jnt in self.__rootJoint.getChildren(type='joint'):
+            jnt.segmentScaleCompensate.set(False)
+
     def _createGroups(self):
         super(GlobalMaster, self)._createGroups()
         self.__spaceSwtichGrp = pm.createNode('transform', n='spaceSwitches_grp'.format(self._prefix))
@@ -55,15 +57,17 @@ class GlobalMaster(Master):
         self.__mainController = Controller(name='main_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
         self.__mainController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.__cogController = Controller(name='cog_ctrl', shape=Controller.SHAPE.ARROW_QUAD, color=self._controllerColor, direction=Controller.DIRECTION.Y)
-        self.__cogController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         pm.matchTransform(self.__cogController.zeroGrp(), self.__cogJoint, position=True)
         self._controllers = [self.__globalController, self.__mainController, self.__cogController]
+        self.__cogController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        if self.__cogJoint:
+            pm.parentConstraint(self.__cogController, self.__cogJoint, mo=True)
 
         self.__globalController | self.__mainController | self.__cogController
         pm.parent(self.__globalController.zeroGrp(), self._topGrp)
 
-        self.__globalController.scale >> self.__skeletonRoot.scale
-        pm.parentConstraint(self.__mainController, self.__skeletonRoot, mo=True)
+        self.__globalController.scale >> self.__rootJoint.scale
+        pm.parentConstraint(self.__mainController, self.__rootJoint, mo=True)
 
         self.addMembers(self.__globalController.controllerNode(), self.__mainController.controllerNode(), self.__cogController.controllerNode())
 

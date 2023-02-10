@@ -270,7 +270,7 @@ class TwoBoneLimb(Module):
         pm.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         pm.matchTransform(moduleCtrl.zeroGrp(), self.__blendJoints[-1], position=True)
         pm.parentConstraint(self.__blendJoints[-1], moduleCtrl.zeroGrp(), mo=True)
-        moduleCtrl.shapeOffset = [0, 0, self._aimSign*-2]
+        moduleCtrl.shapeOffset = pm.dt.Vector.zNegAxis * 10
 
         fkIkRev = pm.createNode('reverse', n='{}fkIk_rev'.format(self._prefix))
         moduleCtrl.ik >> self.__ikSystem.topGrp().visibility
@@ -294,6 +294,8 @@ class TwoBoneLimb(Module):
             pvLineDecMtx = self.__ikSystem.joints()[1].worldMatrix.outputs(type='decomposeMatrix')[0]
             moduleTwistCtrl.worldMatrix >> pvLineDecMtx.inputMatrix
             pm.parent(moduleTwistCtrl.zeroGrp(), self.__controllerGrp)
+            moduleTwistCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
+            moduleCtrl.bendCtrlVis >> moduleTwistCtrl.zeroGrp().visibility
             self._controllers.append(moduleTwistCtrl)
 
             upAxis = list(set(['X', 'Y', 'Z']) - set(self._aimAxis))[0]

@@ -20,7 +20,8 @@ class Module(Container):
         self._outGrp = None
         self._systemGrp = None
 
-        self._skelJoints = [pm.PyNode(jnt) for jnt in skeletonJoints] if skeletonJoints else None
+        self._skelJoints = [pm.PyNode(jnt) for jnt in skeletonJoints]
+        self._skelJoints.sort(key=lambda jnt: len(jnt.getAllParents()))
         self._initSkelLocators = None
         self._oriPlaneLocators = None
         self._orientPlane = None
@@ -163,7 +164,7 @@ class Module(Container):
             if utils.isParallel(aimVector, midOriPlaneLocVector) or round(midOriPlaneLocVector.length()) == 0.0:
                 midOriPlaneLocVector = pm.dt.Vector.zAxis
                 if self.__class__.__name__ == 'String':
-                    midOriPlaneLocVector = pm.dt.Vector.xNegAxis
+                    midOriPlaneLocVector = pm.dt.Vector.xAxis
             midLocPos = utils.getWorldPoint(midInitSkelLoc) + (midOriPlaneLocVector.normal() * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
 
         midLoc = pm.spaceLocator(n='{}mid_oriPlane_loc'.format(self._prefix))
@@ -226,15 +227,16 @@ class Module(Container):
         self._initJoints = initJoints
 
     def symmeterizeGuide(self):
-        searchStr = '_L'
-        replaceStr = '_R'
-        if '_R' in self._prefix:
-            searchStr = '_R'
-            replaceStr = '_L'
+        searchStr = '_R'
+        replaceStr = '_L'
+        if '_L' in self._prefix:
+            searchStr = '_L'
+            replaceStr = '_R'
+
         for loc in self._oriPlaneLocators:
-            locPos = loc.getTranslation(space='world')
-            oppLoc = pm.PyNode(loc.replace(searchStr, replaceStr))
-            oppLoc.setTranslation((-locPos[0], locPos[1], locPos[2]), space='world')
+            symLoc = pm.PyNode(loc.replace(searchStr, replaceStr))
+            symLocPos = symLoc.getTranslation(space='world')
+            loc.setTranslation((-symLocPos[0], symLocPos[1], symLocPos[2]), space='world')
 
     def build(self):
         """Build module with joints and objects from the initialize step.
@@ -367,6 +369,7 @@ class Module(Container):
         else:
             parentSpace = utils.findClosestObject(pm.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints())
         pm.matchTransform(self._topGrp, parentSpace, pivots=True)
+        utils.removeConnections(self._topGrp)
         pm.parentConstraint(parentSpace, self._topGrp, mo=True)
         parentSpace.scale >> self._topGrp.scale
         for outJnt in self._outJoints:

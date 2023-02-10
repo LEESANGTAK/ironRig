@@ -34,6 +34,14 @@ class TwoBoneIK(System):
 
     def _buildSystems(self):
         super(TwoBoneIK, self)._buildSystems()
+
+        orientY = self._joints[1].jointOrientY.get()
+        if abs(orientY) <= 0.02:  # IK does not working if jointOrient has too small value in case straight joint chain
+            if orientY > 0:
+                self._joints[1].preferredAngleY.set(90)
+            elif orientY < 0:
+                self._joints[1].preferredAngleY.set(-90)
+
         self.__ikHandle = pm.ikHandle(startJoint=self._joints[0], endEffector=self._joints[-1], solver='ikRPsolver', n='{}ikh'.format(self._prefix))[0]
         self.__ikHandleLoc = pm.spaceLocator(n='{}_zero'.format(self.__ikHandle))
         pm.matchTransform(self.__ikHandleLoc, self.__ikHandle)

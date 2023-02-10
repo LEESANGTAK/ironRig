@@ -302,7 +302,7 @@ class ThreeBoneLimb(Module):
         pm.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         pm.matchTransform(moduleCtrl.zeroGrp(), self.__blendJoints[-1], position=True)
         pm.parentConstraint(self.__blendJoints[-1], moduleCtrl.zeroGrp(), mo=True)
-        moduleCtrl.shapeOffset = [0, 0, self._aimSign*-2]
+        moduleCtrl.shapeOffset = pm.dt.Vector.zNegAxis * 10
 
         fkIkRev = pm.createNode('reverse', n='{}fkIk_rev'.format(self._prefix))
         moduleCtrl.ik >> self.__ikSystem.topGrp().visibility
@@ -324,8 +324,9 @@ class ThreeBoneLimb(Module):
             oCnst = pm.orientConstraint(self.__blendJoints[0], self.__blendJoints[1], moduleFirstTwistCtrl.zeroGrp(), mo=False)
             oCnst.interpType.set(2)
             pm.parent(moduleFirstTwistCtrl.zeroGrp(), self.__controllerGrp)
-            self._controllers.append(moduleFirstTwistCtrl)
             moduleFirstTwistCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
+            moduleCtrl.bendCtrlVis >> moduleFirstTwistCtrl.zeroGrp().visibility
+            self._controllers.append(moduleFirstTwistCtrl)
 
             pvLineDecMtx = self.__ikSystem.joints()[1].worldMatrix.outputs(type='decomposeMatrix')[0]
             moduleFirstTwistCtrl.worldMatrix >> pvLineDecMtx.inputMatrix
@@ -336,8 +337,9 @@ class ThreeBoneLimb(Module):
             oCnst = pm.orientConstraint(self.__blendJoints[1], self.__blendJoints[2], moduleSecondTwistCtrl.zeroGrp(), mo=False)
             oCnst.interpType.set(2)
             pm.parent(moduleSecondTwistCtrl.zeroGrp(), self.__controllerGrp)
-            self._controllers.append(moduleSecondTwistCtrl)
             moduleSecondTwistCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
+            moduleCtrl.bendCtrlVis >> moduleSecondTwistCtrl.zeroGrp().visibility
+            self._controllers.append(moduleSecondTwistCtrl)
 
             upAxis = list(set(['X', 'Y', 'Z']) - set(self._aimAxis))[0]
             if self.__firstLimbTwistSystem:

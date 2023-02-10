@@ -50,7 +50,7 @@ class SplineIK(System):
 
     def __createCurveWithJoints(self):
         editPoints = [pm.xform(jnt, q=True, rp=True, ws=True) for jnt in self._joints]
-        crv = pm.curve(d=self.__curveDegree, editPoint=editPoints, n='{}crv'.format(self._prefix))
+        crv = pm.curve(d=1, editPoint=editPoints, n='{}crv'.format(self._prefix))
         spans = self.__numControllers-1
         if self.__curveSpans:
             spans = self.__curveSpans

@@ -3,7 +3,6 @@ from ... import utils
 from ..irGlobal import Controller
 from ..irSystem import FK
 from ..irSystem import RevFootIK
-from ..irSystem import TwoBoneIK
 from .module import Module
 from .twoBoneLimb import TwoBoneLimb
 from .threeBoneLimb import ThreeBoneLimb
@@ -12,6 +11,8 @@ from .threeBoneLimb import ThreeBoneLimb
 class Foot(Module):
     def __init__(self, prefix='', joints=[]):
         super(Foot, self).__init__(prefix, joints)
+
+        self.__pivotLocators = ['in_loc', 'out_loc', 'heel_loc', 'tip_loc']
 
         self.__ikSystem = None
         self.__fkSystem = None
@@ -37,6 +38,12 @@ class Foot(Module):
 
         return midLoc
 
+    def preBuild(self):
+        super(Foot, self).preBuild()
+        for pivotLoc in self.__pivotLocators:
+            pm.spaceLocator(n=pivotLoc)
+        pm.parent(self.__pivotLocators, self._initGrp)
+
     def build(self):
         super(Foot, self).build()
         self.__buildControls()
@@ -48,7 +55,7 @@ class Foot(Module):
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = RevFootIK(self._prefix+'ik_', ikJoints)
+        self.__ikSystem = RevFootIK(self._prefix+'ik_', ikJoints, self.__pivotLocators)
         if self._negateScaleX:
             self.__ikSystem.negateSclaeX = True
         self.__ikSystem.build()
