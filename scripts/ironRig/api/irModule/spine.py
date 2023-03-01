@@ -86,11 +86,16 @@ class Spine(Module):
         pelvisCtrl = Controller('pelvis_ctrl', Controller.SHAPE.CUBE)
         pm.matchTransform(pelvisCtrl.zeroGrp(), self.__ikSystem.joints()[1], position=True, rotation=True)
         pm.parentConstraint(pelvisCtrl, self.__ikSystem.controllers()[0], mo=True)
-        shapeOffset = utils.getDistance(self.__ikSystem.joints()[0], self.__ikSystem.joints()[1]) * (-self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis()))
-        pelvisCtrl.shapeOffset = shapeOffset
+        pelvisCtrl.shapeOffset = utils.getDistance(self.__ikSystem.joints()[0], self.__ikSystem.joints()[1]) * (-self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis()))
         pm.parent(pelvisCtrl.zeroGrp(), self.__controllerGrp)
         pelvisCtrl.lockHideChannels(['scale', 'visibility'])
         self._controllers.append(pelvisCtrl)
         self.addMembers(pelvisCtrl.controllerNode())
-        shapeOffset = -(self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis())) * utils.getDistance(self.__ikSystem.joints()[int(len(self.__ikSystem.joints())*0.5)], self.__ikSystem.joints()[0])
-        pelvisCtrl.shapeOffset = shapeOffset
+        pelvisCtrl.shapeOffset = -(self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis())) * utils.getDistance(self.__ikSystem.joints()[int(len(self.__ikSystem.joints())*0.5)], self.__ikSystem.joints()[0])
+
+        upBodyCtrl = Controller('upBody_ctrl', Controller.SHAPE.ARROW_QUAD, direction=Controller.DIRECTION.Y)
+        pm.matchTransform(upBodyCtrl.zeroGrp(), self._initJoints[0], position=True)
+        pm.parent(self._topGrp.getChildren(), upBodyCtrl)
+        self._topGrp | upBodyCtrl.zeroGrp()
+        self._controllers.append(upBodyCtrl)
+        self.addMembers(upBodyCtrl.controllerNode())

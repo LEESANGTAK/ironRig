@@ -49,7 +49,14 @@ class Master(Container):
         for module in modules:
             if not module in self._modules:
                 self._modules.append(module)
-                module.parent = self
+                module.master = self
+
+    def removeModules(self, *args):
+        modules = sum([module if isinstance(module, list) else [module] for module in args], [])
+        for module in modules:
+            if module in self._modules:
+                self._modules.remove(module)
+                module.master = None
 
     def build(self):
         self._buildSystems()
@@ -82,6 +89,7 @@ class Master(Container):
 
     def remove(self):
         for module in self._modules:
+            print(module)
             module.remove()
         for master in self._masters:
             master.remove()

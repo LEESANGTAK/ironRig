@@ -4,16 +4,14 @@ from .master import Master
 
 
 class GlobalMaster(Master):
-    def __init__(self, prefix='controlRig_', rootJoint=None, cogJoint=None):
+    def __init__(self, rootJoint=None):
         self.__mastersGrp = None
 
-        super(GlobalMaster, self).__init__(prefix)
+        super(GlobalMaster, self).__init__(prefix='controlRig_',)
 
         self.__rootJoint = pm.PyNode(rootJoint)
-        self.__cogJoint = pm.PyNode(cogJoint) if cogJoint else self.__rootJoint
         self.__globalController = None
         self.__mainController = None
-        self.__cogController = None
 
     def mainController(self):
         return self.__mainController
@@ -23,6 +21,7 @@ class GlobalMaster(Master):
         for module in modules:
             self.set().forceElement(module.set())
             self._modulesGrp | module.topGrp()
+            module.master = self
         self._modules.extend(modules)
 
     def addMasters(self, *args):
@@ -34,7 +33,7 @@ class GlobalMaster(Master):
 
     def build(self):
         super(GlobalMaster, self).build()
-        pm.parent([self._modulesGrp, self.__mastersGrp], self.__cogController)
+        pm.parent([self._modulesGrp, self.__mastersGrp], self.__mainController)
 
         for jnt in self.__rootJoint.getChildren(type='joint'):
             jnt.segmentScaleCompensate.set(False)
@@ -56,20 +55,15 @@ class GlobalMaster(Master):
         self.__globalController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.__mainController = Controller(name='main_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
         self.__mainController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
-        self.__cogController = Controller(name='cog_ctrl', shape=Controller.SHAPE.ARROW_QUAD, color=self._controllerColor, direction=Controller.DIRECTION.Y)
-        pm.matchTransform(self.__cogController.zeroGrp(), self.__cogJoint, position=True)
-        self._controllers = [self.__globalController, self.__mainController, self.__cogController]
-        self.__cogController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
-        if self.__cogJoint:
-            pm.parentConstraint(self.__cogController, self.__cogJoint, mo=True)
+        self._controllers = [self.__globalController, self.__mainController]
 
-        self.__globalController | self.__mainController | self.__cogController
+        self.__globalController | self.__mainController
         pm.parent(self.__globalController.zeroGrp(), self._topGrp)
 
-        self.__globalController.scale >> self.__rootJoint.scale
         pm.parentConstraint(self.__mainController, self.__rootJoint, mo=True)
+        self.__globalController.scale >> self.__rootJoint.scale
 
-        self.addMembers(self.__globalController.controllerNode(), self.__mainController.controllerNode(), self.__cogController.controllerNode())
+        self.addMembers(self.__globalController.controllerNode(), self.__mainController.controllerNode())
 
     def postBuild(self):
         super(GlobalMaster, self).postBuild()

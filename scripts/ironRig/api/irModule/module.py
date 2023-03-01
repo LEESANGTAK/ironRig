@@ -40,6 +40,8 @@ class Module(Container):
         self._controllerSize = 1
         self._controllerColor = Controller.COLOR.YELLOW
 
+        self.__master = None
+
     @property
     def skelJoints(self):
         return self._skelJoints
@@ -85,6 +87,14 @@ class Module(Container):
     @controllerColor.setter
     def controllerColor(self, color):
         self._controllerColor = color
+
+    @property
+    def master(self):
+        return self.__master
+
+    @master.setter
+    def master(self, master):
+        self.__master = master
 
     def preBuild(self):
         """Build initial joints and objects(locator, mesh, ...) from skeleton joints.
@@ -320,8 +330,10 @@ class Module(Container):
         for sysJnt, outJnt in zip(self._sysJoints, self._outJoints):
             pm.pointConstraint(sysJnt, outJnt, mo=True)
             pm.orientConstraint(sysJnt, outJnt, mo=True)
+
             scaleMult = pm.createNode('multiplyDivide', n='{}_scale_mult'.format(outJnt))
             sysJnt.scale >> scaleMult.input1
+            self._topGrp.scale >> scaleMult.input2
             for axis in 'XYZ':
                 scaleMult.attr('output'+axis) >> outJnt.attr('scale'+axis)
             self.addMembers(scaleMult)
@@ -372,9 +384,6 @@ class Module(Container):
         utils.removeConnections(self._topGrp)
         pm.parentConstraint(parentSpace, self._topGrp, mo=True)
         parentSpace.scale >> self._topGrp.scale
-        for outJnt in self._outJoints:
-            scaleMult = outJnt.inputs(type='multiplyDivide')[0]
-            parentSpace.scale >> scaleMult.input2
 
     def remove(self):
         """Remove all nodes realted with a module.
@@ -385,7 +394,10 @@ class Module(Container):
                 for attrStr in attrs:
                     outJnt.attr(attrStr).disconnect()
             for skelJnt in self._skelJoints:
-                skelJnt.scale.set(1.0, 1.0, 1.0)
+                try:
+                    skelJnt.scale.set(1.0, 1.0, 1.0)
+                except:
+                    pass
 
         if self._systems:
             for system in self._systems:
@@ -394,3 +406,6 @@ class Module(Container):
         self._systems = []
         self._controllers = []
         super(Module, self).remove()
+
+        if self.__master:
+            self.__master.removeModules(self)
