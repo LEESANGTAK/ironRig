@@ -27,6 +27,7 @@ class Shape:
     FOOT = os.path.join(CONTROLLER_DIR, 'foot.json')
     ROOT = os.path.join(CONTROLLER_DIR, 'root.json')
     ARROW_QUAD = os.path.join(CONTROLLER_DIR, 'arrowQuad.json')
+    PYRAMID = os.path.join(CONTROLLER_DIR, 'pyramid.json')
 
 
 class Color:
@@ -43,9 +44,9 @@ class Color:
 
 
 class Direction:
-    X = [1.0, 0.0, 0.0]
-    Y = [0.0, 1.0, 0.0]
-    Z = [0.0, 0.0, 1.0]
+    X = 0
+    Y = 1
+    Z = 2
 
 
 class Controller(object):
@@ -56,19 +57,19 @@ class Controller(object):
     COLOR = Color
     DIRECTION = Direction
     ROTATE_MATRIX_INFO = {
-        str(Direction.X): pm.dt.Matrix(
+        Direction.X: pm.dt.Matrix(
             [0, -1, 0, 0],
             [1, 0, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1]
         ),
-        str(Direction.Y): pm.dt.Matrix(
+        Direction.Y: pm.dt.Matrix(
             [1, 0, 0, 0],
             [0, 1, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1]
         ),
-        str(Direction.Z): pm.dt.Matrix(
+        Direction.Z: pm.dt.Matrix(
             [1, 0, 0, 0],
             [0, 0, 1, 0],
             [0, -1, 0, 0],
@@ -189,7 +190,7 @@ class Controller(object):
     def __transformCurve(self):
         for shape, cvsPos in self.__initCVsPosInfo.items():
             for i, cvPos in enumerate(cvsPos):
-                shape.cv[i].setPosition(pm.dt.Vector(cvPos) * self.__size * Controller.ROTATE_MATRIX_INFO[str(self.__direction)] + pm.dt.Vector(self.__shapeOffset))
+                shape.cv[i].setPosition(pm.dt.Vector(cvPos) * self.__size * Controller.ROTATE_MATRIX_INFO[self.__direction] + pm.dt.Vector(self.__shapeOffset))
             shape.updateCurve()
 
     def __initController(self):

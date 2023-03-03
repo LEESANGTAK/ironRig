@@ -17,8 +17,8 @@ class System(Container):
 
         self._aimSign = None
         self._aimAxis = None
-        self._joints = [pm.PyNode(jnt) for jnt in joints]
         self._negateScaleX = False
+        self._joints = [pm.PyNode(jnt) for jnt in joints] if joints else []
         self._controllers = []
 
         self.__controllerColor = Controller.COLOR.YELLOW
