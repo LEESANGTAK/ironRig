@@ -5,9 +5,9 @@ from ironRig.api import irMaster
 from ironRig.api import irModule
 
 
-globalMst = irMaster.GlobalMaster(skeletonRoot='root', cogJoint='Root_M1')
+globalMst = irMaster.GlobalMaster('root')
 globalMst.build()
-globalMst.controllerScale = 50
+globalMst.controllerSize = 50
 globalMst.postBuild()
 #globalMst.remove()
 
@@ -22,7 +22,7 @@ joints = [u'Root_M1',
 spineMod = irModule.Spine(prefix, joints)
 spineMod.preBuild()
 spineMod.build()
-spineMod.controllerScale = 15
+spineMod.controllerSize = 15
 spineMod.postBuild()
 globalMst.addModules(spineMod)
 #spineMod.remove()
@@ -33,7 +33,7 @@ neckMod = irModule.Neck(prefix, joints)
 neckMod.preBuild()
 neckMod.numControllers = 3
 neckMod.build()
-neckMod.controllerScale = 10
+neckMod.controllerSize = 10
 neckMod.postBuild()
 neckMod.attachTo(spineMod)
 globalMst.addModules(neckMod)
@@ -65,7 +65,7 @@ eyeLMod = irModule.Eye(prefix, joints)
 eyeLMod.preBuild()
 eyeLMod.build()
 eyeLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-eyeLMod.controllerScale = 2
+eyeLMod.controllerSize = 2
 eyeLMod.postBuild()
 #eyeLMod.remove()
 
@@ -76,7 +76,7 @@ eyeRMod = irModule.Eye(prefix, joints)
 eyeRMod.preBuild()
 eyeRMod.build()
 eyeRMod.controllerColor = irGlobal.Controller.COLOR.RED
-eyeRMod.controllerScale = 2
+eyeRMod.controllerSize = 2
 eyeRMod.postBuild()
 #eyeRMod.remove()
 
@@ -95,7 +95,7 @@ claLMod = irModule.Clavicle(prefix, joints)
 claLMod.preBuild()
 claLMod.build()
 claLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-claLMod.controllerScale = 20
+claLMod.controllerSize = 20
 claLMod.postBuild()
 claLMod.attachTo(spineMod)
 globalMst.addModules(claLMod)
@@ -108,7 +108,7 @@ claRMod.preBuild()
 claRMod.negateScaleX = True
 claRMod.build()
 claRMod.controllerColor = irGlobal.Controller.COLOR.RED
-claRMod.controllerScale = 20
+claRMod.controllerSize = 20
 claRMod.postBuild()
 claRMod.attachTo(spineMod)
 globalMst.addModules(claRMod)
@@ -120,7 +120,7 @@ armLMod = irModule.TwoBoneLimb(prefix, joints)
 armLMod.preBuild()
 armLMod.build()
 armLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-armLMod.controllerScale = 7
+armLMod.controllerSize = 7
 armLMod.postBuild()
 armLMod.attachTo(claLMod)
 globalMst.addModules(armLMod)
@@ -133,7 +133,7 @@ armRMod.preBuild()
 armRMod.negateScaleX = True
 armRMod.build()
 armRMod.controllerColor = irGlobal.Controller.COLOR.RED
-armRMod.controllerScale = 7
+armRMod.controllerSize = 7
 armRMod.postBuild()
 armRMod.attachTo(claRMod)
 globalMst.addModules(armRMod)
@@ -145,7 +145,7 @@ legLMod = irModule.TwoBoneLimb(prefix, joints)
 legLMod.preBuild()
 legLMod.build()
 legLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-legLMod.controllerScale = 7
+legLMod.controllerSize = 7
 legLMod.postBuild()
 legLMod.attachTo(spineMod)
 globalMst.addModules(legLMod)
@@ -158,7 +158,7 @@ legRMod.preBuild()
 legRMod.negateScaleX = True
 legRMod.build()
 legRMod.controllerColor = irGlobal.Controller.COLOR.RED
-legRMod.controllerScale = 7
+legRMod.controllerSize = 7
 legRMod.postBuild()
 legRMod.attachTo(spineMod)
 globalMst.addModules(legRMod)
@@ -170,7 +170,7 @@ footLMod = irModule.Foot(prefix, joints)
 footLMod.preBuild()
 footLMod.build()
 footLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-footLMod.controllerScale = 7
+footLMod.controllerSize = 7
 footLMod.postBuild()
 footLMod.attachTo(legLMod)
 globalMst.addModules(footLMod)
@@ -183,7 +183,7 @@ footRMod.preBuild()
 footRMod.negateScaleX = True
 footRMod.build()
 footRMod.controllerColor = irGlobal.Controller.COLOR.RED
-footRMod.controllerScale = 7
+footRMod.controllerSize = 7
 footRMod.postBuild()
 footRMod.attachTo(legRMod)
 globalMst.addModules(footRMod)
@@ -201,7 +201,7 @@ thumbLMod = irModule.Finger(prefix, joints)
 thumbLMod.preBuild()
 thumbLMod.build()
 thumbLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-thumbLMod.controllerScale = 2
+thumbLMod.controllerSize = 2
 thumbLMod.postBuild()
 #thumbLMod.remove()
 
@@ -214,7 +214,7 @@ indexLMod = irModule.Finger(prefix, joints)
 indexLMod.preBuild()
 indexLMod.build()
 indexLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-indexLMod.controllerScale = 2
+indexLMod.controllerSize = 2
 indexLMod.postBuild()
 #indexLMod.remove()
 
@@ -227,7 +227,7 @@ middleLMod = irModule.Finger(prefix, joints)
 middleLMod.preBuild()
 middleLMod.build()
 middleLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-middleLMod.controllerScale = 2
+middleLMod.controllerSize = 2
 middleLMod.postBuild()
 #middleLMod.remove()
 
@@ -240,7 +240,7 @@ ringLMod = irModule.Finger(prefix, joints)
 ringLMod.preBuild()
 ringLMod.build()
 ringLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-ringLMod.controllerScale = 2
+ringLMod.controllerSize = 2
 ringLMod.postBuild()
 #ringLMod.remove()
 
@@ -253,7 +253,7 @@ pinkyLMod = irModule.Finger(prefix, joints)
 pinkyLMod.preBuild()
 pinkyLMod.build()
 pinkyLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-pinkyLMod.controllerScale = 2
+pinkyLMod.controllerSize = 2
 pinkyLMod.postBuild()
 #pinkyLMod.remove()
 
@@ -277,7 +277,7 @@ thumbRMod.preBuild()
 thumbRMod.negateScaleX = True
 thumbRMod.build()
 thumbRMod.controllerColor = irGlobal.Controller.COLOR.RED
-thumbRMod.controllerScale = 2
+thumbRMod.controllerSize = 2
 thumbRMod.postBuild()
 #thumbRMod.remove()
 
@@ -291,7 +291,7 @@ indexRMod.preBuild()
 indexRMod.negateScaleX = True
 indexRMod.build()
 indexRMod.controllerColor = irGlobal.Controller.COLOR.RED
-indexRMod.controllerScale = 2
+indexRMod.controllerSize = 2
 indexRMod.postBuild()
 #indexRMod.remove()
 
@@ -305,7 +305,7 @@ middleRMod.preBuild()
 middleRMod.negateScaleX = True
 middleRMod.build()
 middleRMod.controllerColor = irGlobal.Controller.COLOR.RED
-middleRMod.controllerScale = 2
+middleRMod.controllerSize = 2
 middleRMod.postBuild()
 #middleRMod.remove()
 
@@ -319,7 +319,7 @@ ringRMod.preBuild()
 ringRMod.negateScaleX = True
 ringRMod.build()
 ringRMod.controllerColor = irGlobal.Controller.COLOR.RED
-ringRMod.controllerScale = 2
+ringRMod.controllerSize = 2
 ringRMod.postBuild()
 #ringRMod.remove()
 
@@ -333,7 +333,7 @@ pinkyRMod.preBuild()
 pinkyRMod.negateScaleX = True
 pinkyRMod.build()
 pinkyRMod.controllerColor = irGlobal.Controller.COLOR.RED
-pinkyRMod.controllerScale = 2
+pinkyRMod.controllerSize = 2
 pinkyRMod.postBuild()
 #pinkyRMod.remove()
 

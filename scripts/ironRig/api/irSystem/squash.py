@@ -48,13 +48,16 @@ class Squash(System):
         ffdtopPos = pm.xform(self.__ffd.pt[2][4][2], q=True, t=True, ws=True)
         pm.xform(ctrl.zeroGrp(), t=ffdtopPos, ws=True)
         ctrl.shapeOffset = [0.0, 4.0, 0.0]
+        ctrl.lockHideChannels(['rotate', 'scale', 'visibility'])
 
         squashScalerMult = pm.createNode('multDoubleLinear', n='{}squash_mult'.format(self._prefix))
-        squashScalerMult.input2.set(0.017)
         ctrl.ty >> squashScalerMult.input1
         cmds.connectAttr('{}.output'.format(squashScalerMult), '{}.factor'.format(self.__squashHandle))
         cmds.connectAttr('{}.tx'.format(ctrl), '{}.curvature'.format(self.__sideBendHandle))
         cmds.connectAttr('{}.tz'.format(ctrl), '{}.curvature'.format(self.__forwardBendHandle))
+        squashScalerMult.input2.set(0.05)
+        ctrl.tx.outputs()[0].conversionFactor.set(0.05)
+        ctrl.tz.outputs()[0].conversionFactor.set(0.05)
 
         self._controllerGrp | ctrl.zeroGrp()
         self._controllers.append(ctrl)
