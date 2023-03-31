@@ -207,10 +207,17 @@ def getInbetweenJoints(startJoint, endJoint):
     return inbJoints
 
 
-def axisToVector(axis):
+def axisStrToVector(axis):
     axisTable = {'X': pm.dt.Vector(1, 0, 0),
                  'Y': pm.dt.Vector(0, 1, 0),
                  'Z': pm.dt.Vector(0, 0, 1)}
+    return axisTable[axis]
+
+
+def axisStrToEnum(axis):
+    axisTable = {'X': 0,
+                 'Y': 1,
+                 'Z': 2}
     return axisTable[axis]
 
 
@@ -542,11 +549,20 @@ def cleanupRig():
     for privateGrp in privateGrps:
         privateGrp.hide()
 
+    # Hide secondary and tertiary controllers
+    try:
+        pm.ls('*.extraCtrlVis')[0].set(False)
+        pm.ls('*.facialCtrlVis')[0].set(False)
+    except:
+        pass
+
     hideJoints()
 
+    # Convert multiRemap nodes to maya node networks
     multiRemapNodes = pm.ls(type='multiRemapValue')
-    for multiRemapNode in multiRemapNodes:
-        convertMultiRemapToMayaRemap(multiRemapNode)
+    if multiRemapNodes:
+        for multiRemapNode in multiRemapNodes:
+            convertMultiRemapToMayaRemap(multiRemapNode)
 
 
 def cleanupControllers():

@@ -12,7 +12,7 @@ class Foot(Module):
     def __init__(self, prefix='', joints=[]):
         super(Foot, self).__init__(prefix, joints)
 
-        self.__pivotLocators = ['in_loc', 'out_loc', 'heel_loc', 'tip_loc']
+        self.__pivotLocators = ['{}in_loc'.format(self._prefix), '{}out_loc'.format(self._prefix), '{}heel_loc'.format(self._prefix), '{}tip_loc'.format(self._prefix)]
 
         self.__ikSystem = None
         self.__fkSystem = None
@@ -111,7 +111,6 @@ class Foot(Module):
             pm.pointConstraint(self.__ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
             # Connect ik controllers
             pm.parentConstraint(module.ikSystem().controllers()[0], self.__ikSystem.controllers()[0], mo=True)
-            print(self.__ikSystem.controllers()[0])
             utils.cloneUserDefinedAttrs(self.__ikSystem.controllers()[0], module.ikSystem().controllers()[0])
             self.__ikSystem.controllers()[0].hide()
             # Connect fk controllers

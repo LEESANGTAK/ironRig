@@ -20,24 +20,23 @@ class Squash(System):
 
     def _buildSystems(self):
         ffdNodes = pm.lattice(self.__vertices, dv=(5, 5, 5), oc=True, n='{}ffd'.format(self._prefix))
-        # ffdNodes[0].outsideLattice.set(1)
-        ffdBottomYPos = pm.xform(ffdNodes[1].pt[2][0][2], q=True, t=True, ws=True)[1]
         self.__ffd = ffdNodes[1]
+        ffdBottomYPos = pm.xform(self.__ffd.pt[2][0][2], q=True, t=True, ws=True)[1]
 
-        squash, self.__squashHandle = cmds.nonLinear(ffdNodes[1].name(), type='squash', n='{}squash'.format(self._prefix))
+        squash, self.__squashHandle = cmds.nonLinear(self.__ffd.name(), type='squash', n='{}squash'.format(self._prefix))
         cmds.setAttr('{}.lowBound'.format(squash), 0)
         cmds.setAttr('{}.highBound'.format(squash), 2)
-        cmds.matchTransform(self.__squashHandle, ffdNodes[1].name(), scale=True)
+        cmds.matchTransform(self.__squashHandle, self.__ffd.name(), scale=True)
         cmds.setAttr('{}.ty'.format(self.__squashHandle), ffdBottomYPos)
 
-        sideBend, self.__sideBendHandle = cmds.nonLinear(ffdNodes[1].name(), type='bend', n='{}side_bend'.format(self._prefix))
+        sideBend, self.__sideBendHandle = cmds.nonLinear(self.__ffd.name(), type='bend', n='{}side_bend'.format(self._prefix))
         cmds.setAttr('{}.lowBound'.format(sideBend), 0)
-        cmds.matchTransform(self.__sideBendHandle, ffdNodes[1].name(), scale=True)
+        cmds.matchTransform(self.__sideBendHandle, self.__ffd.name(), scale=True)
         cmds.setAttr('{}.ty'.format(self.__sideBendHandle), ffdBottomYPos)
 
-        forwardBend, self.__forwardBendHandle = cmds.nonLinear(ffdNodes[1].name(), type='bend', n='{}forward_bend'.format(self._prefix))
+        forwardBend, self.__forwardBendHandle = cmds.nonLinear(self.__ffd.name(), type='bend', n='{}forward_bend'.format(self._prefix))
         cmds.setAttr('{}.lowBound'.format(forwardBend), 0)
-        cmds.matchTransform(self.__forwardBendHandle, ffdNodes[1].name(), scale=True)
+        cmds.matchTransform(self.__forwardBendHandle, self.__ffd.name(), scale=True)
         cmds.setAttr('{}.ty'.format(self.__forwardBendHandle), ffdBottomYPos)
         cmds.setAttr('{}.ry'.format(self.__forwardBendHandle), -90)
 
@@ -45,8 +44,8 @@ class Squash(System):
 
     def _buildControls(self):
         ctrl = Controller('{}ctrl'.format(self._prefix), Controller.SHAPE.PYRAMID, Controller.COLOR.GREEN, direction=Controller.DIRECTION.Y)
-        ffdtopPos = pm.xform(self.__ffd.pt[2][4][2], q=True, t=True, ws=True)
-        pm.xform(ctrl.zeroGrp(), t=ffdtopPos, ws=True)
+        ffdTopPos = pm.xform(self.__ffd.pt[2][4][2], q=True, t=True, ws=True)
+        pm.xform(ctrl.zeroGrp(), t=ffdTopPos, ws=True)
         ctrl.shapeOffset = [0.0, 4.0, 0.0]
         ctrl.lockHideChannels(['rotate', 'scale', 'visibility'])
 

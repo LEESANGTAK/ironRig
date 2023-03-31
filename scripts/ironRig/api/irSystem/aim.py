@@ -45,7 +45,7 @@ class Aim(System):
 
         pm.aimConstraint(self.__aimLoc,
                          self._joints[0],
-                         aimVector=self._aimSign*utils.axisToVector(self._aimAxis),
+                         aimVector=self._aimSign*utils.axisStrToVector(self._aimAxis),
                          upVector=[0, 1, 0],
                          worldUpType='object',
                          worldUpObject=upLoc)

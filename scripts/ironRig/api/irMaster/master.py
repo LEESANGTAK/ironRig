@@ -89,7 +89,6 @@ class Master(Container):
 
     def remove(self):
         for module in self._modules:
-            print(module)
             module.remove()
         for master in self._masters:
             master.remove()

@@ -1,6 +1,6 @@
 # What is the iron rig?
-- Minimizing guide placement process
 - Module based control rig build system on top of a skeleton
+- Minimizing guide placement process
 - Module recive prefix string and skeleton joints to build systems
 - Control rig completed with connecting modules
 - Friendly to parallel evaluation
@@ -14,3 +14,4 @@
 - Adding wing module
 - Adding facial modules (e.g. Brow, Lid, Lip, ...)
 - Adding milliped module for creatures who has a bunch of legs
+- Building node editor GUI

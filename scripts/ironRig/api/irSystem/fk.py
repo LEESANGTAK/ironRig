@@ -26,7 +26,7 @@ class FK(System):
             if jnt == self._joints[-1] and not self.__endController:
                 break
             ctrl = Controller('{}_ctrl'.format(jnt))
-            ctrl.direction = utils.axisToVector(self._aimAxis)
+            ctrl.direction = utils.axisStrToEnum(self._aimAxis)
             pm.matchTransform(ctrl.zeroGrp(), jnt, position=True, rotation=True)
             if self._negateScaleX and utils.getWorldPoint(ctrl).x < 0.0:
                 ctrl.zeroGrp().sx.set(-1)

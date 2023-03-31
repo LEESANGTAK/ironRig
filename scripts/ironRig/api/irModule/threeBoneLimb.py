@@ -347,10 +347,10 @@ class ThreeBoneLimb(Module):
                 pm.parentConstraint(moduleFirstTwistCtrl, self.__firstLimbTwistSystem.controllers()[-1].zeroGrp(), mo=True)
                 pm.aimConstraint(moduleFirstTwistCtrl,
                                 self.__firstLimbTwistSystem.controllers()[1].zeroGrp(),
-                                aimVector=self._aimSign * utils.axisToVector(self._aimAxis),
-                                upVector=utils.axisToVector(upAxis),
+                                aimVector=self._aimSign * utils.axisStrToVector(self._aimAxis),
+                                upVector=utils.axisStrToVector(upAxis),
                                 worldUpType='objectrotation',
-                                worldUpVector=utils.axisToVector(upAxis),
+                                worldUpVector=utils.axisStrToVector(upAxis),
                                 worldUpObject=moduleFirstTwistCtrl)
             if self.__secondLimbTwistSystem:
                 moduleCtrl.bendCtrlVis >> self.__secondLimbTwistSystem.topGrp().visibility
@@ -358,20 +358,20 @@ class ThreeBoneLimb(Module):
                 pm.parentConstraint(moduleSecondTwistCtrl, self.__secondLimbTwistSystem.controllers()[-1].zeroGrp(), mo=True)
                 pm.aimConstraint(moduleFirstTwistCtrl,
                                 self.__secondLimbTwistSystem.controllers()[1].zeroGrp(),
-                                aimVector=-self._aimSign * utils.axisToVector(self._aimAxis),
-                                upVector=utils.axisToVector(upAxis),
+                                aimVector=-self._aimSign * utils.axisStrToVector(self._aimAxis),
+                                upVector=utils.axisStrToVector(upAxis),
                                 worldUpType='objectrotation',
-                                worldUpVector=utils.axisToVector(upAxis),
+                                worldUpVector=utils.axisStrToVector(upAxis),
                                 worldUpObject=moduleFirstTwistCtrl)
             if self.__thirdLimbTwistSystem:
                 moduleCtrl.bendCtrlVis >> self.__thirdLimbTwistSystem.topGrp().visibility
                 pm.parentConstraint(moduleSecondTwistCtrl, self.__thirdLimbTwistSystem.controllers()[0].zeroGrp(), mo=True)
                 pm.aimConstraint(moduleSecondTwistCtrl,
                                 self.__thirdLimbTwistSystem.controllers()[1].zeroGrp(),
-                                aimVector=-self._aimSign * utils.axisToVector(self._aimAxis),
-                                upVector=utils.axisToVector(upAxis),
+                                aimVector=-self._aimSign * utils.axisStrToVector(self._aimAxis),
+                                upVector=utils.axisStrToVector(upAxis),
                                 worldUpType='objectrotation',
-                                worldUpVector=utils.axisToVector(upAxis),
+                                worldUpVector=utils.axisStrToVector(upAxis),
                                 worldUpObject=moduleSecondTwistCtrl)
 
     def postBuild(self):
@@ -424,8 +424,8 @@ class ThreeBoneLimb(Module):
             pm.delete(tempPoleVectorLoc)
             pm.aimConstraint(
                 self.__ikSystem.ikHandleController(), aimLoc,
-                aimVector=self._aimSign*utils.axisToVector(self._aimAxis),
-                upVector=upAxisInfo[0]*utils.axisToVector(upAxisInfo[1]),
+                aimVector=self._aimSign*utils.axisStrToVector(self._aimAxis),
+                upVector=upAxisInfo[0]*utils.axisStrToVector(upAxisInfo[1]),
                 worldUpType='object',
                 worldUpObject=self.__ikSystem.poleVectorController(),
                 mo=True

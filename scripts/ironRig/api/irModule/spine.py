@@ -41,7 +41,7 @@ class Spine(Module):
         utils.removeConnections(self.__ikSystem.controllers()[1].zeroGrp())
         for ctrl in self.__ikSystem.controllers()[1:-1]:
             ctrl.shape = Controller.SHAPE.CIRCLE
-        shapeOffset = (self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis())) * utils.getDistance(self.__ikSystem.joints()[int(len(self.__ikSystem.joints())*0.5)], self.__ikSystem.joints()[-1])
+        shapeOffset = (self.__ikSystem.aimSign() * utils.axisStrToVector(self.__ikSystem.aimAxis())) * utils.getDistance(self.__ikSystem.joints()[int(len(self.__ikSystem.joints())*0.5)], self.__ikSystem.joints()[-1])
         self.__ikSystem.controllers()[-1].shapeOffset = shapeOffset
         self.addSystems(self.__ikSystem)
 
@@ -86,12 +86,12 @@ class Spine(Module):
         pelvisCtrl = Controller('pelvis_ctrl', Controller.SHAPE.CUBE)
         pm.matchTransform(pelvisCtrl.zeroGrp(), self.__ikSystem.joints()[1], position=True, rotation=True)
         pm.parentConstraint(pelvisCtrl, self.__ikSystem.controllers()[0], mo=True)
-        pelvisCtrl.shapeOffset = utils.getDistance(self.__ikSystem.joints()[0], self.__ikSystem.joints()[1]) * (-self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis()))
+        pelvisCtrl.shapeOffset = utils.getDistance(self.__ikSystem.joints()[0], self.__ikSystem.joints()[1]) * (-self.__ikSystem.aimSign() * utils.axisStrToVector(self.__ikSystem.aimAxis()))
         pm.parent(pelvisCtrl.zeroGrp(), self.__controllerGrp)
         pelvisCtrl.lockHideChannels(['scale', 'visibility'])
         self._controllers.append(pelvisCtrl)
         self.addMembers(pelvisCtrl.controllerNode())
-        pelvisCtrl.shapeOffset = -(self.__ikSystem.aimSign() * utils.axisToVector(self.__ikSystem.aimAxis())) * utils.getDistance(self.__ikSystem.joints()[int(len(self.__ikSystem.joints())*0.5)], self.__ikSystem.joints()[0])
+        pelvisCtrl.shapeOffset = -(self.__ikSystem.aimSign() * utils.axisStrToVector(self.__ikSystem.aimAxis())) * utils.getDistance(self.__ikSystem.joints()[int(len(self.__ikSystem.joints())*0.5)], self.__ikSystem.joints()[0])
 
         upBodyCtrl = Controller('upBody_ctrl', Controller.SHAPE.ARROW_QUAD, direction=Controller.DIRECTION.Y)
         pm.matchTransform(upBodyCtrl.zeroGrp(), self._initJoints[0], position=True)

@@ -5,7 +5,7 @@ Created: 10/15/2022
 
 Test codes:
 pluginName = 'orientPlane'
-testFile = r"C:\programs_env\maya\modules\takControlRig\test\testOrientPlaneNode.ma"
+testFile = r"C:\programs_env\maya\modules\ironRig\test\testOrientPlaneNode.ma"
 
 # Load plugin
 pm.openFile(testFile, f=True)

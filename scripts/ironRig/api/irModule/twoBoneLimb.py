@@ -304,10 +304,10 @@ class TwoBoneLimb(Module):
                 pm.parentConstraint(moduleTwistCtrl, self.__upperTwistSystem.controllers()[-1].zeroGrp(), mo=True)
                 pm.aimConstraint(moduleTwistCtrl,
                                 self.__upperTwistSystem.controllers()[1].zeroGrp(),
-                                aimVector=self._aimSign * utils.axisToVector(self._aimAxis),
-                                upVector=utils.axisToVector(upAxis),
+                                aimVector=self._aimSign * utils.axisStrToVector(self._aimAxis),
+                                upVector=utils.axisStrToVector(upAxis),
                                 worldUpType='objectrotation',
-                                worldUpVector=utils.axisToVector(upAxis),
+                                worldUpVector=utils.axisStrToVector(upAxis),
                                 worldUpObject=moduleTwistCtrl)
                 self.__upperTwistSystem.controllers()[-1].hide()
             if self.__lowerTwistSystem:
@@ -315,10 +315,10 @@ class TwoBoneLimb(Module):
                 pm.parentConstraint(moduleTwistCtrl, self.__lowerTwistSystem.controllers()[0].zeroGrp(), mo=True)
                 pm.aimConstraint(moduleTwistCtrl,
                                 self.__lowerTwistSystem.controllers()[1].zeroGrp(),
-                                aimVector=-self._aimSign * utils.axisToVector(self._aimAxis),
-                                upVector=utils.axisToVector(upAxis),
+                                aimVector=-self._aimSign * utils.axisStrToVector(self._aimAxis),
+                                upVector=utils.axisStrToVector(upAxis),
                                 worldUpType='objectrotation',
-                                worldUpVector=utils.axisToVector(upAxis),
+                                worldUpVector=utils.axisStrToVector(upAxis),
                                 worldUpObject=moduleTwistCtrl)
                 self.__lowerTwistSystem.controllers()[0].hide()
 
@@ -340,3 +340,47 @@ class TwoBoneLimb(Module):
             self.__lowerTwistSystem.controllerSize = self._controllerSize * 0.9
         if self.__upperTwistSystem or self.__lowerTwistSystem:
             self._controllers[1].size = self._controllerSize * 0.9
+
+    def attachTo(self, module):
+        if module.__class__.__name__ == 'LimbBase':
+            limbBaseCtrl = module.fkSystem().controllers()[0]
+
+            aimLoc = pm.spaceLocator(n='{}_aim_loc'.format(limbBaseCtrl))
+            staticLoc = pm.spaceLocator(n='{}_static_loc'.format(limbBaseCtrl))
+            for loc in [staticLoc, aimLoc]:
+                pm.matchTransform(loc, limbBaseCtrl.zeroGrp())
+            pm.parent([staticLoc, aimLoc], module.fkSystem().blackboxGrp())
+            cnst = pm.orientConstraint([aimLoc, staticLoc], limbBaseCtrl.zeroGrp(), mo=True)
+            cnst.interpType.set(2)
+
+            pm.addAttr(limbBaseCtrl, ln='aim', at='float', min=0.0, max=1.0, dv=0.5, keyable=True)
+            revNode = pm.createNode('reverse', n='{}_aim_rev'.format(limbBaseCtrl))
+            limbBaseCtrl.aim >> cnst.target[0].targetWeight
+            limbBaseCtrl.aim >> revNode.inputX
+            revNode.outputX >> cnst.target[1].targetWeight
+
+            tempPoleVectorLoc = pm.spaceLocator(n='tempPoleVector_loc')
+            tempPoleVectorLocPos = utils.getWorldPoint(limbBaseCtrl.zeroGrp()) + (utils.getWorldPoint(self.__ikSystem.poleVectorController()) - utils.getWorldPoint(self.__ikSystem.joints()[1]))
+            pm.xform(tempPoleVectorLoc, t=tempPoleVectorLocPos, ws=True)
+            upAxisInfo = utils.getAimAxisInfo(limbBaseCtrl.zeroGrp(), tempPoleVectorLoc)
+            pm.delete(tempPoleVectorLoc)
+            pm.aimConstraint(
+                self.__ikSystem.ikHandleController(), aimLoc,
+                aimVector=self._aimSign*utils.axisStrToVector(self._aimAxis),
+                upVector=upAxisInfo[0]*utils.axisStrToVector(upAxisInfo[1]),
+                worldUpType='object',
+                worldUpObject=self.__ikSystem.poleVectorController(),
+                mo=True
+            )
+
+            self.addMembers(revNode)
+
+            if self.__ikStartController:
+                ikStartObject = self.__ikSystem.controllers()[-1].zeroGrp()
+            else:
+                ikStartObject = self.__ikSystem.joints()[0].getParent()
+            pm.parentConstraint(module.outJoints()[-1], ikStartObject, mo=True)
+
+            pm.parentConstraint(module.outJoints()[-1], self.__fkSystem.controllers()[0].zeroGrp(), mo=True)
+        else:
+            super(TwoBoneLimb, self).attachTo(module)
