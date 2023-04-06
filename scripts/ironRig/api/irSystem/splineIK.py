@@ -44,7 +44,15 @@ class SplineIK(System):
     def _buildSystems(self):
         super(SplineIK, self)._buildSystems()
         self.__createCurveWithJoints()
+        # Store rotation of the end joint
+        endJntRo = pm.xform(self._joints[-1], q=True, ro=True, ws=True)
+
         self.__ikHandle = pm.ikHandle(name='{}ikh'.format(self._prefix), solver='ikSplineSolver', sj=self._joints[0], ee=self._joints[-1], curve=self.__curve, createCurve=False, parentCurve=False)[0]
+
+        # Restore end joint rotation after appling spline ik handle
+        pm.xform(self._joints[-1], ro=endJntRo, ws=True)
+        pm.makeIdentity(self._joints[-1], apply=True)
+
         pm.parent(self.__ikHandle, self._blbxGrp)
         self.__buildCurveBindJoints()
 
