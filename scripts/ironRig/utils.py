@@ -221,6 +221,25 @@ def axisStrToEnum(axis):
     return axisTable[axis]
 
 
+def getMeshesFromJoints(joints):
+    meshes = []
+    skinClusters = []
+
+    for jnt in joints:
+        jntSkinClusters = jnt.worldMatrix.outputs(type='skinCluster')
+        if jntSkinClusters:
+            skinClusters.extend(jntSkinClusters)
+    skinClusters = list(set(skinClusters))
+    if not skinClusters:
+        return meshes
+
+    for skinCluster in skinClusters:
+        meshes.extend(skinCluster.outputGeometry.outputs())
+    meshes = list(set(meshes))
+
+    return meshes
+
+
 def getAffectedVertices(joints, minWeight=0.1):
     preSels = pm.selected()
     pm.select(cl=True)
@@ -556,13 +575,12 @@ def cleanupRig():
     except:
         pass
 
-    hideJoints()
-
     # Convert multiRemap nodes to maya node networks
-    multiRemapNodes = pm.ls(type='multiRemapValue')
-    if multiRemapNodes:
-        for multiRemapNode in multiRemapNodes:
-            convertMultiRemapToMayaRemap(multiRemapNode)
+    if pm.pluginInfo('multiRemapValue', q=True, loaded=True):
+        multiRemapNodes = pm.ls(type='multiRemapValue')
+        if multiRemapNodes:
+            for multiRemapNode in multiRemapNodes:
+                convertMultiRemapToMayaRemap(multiRemapNode)
 
 
 def cleanupControllers():
@@ -575,7 +593,7 @@ def cleanupControllers():
 
     # Set default value
     for ctrlTrsf in ctrlTrsfs:
-        for attr in ctrlTrsf.listAttr(keyable=True):
+        for attr in ctrlTrsf.listAttr(keyable=True) + ctrlTrsf.listAttr(ud=True):
             try:
                 attr.set(attr.getDefault())
             except:
@@ -585,11 +603,6 @@ def cleanupControllers():
     displayCtrl = [ctrlTrsf for ctrlTrsf in ctrlTrsfs if ctrlTrsf.hasAttr('geometryVis')]
     if displayCtrl:
         displayCtrl[0].geometryVis.set(2)
-
-
-def hideJoints():
-    for jnt in pm.ls(type='joint'):
-        jnt.drawStyle.set(2)
 
 
 def convertMultiRemapToMayaRemap(multiRemapNode):

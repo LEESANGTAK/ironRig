@@ -1,4 +1,5 @@
 import pymel.core as pm
+from ... import utils
 from ..irGlobal import Controller
 from .master import Master
 
@@ -55,6 +56,7 @@ class GlobalMaster(Master):
         self.__globalController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.__mainController = Controller(name='main_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
         self.__mainController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        self.setupVisibilityAttr(self.__mainController)
         self._controllers = [self.__globalController, self.__mainController]
 
         self.__globalController | self.__mainController
@@ -71,7 +73,26 @@ class GlobalMaster(Master):
         self.__mainController.size = self._controllerSize * 0.85
 
     @staticmethod
-    def setupGlobalScaleAttr(transform):
-        pm.addAttr(transform, ln='globalScale', at='double', min=0.01, dv=1.0, keyable=True)
+    def setupGlobalScaleAttr(globalController):
+        pm.addAttr(globalController, ln='globalScale', at='double', min=0.01, dv=1.0, keyable=True)
         for scaleAttr in [ch + axis for ch in 's' for axis in 'xyz']:
-            transform.globalScale >> transform.attr(scaleAttr)
+            globalController.globalScale >> globalController.attr(scaleAttr)
+
+    def setupVisibilityAttr(self, mainController):
+        modelLayer = pm.createNode('displayLayer', n='modelLayer')
+        pm.addAttr(mainController, ln='modelDisplayType', at='enum', en='Normal:Template:Reference', dv=2, keyable=True)
+        pm.setAttr(mainController.modelDisplayType, channelBox=True)
+        pm.addAttr(mainController, ln='modelVisibility', at='bool', dv=True, keyable=True)
+        pm.setAttr(mainController.modelVisibility, channelBox=True)
+        mainController.modelDisplayType >> modelLayer.displayType
+        mainController.modelVisibility >> modelLayer.visibility
+        modelLayer.addMembers(utils.getMeshesFromJoints(pm.ls(self.__rootJoint, dag=True, type='joint')))
+
+        skeletonLayer = pm.createNode('displayLayer', n='skeletonLayer')
+        pm.addAttr(mainController, ln='skeletonDisplayType', at='enum', en='Normal:Template:Reference', dv=1, keyable=True)
+        pm.setAttr(mainController.skeletonDisplayType, channelBox=True)
+        pm.addAttr(mainController, ln='skeletonVisibility', at='bool', dv=False, keyable=True)
+        pm.setAttr(mainController.skeletonVisibility, channelBox=True)
+        mainController.skeletonDisplayType >> skeletonLayer.displayType
+        mainController.skeletonVisibility >> skeletonLayer.visibility
+        skeletonLayer.addMembers(self.__rootJoint)
