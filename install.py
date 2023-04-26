@@ -18,11 +18,11 @@ MAYA_VERSION = int(cmds.about(version=True))
 MODULE_NAME = os.path.dirname(__file__).rsplit('/', 1)[-1]
 MODULE_PATH = os.path.dirname(__file__)
 # Need to modify below depend on module
-MODULE_VERSION = <'1.0.0'>
-SHELF_ICON_FILE = <'icon.png'>
-SHELF_BUTTON_COMMAND = <'''
+MODULE_VERSION = '1.0.0'
+SHELF_ICON_FILE = 'pythonFamily.png'
+SHELF_BUTTON_COMMAND = '''
 Write command here
-'''>
+'''
 
 
 def onMayaDroppedPythonFile(*args, **kwargs):
@@ -30,7 +30,7 @@ def onMayaDroppedPythonFile(*args, **kwargs):
     createModuleFile(modulesDir)
     addScriptPath()
     loadPlugins()
-    addShelfButtons()
+    #addShelfButtons()
 
 
 def getModulesDirectory():
