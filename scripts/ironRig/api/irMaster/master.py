@@ -7,7 +7,7 @@ from ..irGlobal import Controller
 class Master(Container):
     """
     Master contains modules, controllers.
-    Master controls modules behavior.
+    Master controller controls modules behavior.
     """
     def __init__(self, prefix=''):
         super(Master, self).__init__(prefix)
