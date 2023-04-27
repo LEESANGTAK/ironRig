@@ -371,16 +371,12 @@ class Module(Container):
         :param module: Other module.
         :type module: Module
         """
-        parentSpace =  None
-        if module.__class__.__name__ == 'Spine':
-            allModuleCtrls = module.ikSystem().controllers() + module.controllers()
-            parentSpace = utils.findClosestController(utils.getWorldPoint(self._topGrp), allModuleCtrls)
-        else:
-            parentSpace = utils.findClosestObject(pm.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints())
+        parentSpace = utils.findClosestObject(pm.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints())
         pm.matchTransform(self._topGrp, parentSpace, pivots=True)
         utils.removeConnections(self._topGrp)
         pm.parentConstraint(parentSpace, self._topGrp, mo=True)
-        parentSpace.scale >> self._topGrp.scale
+        if module.__class__.__name__ != 'Spine':
+            parentSpace.scale >> self._topGrp.scale
 
     def remove(self):
         """Remove all nodes realted with a module.
