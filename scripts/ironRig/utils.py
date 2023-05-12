@@ -566,7 +566,8 @@ def cleanupRig():
     # Connect controlRig set to controlRig group
     rigGrp = pm.PyNode('controlRig')
     masterSet = pm.PyNode('controlRig_set')
-    pm.addAttr(rigGrp, ln='rigSet', at='message', keyable=False)
+    if not pm.objExists('controlRig.rigSet'):
+        pm.addAttr(rigGrp, ln='rigSet', at='message', keyable=False)
     masterSet.message >> rigGrp.rigSet
 
     # Hide private groups

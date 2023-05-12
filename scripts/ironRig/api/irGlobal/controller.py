@@ -83,6 +83,8 @@ class Controller(object):
         self.__color = color
         self.__size = size
         self.__direction = direction
+        self.__type = None
+        self.__side = None
 
         self.__curves = []
         self.__transform = None
