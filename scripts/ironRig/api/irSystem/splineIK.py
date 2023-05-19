@@ -9,9 +9,14 @@ class CurveDegree:
     LINEAR = 1
     CUBIC = 3
 
+class DynLock:
+    BASE = 1
+    BOTH = 3
+
 
 class SplineIK(System):
     CURVE_DEGREE = CurveDegree
+    DYNAMIC_LOCK = DynLock
 
     def __init__(self, prefix='', joints=[], numControllers=2):
         super(SplineIK, self).__init__(prefix, joints)
@@ -21,6 +26,7 @@ class SplineIK(System):
         self.__curveSpans = None
         self.__curveJoints = None
         self.__ikHandle = None
+        self.__follicle = None
 
     @property
     def curveDegree(self):
@@ -37,6 +43,14 @@ class SplineIK(System):
     @curveSpans.setter
     def curveSpans(self, spans):
         self.__curveSpans = spans
+
+    @property
+    def dynLock(self):
+        return self.__follicle.pointLock.get()
+
+    @dynLock.setter
+    def dynLock(self, val):
+        self.__follicle.pointLock.set(val)
 
     def ikHandle(self):
         return self.__ikHandle
@@ -92,7 +106,8 @@ class SplineIK(System):
             ctrls.append(ctrl)
             self.addMembers(ctrl.controllerNode())
         pm.parent([ctrl.zeroGrp() for ctrl in ctrls], self._controllerGrp)
-        pm.orientConstraint(ctrls[-1], self._joints[-1], mo=True)
+        #pm.orientConstraint(ctrls[-1], self._joints[-1], mo=True)
+        ctrls[-1].rotate >> self._joints[-1].rotate  # Joint can't rotate when dynamic applied if drive using constraint
         self._controllers = ctrls
 
     def setupStretch(self):
@@ -271,10 +286,12 @@ class SplineIK(System):
         hairSystem.compressionResistance.set(200)
         hairSystem.stiffnessScale[1].stiffnessScale_FloatValue.set(1)
 
-        follicle = pm.createNode('follicle', n='{0}follicle'.format(self._prefix))
-        follicle.restPose.set(1)
-        follicle.startDirection.set(1)
-        follicle.degree.set(3)
+        self.__follicle = pm.createNode('follicle')
+        self.__follicle.getTransform().rename('{0}follicle'.format(self._prefix))
+        self.__follicle.restPose.set(1)
+        self.__follicle.startDirection.set(1)
+        self.__follicle.degree.set(3)
+        self.__follicle.pointLock.get()
 
         dynCrv =  pm.duplicate(self.__curve, n='{0}dyn_crv'.format(self._prefix))[0]
 
@@ -301,15 +318,15 @@ class SplineIK(System):
         inputActiveStartId = SplineIK.findMultiAttributeEmptyIndex(nucleus, 'inputActiveStart')
         hairSystem.startState >> nucleus.inputActiveStart[inputActiveStartId]
 
-        hairSystem.outputHair[0] >> follicle.currentPosition
-        follicle.outHair >> hairSystem.inputHair[0]
+        hairSystem.outputHair[0] >> self.__follicle.currentPosition
+        self.__follicle.outHair >> hairSystem.inputHair[0]
 
         self.__curve.worldSpace >> rebuildCrv.inputCurve
         pm.connectAttr('{}.outputCurve'.format(rebuildCrv), '{}.create'.format(rebuildCrvShape))  # If use ">>" operator, "Could not create desired MFn" warning is caused
-        rebuildCrvShape.local >> follicle.startPosition
-        self.__curve.getTransform().worldMatrix >> follicle.startPositionMatrix
+        rebuildCrvShape.local >> self.__follicle.startPosition
+        self.__curve.getTransform().worldMatrix >> self.__follicle.startPositionMatrix
 
-        follicle.outCurve >> dynCrv.create
+        self.__follicle.outCurve >> dynCrv.create
 
         dynCrv.worldSpace >> self.__ikHandle.inCurve
 
@@ -331,7 +348,7 @@ class SplineIK(System):
 
         # Cleanup
         self.addMembers(rebuildCrv, enableCond)
-        pm.parent(follicle.getTransform(), self._blbxGrp)
+        pm.parent(self.__follicle.getTransform(), self._blbxGrp)
         pm.parent(rebuildCrvShape.getTransform(), nucleus, hairSystem.getTransform(), self._noTrsfGrp)
 
     def __getNucleus(self):

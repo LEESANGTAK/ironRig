@@ -645,8 +645,6 @@ def convertMultiRemapToMayaRemap(multiRemapNode):
         driverPlug = drivenPlug.inputs(plugs=True, type='multiRemapValue')[0]
         outConnectInfo.append((driverPlug, drivenPlug))
 
-    print(outConnectInfo)
-
     set = multiRemapNode.message.outputs(type='objectSet')[0]
 
     # Setup parent remap value
@@ -685,3 +683,79 @@ def convertMultiRemapToMayaRemap(multiRemapNode):
 
     pm.delete(multiRemapNode)
     set.forceElement(childRemaps)
+
+
+def setupGlobalDynamicController(moduleGroups, name):
+    moduleGroups = [pm.PyNode(moduleGrp) for moduleGrp in moduleGroups]
+
+    pm.undoInfo(openChunk=True)
+
+    hairSystems = [moduleGrp.getChildren(ad=True, type='hairSystem')[0] for moduleGrp in moduleGroups]
+
+    solver = pm.createNode('nucleus', n='{}_nucleus'.format(name))
+    solver.inheritsTransform.set(False)
+    solver.spaceScale.set(0.05)
+
+    # Create controller
+    dynCtrlName = 'dyn_ctrl'
+    if not pm.objExists(dynCtrlName):
+        dynCtrl = pm.curve(d=1, p=[[-1, 6, 0], [0, 5, 0], [1, 6, 0], [2, 6, 0], [4, 4, 0], [3, 3, 0], [2, 4, 0], [2, 1, 0], [-2, 1, 0], [-2, 4, 0], [-3, 3, 0], [-4, 4, 0], [-2, 6, 0], [-1, 6, 0]], n=dynCtrlName)
+        pm.group(dynCtrl, n='{}_zero'.format(dynCtrl))
+    else:
+        dynCtrl = pm.PyNode(dynCtrlName)
+
+    pm.addAttr(dynCtrl, ln=name, at='enum', en='---------------:')
+    pm.setAttr('{}.{}'.format(dynCtrl, name), channelBox=True)
+    pm.addAttr(dynCtrl, ln='{}_enable'.format(name), at='bool', keyable=True, dv=False)
+    pm.addAttr(dynCtrl, ln='{}_startFrame'.format(name), at='long', keyable=True, dv=100000)
+    pm.addAttr(dynCtrl, ln='{}_subSteps'.format(name), at='long', keyable=True, dv=3)
+
+    dynCtrl.attr('{}_enable'.format(name)) >> solver.enable
+    dynCtrl.attr('{}_startFrame'.format(name)) >> solver.startFrame
+    dynCtrl.attr('{}_subSteps'.format(name)) >> solver.subSteps
+
+    for hairSystem in hairSystems:
+        changeSolver(hairSystem, solver)
+        localDynCtrl = list(set(hairSystem.inputs(type='transform', exactType=True)))[0]
+        dynCtrl.attr('{}_enable'.format(name)) >> localDynCtrl.enable
+        dynCtrl.attr('{}_startFrame'.format(name)) >> localDynCtrl.startFrame
+        dynCtrl.attr('{}_subSteps'.format(name)) >> localDynCtrl.subSteps
+
+    pm.undoInfo(closeChunk=True)
+
+def changeSolver(dynamicNode, solver=None):
+    if not solver:
+        solver = pm.createNode('nucleus')
+    else:
+        solver = pm.PyNode(solver)
+
+    dynamicNode = pm.PyNode(dynamicNode)
+    if dynamicNode.nodeType() == 'transform':
+        dynamicNode = dynamicNode.getShape()
+
+    oldSolver = list(set(dynamicNode.inputs(type='nucleus')))
+
+    time1 = pm.PyNode('time1')
+    time1.outTime.connect(solver.currentTime, f=True)
+
+    solver.startFrame.connect(dynamicNode.startFrame, f=True)
+
+    index = findMultiAttributeEmptyIndex(node=solver, attribute='outputObjects')
+    solver.outputObjects[index].connect(dynamicNode.nextState, f=True)
+
+    index = findMultiAttributeEmptyIndex(node=solver, attribute='inputActive')
+    dynamicNode.currentState.disconnect()
+    dynamicNode.currentState.connect(solver.inputActive[index])
+
+    index = findMultiAttributeEmptyIndex(node=solver, attribute='inputActiveStart')
+    dynamicNode.startState.disconnect()
+    dynamicNode.startState.connect(solver.inputActiveStart[index])
+
+    pm.delete(oldSolver)
+
+def findMultiAttributeEmptyIndex(node, attribute):
+    node = pm.PyNode(node)
+    id = 0
+    while node.attr(attribute)[id].isConnected():
+        id += 1
+    return id

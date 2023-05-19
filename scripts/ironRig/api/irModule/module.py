@@ -382,15 +382,17 @@ class Module(Container):
         """Remove all nodes realted with a module.
         """
         if self._outJoints:
+            for outJnt in self._outJoints:
+                for attrStr in 'trs':
+                    outJnt.attr(attrStr).disconnect()
+
             attrs = [ch + axis for ch in 'trs' for axis in 'xyz']
             for outJnt in self._outJoints:
                 for attrStr in attrs:
                     outJnt.attr(attrStr).disconnect()
+
             for skelJnt in self._skelJoints:
-                try:
-                    skelJnt.scale.set(1.0, 1.0, 1.0)
-                except:
-                    pass
+                skelJnt.scale.set(1.0, 1.0, 1.0)
 
         if self._systems:
             for system in self._systems:
