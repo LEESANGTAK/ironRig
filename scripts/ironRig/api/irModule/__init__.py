@@ -1,3 +1,5 @@
+import imp
+
 from . import module
 from . import simple
 from . import spine
@@ -13,20 +15,20 @@ from . import jaw
 from . import string
 from . import rope
 
-reload(module)
-reload(simple)
-reload(spine)
-reload(neck)
-reload(limbBase)
-reload(twoBoneLimb)
-reload(threeBoneLimb)
-reload(foot)
-reload(finger)
-reload(head)
-reload(eye)
-reload(jaw)
-reload(string)
-reload(rope)
+imp.reload(module)
+imp.reload(simple)
+imp.reload(spine)
+imp.reload(neck)
+imp.reload(limbBase)
+imp.reload(twoBoneLimb)
+imp.reload(threeBoneLimb)
+imp.reload(foot)
+imp.reload(finger)
+imp.reload(head)
+imp.reload(eye)
+imp.reload(jaw)
+imp.reload(string)
+imp.reload(rope)
 
 from .simple import Simple
 from .spine import Spine

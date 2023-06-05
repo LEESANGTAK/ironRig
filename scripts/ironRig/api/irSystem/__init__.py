@@ -1,3 +1,5 @@
+import imp
+
 from . import system
 from . import single
 from . import fk
@@ -9,16 +11,16 @@ from . import revFootIK
 from . import aim
 from . import squash
 
-reload(system)
-reload(single)
-reload(fk)
-reload(splineIK)
-reload(ribbonIK)
-reload(twoBoneIK)
-reload(threeBoneIK)
-reload(revFootIK)
-reload(aim)
-reload(squash)
+imp.reload(system)
+imp.reload(single)
+imp.reload(fk)
+imp.reload(splineIK)
+imp.reload(ribbonIK)
+imp.reload(twoBoneIK)
+imp.reload(threeBoneIK)
+imp.reload(revFootIK)
+imp.reload(aim)
+imp.reload(squash)
 
 
 from .single import Single
