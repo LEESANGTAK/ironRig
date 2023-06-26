@@ -199,8 +199,8 @@ class SplineIK(System):
         sine, sineHandle = cmds.nonLinear(crv.name(), type='sine')  # If instanciate non-linear deformer as "PyNode", "Could not create desired MFn" warning is caused
         sineHandle = pm.PyNode(sineHandle)
         sineHandle.rename('{0}sineHandle'.format(self._prefix))
-        sineHandle.dropoff.set(-1)
-        sineHandle.highBound.set(0)
+        cmds.setAttr('{}.dropoff'.format(sine), -1)
+        cmds.setAttr('{}.highBound'.format(sine), 0)
 
         numCVs = crv.numCVs()
         startPosition = pm.xform(crv.cv[0], q=True, t=True, ws=True)
@@ -385,7 +385,7 @@ class SplineIK(System):
         # Add attributes
         for attrInfo in ATTRIBUTES_INFO:
             for attrName, attrProperties in attrInfo.items():
-                if attrProperties.has_key('range'):
+                if 'range' in attrProperties:
                     pm.addAttr(self._controllers[-1], ln=attrName, at=attrProperties['type'], min=attrProperties['range'][0], max=attrProperties['range'][1], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
                 else:
                     pm.addAttr(self._controllers[-1], ln=attrName, at=attrProperties['type'], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])

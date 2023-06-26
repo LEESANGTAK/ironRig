@@ -109,12 +109,10 @@ class Module(Container):
         """
         self._topGrp.rename('{}module'.format(self._prefix))
         self._geoGrp = pm.group(n='{}geo_grp'.format(self._prefix), empty=True)
-        self._geoGrp.hide()
         self._initGrp = pm.group(n='{}init_grp'.format(self._prefix), empty=True)
-        self._systemGrp = pm.group(n='{}sys_grp'.format(self._prefix), empty=True)
         self._outGrp = pm.group(n='{}out_grp'.format(self._prefix), empty=True)
-        self._outGrp.hide()
-        pm.parent(self._geoGrp, self._initGrp, self._systemGrp, self._outGrp, self._topGrp)
+        self._systemGrp = pm.group(n='{}sys_grp'.format(self._prefix), empty=True)
+        pm.parent([self._geoGrp, self._initGrp, self._outGrp, self._systemGrp], self._topGrp)
 
     def _buildInitSkelLocators(self):
         initSkelLocs = []
@@ -259,9 +257,13 @@ class Module(Container):
         self._connectOutputs()
         self._connectSkeleton()
         pm.matchTransform(self._topGrp, self._skelJoints[0], pivots=True)
+
         if self.__globalController:
             self.__buildGlobalController()
+
         self._initGrp.hide()
+        self._geoGrp.hide()
+        self._outGrp.hide()
 
     def __cleanupSkelJoints(self):
         limitAttrs = ['scaleMinX', 'scaleMaxX', 'scaleMinY', 'scaleMaxY', 'scaleMinZ', 'scaleMaxZ',

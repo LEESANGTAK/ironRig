@@ -701,6 +701,9 @@ def setupGlobalDynamicController(moduleGroups, name):
     if not pm.objExists(dynCtrlName):
         dynCtrl = pm.curve(d=1, p=[[-1, 6, 0], [0, 5, 0], [1, 6, 0], [2, 6, 0], [4, 4, 0], [3, 3, 0], [2, 4, 0], [2, 1, 0], [-2, 1, 0], [-2, 4, 0], [-3, 3, 0], [-4, 4, 0], [-2, 6, 0], [-1, 6, 0]], n=dynCtrlName)
         pm.group(dynCtrl, n='{}_zero'.format(dynCtrl))
+        for attr in dynCtrl.listAttr(keyable=True):
+            attr.lock(True)
+            attr.setKeyable(False)
     else:
         dynCtrl = pm.PyNode(dynCtrlName)
 
@@ -709,6 +712,12 @@ def setupGlobalDynamicController(moduleGroups, name):
     pm.addAttr(dynCtrl, ln='{}_enable'.format(name), at='bool', keyable=True, dv=False)
     pm.addAttr(dynCtrl, ln='{}_startFrame'.format(name), at='long', keyable=True, dv=100000)
     pm.addAttr(dynCtrl, ln='{}_subSteps'.format(name), at='long', keyable=True, dv=3)
+    pm.addAttr(dynCtrl, ln='{}_bendResistance'.format(name), at='double', keyable=True, dv=0.1)
+    pm.addAttr(dynCtrl, ln='{}_stiffness'.format(name), at='double', keyable=True, dv=0.1)
+    pm.addAttr(dynCtrl, ln='{}_damp'.format(name), at='double', keyable=True, dv=0.1)
+    pm.addAttr(dynCtrl, ln='{}_drag'.format(name), at='double', keyable=True, dv=0.05)
+    pm.addAttr(dynCtrl, ln='{}_startCurveAttract'.format(name), at='double', keyable=True, dv=1)
+    pm.addAttr(dynCtrl, ln='{}_attractionDamp'.format(name), at='double', keyable=True, dv=0)
 
     dynCtrl.attr('{}_enable'.format(name)) >> solver.enable
     dynCtrl.attr('{}_startFrame'.format(name)) >> solver.startFrame
@@ -720,6 +729,12 @@ def setupGlobalDynamicController(moduleGroups, name):
         dynCtrl.attr('{}_enable'.format(name)) >> localDynCtrl.enable
         dynCtrl.attr('{}_startFrame'.format(name)) >> localDynCtrl.startFrame
         dynCtrl.attr('{}_subSteps'.format(name)) >> localDynCtrl.subSteps
+        dynCtrl.attr('{}_bendResistance'.format(name)) >> localDynCtrl.bendResistance
+        dynCtrl.attr('{}_stiffness'.format(name)) >> localDynCtrl.stiffness
+        dynCtrl.attr('{}_damp'.format(name)) >> localDynCtrl.damp
+        dynCtrl.attr('{}_drag'.format(name)) >> localDynCtrl.drag
+        dynCtrl.attr('{}_startCurveAttract'.format(name)) >> localDynCtrl.startCurveAttract
+        dynCtrl.attr('{}_attractionDamp'.format(name)) >> localDynCtrl.attractionDamp
 
     pm.undoInfo(closeChunk=True)
 
