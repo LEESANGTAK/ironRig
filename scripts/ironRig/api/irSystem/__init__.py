@@ -10,6 +10,7 @@ from . import threeBoneIK
 from . import revFootIK
 from . import aim
 from . import squash
+from . import corrective
 
 imp.reload(system)
 imp.reload(single)
@@ -21,6 +22,7 @@ imp.reload(threeBoneIK)
 imp.reload(revFootIK)
 imp.reload(aim)
 imp.reload(squash)
+imp.reload(corrective)
 
 
 from .single import Single
@@ -32,3 +34,4 @@ from .threeBoneIK import ThreeBoneIK
 from .revFootIK import RevFootIK
 from .aim import Aim
 from .squash import Squash
+from .corrective import Corrective

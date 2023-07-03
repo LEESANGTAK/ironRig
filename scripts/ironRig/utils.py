@@ -774,3 +774,46 @@ def findMultiAttributeEmptyIndex(node, attribute):
     while node.attr(attribute)[id].isConnected():
         id += 1
     return id
+
+def symmeterizeModule(sourceModuleGroup, targetModuleGroup):
+    srcModGrp = pm.PyNode(sourceModuleGroup)
+    trgModGrp = pm.PyNode(targetModuleGroup)
+    srcTrans = srcModGrp.translate.get()
+    srcRotate = srcModGrp.rotate.get()
+    srcScale = srcModGrp.scale.get()
+    trgModGrp.translate.set(-srcTrans.x, srcTrans.y, srcTrans.z)
+    trgModGrp.rotate.set(srcRotate)
+    trgModGrp.scale.set(srcScale)
+
+    srcPrefix = srcModGrp.split('_module')[0]
+    trgPrefix = trgModGrp.split('_module')[0]
+    srcCtrlNodes = [item for item in pm.PyNode('{}_set'.format(srcPrefix)).members(flatten=True) if item.nodeType() == 'controller']
+    srcCtrls = [ctrlNode.inputs()[0] for ctrlNode in srcCtrlNodes]
+    trgCtrlNodes = [item for item in pm.PyNode('{}_set'.format(trgPrefix)).members(flatten=True) if item.nodeType() == 'controller']
+    trgCtrls = [ctrlNode.inputs()[0] for ctrlNode in trgCtrlNodes]
+
+    for srcCtrl, trgCtrl in zip(sorted(srcCtrls), sorted(trgCtrls)):
+        srcCtrlZeroGrp = srcCtrl.getParent(generations=2)
+        trgCtrlZeroGrp = trgCtrl.getParent(generations=2)
+        srcMtx = srcCtrlZeroGrp.worldMatrix.get()
+        trgMtx = symmetryMatrix(srcMtx)
+        pm.xform(trgCtrlZeroGrp, m=trgMtx, ws=True)
+        pm.xform(trgCtrlZeroGrp, t=(-srcMtx[3][0], srcMtx[3][1], srcMtx[3][2]), ws=True)
+
+        srcCtrlExtraGrp = srcCtrl.getParent()
+        trgCtrlExtraGrp = trgCtrl.getParent()
+        srcMtx = srcCtrlExtraGrp.worldMatrix.get()
+        trgMtx = symmetryMatrix(srcMtx)
+        pm.xform(trgCtrlExtraGrp, m=trgMtx, ws=True)
+        pm.xform(trgCtrlExtraGrp, t=(-srcMtx[3][0], srcMtx[3][1], srcMtx[3][2]), ws=True)
+
+def symmetryMatrix(matrix):
+    resultMtx = pm.dt.Matrix()
+    symMtx = pm.dt.Matrix(
+        1.0, 0.0, 0.0, 0.0,
+        0.0, -1.0, 0.0, 0.0,
+        0.0, 0.0, -1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    )
+    resultMtx = matrix * symMtx
+    return resultMtx
