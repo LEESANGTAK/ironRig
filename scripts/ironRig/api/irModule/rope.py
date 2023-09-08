@@ -23,6 +23,7 @@ class Rope(Module):
             pm.error('Number of controllers should be odd number.')
         self.__numberOfControllers = val
 
+    # Automate controller for odd number indexed controllers
     @property
     def autoOddnumController(self):
         return self.__dynamic

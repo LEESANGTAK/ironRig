@@ -352,7 +352,7 @@ class Module(Container):
         pm.matchTransform(modGlobalCtrl.zeroGrp(), self._initJoints[0], position=True, rotation=True)
         modGlobalCtrl.lockHideChannels(['scale', 'visibility'], 'XYZ')
         self._topGrp | modGlobalCtrl.zeroGrp()
-        pm.parent([self._geoGrp, self._initGrp, self._systemGrp, self._outGrp], modGlobalCtrl)
+        pm.parent([self._geoGrp, self._initGrp, self._outGrp, self._systemGrp], modGlobalCtrl)
 
     def postBuild(self):
         """Edit controllers states of color and shape.

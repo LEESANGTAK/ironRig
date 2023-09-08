@@ -1,17 +1,18 @@
 //Maya ASCII 2020 scene
 //Name: ARKit_controller.ma
-//Last modified: Wed, Dec 28, 2022 02:00:39 PM
+//Last modified: Tue, Sep 05, 2023 11:29:26 PM
 //Codeset: 949
 requires maya "2020";
 requires "stereoCamera" "10.0";
 requires "mtoa" "4.1.1";
+requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2020";
 fileInfo "version" "2020";
 fileInfo "cutIdentifier" "202011110415-b1e20b88e2";
-fileInfo "osv" "Microsoft Windows 10 Technical Preview  (Build 19043)\n";
-fileInfo "UUID" "81594C1E-4A25-7202-53E7-CBA876F76532";
+fileInfo "osv" "Microsoft Windows 10 Technical Preview  (Build 19045)\n";
+fileInfo "UUID" "A230BE25-4819-CAC8-E076-9989DFCF6374";
 createNode transform -n "facial_module";
 	rename -uid "8EB147CA-4F6C-1225-8800-A0BF08BCD245";
 	addAttr -ci true -sn "onFace" -ln "onFace" -min 0 -max 1 -at "bool";
@@ -117,6 +118,7 @@ createNode transform -n "facial_attrs_out" -p "facial_out_grp";
 		-max 1 -at "double";
 	addAttr -ci true -k true -sn "mouthStretchRight" -ln "mouthStretchRight" -nn "Mouth Stretch Right" 
 		-max 1 -at "double";
+	addAttr -ci true -sn "tongueOut" -ln "tongueOut" -min 0 -max 1 -at "double";
 	setAttr -l on -k off ".v";
 	setAttr -l on -k off ".tx";
 	setAttr -l on -k off ".ty";
@@ -170,13 +172,23 @@ createNode transform -n "facial_attrs_out" -p "facial_out_grp";
 	setAttr -k on ".mouthPressRight";
 	setAttr -k on ".mouthStretchLeft";
 	setAttr -k on ".mouthStretchRight";
+	setAttr -k on ".tongueOut";
 createNode transform -n "facial_global_ctrl_zero" -p "facial_module";
 	rename -uid "16330C46-4F84-25E2-E869-2689C36C4AC3";
 	setAttr ".t" -type "double3" 0 32.501514705482904 0 ;
 	setAttr ".s" -type "double3" 2.8742368939162302 2.8742368939162302 2.8742368939162302 ;
 createNode transform -n "facial_global_ctrl" -p "facial_global_ctrl_zero";
 	rename -uid "11FFFFBB-4F25-2DEF-5B6A-61857559A5BE";
-	addAttr -ci true -k true -sn "cheekPuff" -ln "cheekPuff" -min 0 -max 1 -at "double";
+	setAttr -l on -k off ".v";
+	setAttr -l on -k off ".tx";
+	setAttr -l on -k off ".ty";
+	setAttr -l on -k off ".tz";
+	setAttr -l on -k off ".rx";
+	setAttr -l on -k off ".ry";
+	setAttr -l on -k off ".rz";
+	setAttr -l on -k off ".sx";
+	setAttr -l on -k off ".sy";
+	setAttr -l on -k off ".sz";
 createNode nurbsCurve -n "facial_global_ctrlShape" -p "facial_global_ctrl";
 	rename -uid "5D49D5BA-4F09-AD85-E506-D29FEB8952A8";
 	setAttr -k off ".v";
@@ -3094,8 +3106,8 @@ createNode transform -n "FRM_L_mouth_sharpCornerPull" -p "GRP_mouthGUI";
 	rename -uid "5ED13C0A-4289-0C40-2C8D-B1B65791F3BB";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" 2.6958282553923447 1.7824426191326594 0 ;
-	setAttr ".r" -type "double3" 0 0 -16 ;
+	setAttr ".t" -type "double3" 2.812105466428906 1.8987198301692096 -6.6444309161670232e-14 ;
+	setAttr ".r" -type "double3" 0 0 -28.894798840821423 ;
 	setAttr ".s" -type "double3" 1.0000000000000002 4.0000000000000009 1 ;
 createNode mesh -n "FRM_L_mouth_sharpCornerPullShape" -p "FRM_L_mouth_sharpCornerPull";
 	rename -uid "1FFA2867-4B40-5B6E-ED4F-D083A9C967E6";
@@ -3257,8 +3269,8 @@ createNode transform -n "FRM_R_mouth_sharpCornerPull" -p "GRP_mouthGUI";
 	rename -uid "535480A6-4947-6810-7356-0EA3CF3645B9";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" -2.6751592691187609 1.7824426191326594 0 ;
-	setAttr ".r" -type "double3" 0 0 16 ;
+	setAttr ".t" -type "double3" -2.6751592691187609 2.0149970412057634 -1.1368683772161603e-13 ;
+	setAttr ".r" -type "double3" 0 0 31.141348637329624 ;
 	setAttr ".s" -type "double3" 1.0000000000000002 4.0000000000000009 1 ;
 createNode mesh -n "FRM_R_mouth_sharpCornerPullShape" -p "FRM_R_mouth_sharpCornerPull";
 	rename -uid "EE0FFFC1-426C-A51C-8090-13818301FABF";
@@ -3420,7 +3432,7 @@ createNode transform -n "FRM_L_mouth_cornerPull" -p "GRP_mouthGUI";
 	rename -uid "063F1313-4C05-E177-D2FD-1BB4DAEAE5A9";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" 4.2202237852006981 1.0698755066677172 0 ;
+	setAttr ".t" -type "double3" 4.1039465741641328 1.1861527177042674 -4.7242530128280239e-14 ;
 	setAttr ".r" -type "double3" 0 0 -41 ;
 	setAttr ".s" -type "double3" 1.0000000000000002 4.0000000000000009 1 ;
 createNode mesh -n "FRM_L_mouth_cornerPullShape" -p "FRM_L_mouth_cornerPull";
@@ -3583,7 +3595,7 @@ createNode transform -n "FRM_R_mouth_cornerPull" -p "GRP_mouthGUI";
 	rename -uid "0747B3F3-4529-4E9B-72B1-92AF0E671E2C";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" -4.2028225122535616 1.0698755066677172 0 ;
+	setAttr ".t" -type "double3" -4.086545301216999 1.2442913232225443 4.7242529082723944e-14 ;
 	setAttr ".r" -type "double3" 0 0 41 ;
 	setAttr ".s" -type "double3" 1.0000000000000002 4.0000000000000009 1 ;
 createNode mesh -n "FRM_R_mouth_cornerPullShape" -p "FRM_R_mouth_cornerPull";
@@ -3746,8 +3758,8 @@ createNode transform -n "FRM_L_mouth_dimple" -p "GRP_mouthGUI";
 	rename -uid "A7D8F563-454A-CC9E-2EC0-CE89A5A36A82";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" 5.1576805118489206 0.23075525801544217 0 ;
-	setAttr ".r" -type "double3" 0 0 -81 ;
+	setAttr ".t" -type "double3" 5.0414033008123598 0.056339441460608229 -6.6725523398709501e-14 ;
+	setAttr ".r" -type "double3" 0 0 -90.944353502396439 ;
 	setAttr ".s" -type "double3" 1.0000000000000002 4.0000000000000009 1 ;
 createNode mesh -n "FRM_L_mouth_dimpleShape" -p "FRM_L_mouth_dimple";
 	rename -uid "3880B702-47B8-D9BE-6F21-2C9252C19072";
@@ -3910,7 +3922,7 @@ createNode transform -n "FRM_R_mouth_dimple" -p "GRP_mouthGUI";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
 	setAttr ".t" -type "double3" -5.1318059207896063 0.23075525801544217 0 ;
-	setAttr ".r" -type "double3" 0 0 81 ;
+	setAttr ".r" -type "double3" 0 0 88.035990244653632 ;
 	setAttr ".s" -type "double3" 1.0000000000000002 4.0000000000000009 1 ;
 createNode mesh -n "FRM_R_mouth_dimpleShape" -p "FRM_R_mouth_dimple";
 	rename -uid "4D4DF268-43D3-51F6-8AC1-F0BF5D479FBD";
@@ -4072,7 +4084,7 @@ createNode transform -n "FRM_L_mouth_cornerDepress" -p "GRP_mouthGUI";
 	rename -uid "227F3A82-4D4F-7DC8-8CE9-048CFB68B923";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" 4.2299658110781735 -0.63940261600335191 0 ;
+	setAttr ".t" -type "double3" 4.0555499945233278 -0.98823424911300972 4.2823043379537341e-14 ;
 	setAttr ".r" -type "double3" 0 0 -141 ;
 	setAttr ".s" -type "double3" 1.0000000000000002 4.0000000000000009 1 ;
 createNode mesh -n "FRM_L_mouth_cornerDepressShape" -p "FRM_L_mouth_cornerDepress";
@@ -4235,7 +4247,7 @@ createNode transform -n "FRM_R_mouth_cornerDepress" -p "GRP_mouthGUI";
 	rename -uid "8C1A1F0D-42E3-1D97-5E41-7793F89A1CEE";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" -4.1931442863416022 -0.63940261600335191 0 ;
+	setAttr ".t" -type "double3" -4.1931442863416022 -1.1626500656678367 4.1550733022830145e-23 ;
 	setAttr ".r" -type "double3" 0 0 141 ;
 	setAttr ".s" -type "double3" 1.0000000000000002 4.0000000000000009 1 ;
 createNode mesh -n "FRM_R_mouth_cornerDepressShape" -p "FRM_R_mouth_cornerDepress";
@@ -4398,8 +4410,8 @@ createNode transform -n "FRM_L_mouth_stretch" -p "GRP_mouthGUI";
 	rename -uid "1C1C3FFE-495B-A522-1065-DB8786602DE9";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" 2.6332164300601257 -1.5555207030862803 0 ;
-	setAttr ".r" -type "double3" 0 0 -121.26263717525809 ;
+	setAttr ".t" -type "double3" 2.7431823729773681 -1.9079573646877037 -2.3621263657933078e-14 ;
+	setAttr ".r" -type "double3" 0 0 -150.26477216662474 ;
 	setAttr ".s" -type "double3" 1.0000000000000002 4.0000000000000009 1 ;
 createNode mesh -n "FRM_L_mouth_stretchShape" -p "FRM_L_mouth_stretch";
 	rename -uid "4120DA9B-44E4-3214-DD08-5383FEC0F131";
@@ -4561,8 +4573,8 @@ createNode transform -n "FRM_R_mouth_stretch" -p "GRP_mouthGUI";
 	rename -uid "F20D273E-47A4-69A7-2337-F3BE8B7129E8";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" -2.5910840552861085 -1.5555207030862803 0 ;
-	setAttr ".r" -type "double3" 0 0 121.26300000000002 ;
+	setAttr ".t" -type "double3" -2.9198196785056973 -2.0695694489165568 6.6444308391507363e-14 ;
+	setAttr ".r" -type "double3" 0 0 147.9718363043601 ;
 	setAttr ".s" -type "double3" 1.0000000000000002 4.0000000000000009 1 ;
 createNode mesh -n "FRM_R_mouth_stretchShape" -p "FRM_R_mouth_stretch";
 	rename -uid "CDD753F5-4A6A-41EA-8002-849AB64392BD";
@@ -4724,8 +4736,8 @@ createNode transform -n "FRM_R_mouth_lowerLipDepress" -p "GRP_mouthGUI";
 	rename -uid "CBFBB2EE-4471-265F-6E41-97BF745250BA";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" -1.2302064566390878 -2.416261780222122 0 ;
-	setAttr ".r" -type "double3" 0 0 171.27700000000002 ;
+	setAttr ".t" -type "double3" -1.5208994842304906 -2.648816202295226 1.0926735430144792e-13 ;
+	setAttr ".r" -type "double3" 0 0 165.01930420133363 ;
 	setAttr ".s" -type "double3" 1.0000000000000004 4.0000000000000009 1 ;
 createNode mesh -n "FRM_R_mouth_lowerLipDepressShape" -p "FRM_R_mouth_lowerLipDepress";
 	rename -uid "73226E92-4FC4-7D6A-D796-789EA245CE38";
@@ -4887,8 +4899,8 @@ createNode transform -n "FRM_L_mouth_lowerLipDepress" -p "GRP_mouthGUI";
 	rename -uid "0F2F5D29-4BE8-0393-07D0-1ABC34D367B6";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-	setAttr ".t" -type "double3" 1.2592253182574396 -2.416261780222122 0 ;
-	setAttr ".r" -type "double3" 0 0 -171.27741479138808 ;
+	setAttr ".t" -type "double3" 1.4336411348122813 -2.5325389912586758 -1.5650988268934015e-13 ;
+	setAttr ".r" -type "double3" 0 0 -166.8802602715534 ;
 	setAttr ".s" -type "double3" 1.0000000000000004 4.0000000000000009 1 ;
 createNode mesh -n "FRM_L_mouth_lowerLipDepressShape" -p "FRM_L_mouth_lowerLipDepress";
 	rename -uid "EAC742A1-45F5-74BB-303E-E8BB3FF5BDF6";
@@ -5740,6 +5752,177 @@ createNode mesh -n "CTRL_C_mouthPuckerShape" -p "CTRL_C_mouthPucker";
 	setAttr ".dr" 1;
 	setAttr ".vnm" 0;
 	setAttr ".ai_translator" -type "string" "polymesh";
+createNode transform -n "FRM_C_tongue_out" -p "FRM_faceGUI";
+	rename -uid "790CC482-4E11-F68B-B099-CA87DEA9F92B";
+	setAttr ".ovdt" 2;
+	setAttr ".ove" yes;
+	setAttr ".t" -type "double3" 11.130388631431916 21.598982423775066 -1.2992557994507018e-13 ;
+	setAttr ".s" -type "double3" 1.9999999999999998 2 1.9999999999999998 ;
+createNode mesh -n "FRM_C_tongue_outShape" -p "FRM_C_tongue_out";
+	rename -uid "AB409DF8-40E0-4CA2-80E7-62AD701D8A2D";
+	setAttr -k off ".v";
+	setAttr ".ovdt" 2;
+	setAttr ".ove" yes;
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".csh" no;
+	setAttr ".pv" -type "double2" 0.5 1 ;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 20 ".uvst[0].uvsp[0:19]" -type "float2" 0 0 1 0 0 1 1 1 0
+		 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr ".ugsdt" no;
+	setAttr -s 12 ".pt[0:11]" -type "float3"  0.027625604 -0.49543357 8.3794766e-17 
+		-0.028361952 -0.49543357 8.3794772e-17 0.027625604 -0.49533036 -4.994558e-23 -0.028361952 
+		-0.49533036 -4.994558e-23 0.027625604 -0.49809828 8.4577907e-17 -0.028361952 -0.49809828 
+		8.4577914e-17 -0.10787356 -0.49543357 8.3791901e-17 -0.10787353 -0.49809828 8.4575049e-17 
+		0.11782452 -0.49543357 8.3791907e-17 0.11782454 -0.49809828 8.4575035e-17 0.027625604 
+		-0.54308897 8.4577775e-17 -0.028361952 -0.54308897 8.4577782e-17;
+	setAttr -s 12 ".vt[0:11]"  -0.03660202 0.50738716 -1.1102229e-16 0.037577629 0.50738716 -1.110223e-16
+		 -0.03660202 1.47947121 6.6174449e-23 0.037577629 1.47947121 6.6174449e-23 -0.03660202 0.49047852 -1.1205989e-16
+		 0.037577629 0.49047852 -1.120599e-16 0.22688675 0.50738716 -1.1101849e-16 0.22688675 0.49047852 -1.1205611e-16
+		 -0.22653103 0.50738716 -1.110185e-16 -0.22653103 0.49047852 -1.1205609e-16 -0.03660202 0.49047852 -1.1205989e-16
+		 0.037577629 0.49047852 -1.120599e-16;
+	setAttr -s 16 ".ed[0:15]"  0 1 1 0 2 0 1 3 0 2 3 0 0 4 0 1 5 0 4 5 0
+		 1 6 0 5 7 0 6 7 0 0 8 0 4 9 0 8 9 0 4 10 0 5 11 0 10 11 0;
+	setAttr -s 5 -ch 20 ".fc[0:4]" -type "polyFaces" 
+		f 4 0 2 -4 -2
+		mu 0 4 0 1 3 2
+		f 4 -1 4 6 -6
+		mu 0 4 4 5 6 7
+		f 4 5 8 -10 -8
+		mu 0 4 8 9 10 11
+		f 4 -5 10 12 -12
+		mu 0 4 12 13 14 15
+		f 4 -7 13 15 -15
+		mu 0 4 16 17 18 19;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+	setAttr ".dr" 1;
+	setAttr ".vnm" 0;
+	setAttr ".ai_translator" -type "string" "polymesh";
+createNode transform -n "CTRL_C_tongue_out" -p "FRM_C_tongue_out";
+	rename -uid "E2CE4AB9-47CA-C120-B8F8-95A235858F22";
+	setAttr -l on -k off ".v";
+	setAttr ".ove" yes;
+	setAttr -k off ".tx";
+	setAttr -k off ".tz";
+	setAttr -k off ".rx";
+	setAttr -k off ".ry";
+	setAttr -k off ".rz";
+	setAttr -k off ".sx";
+	setAttr -k off ".sy";
+	setAttr -k off ".sz";
+	setAttr ".mntl" -type "double3" 0 0 0 ;
+	setAttr ".mxtl" -type "double3" 0 1 0 ;
+	setAttr ".mtxe" yes;
+	setAttr ".mtye" yes;
+	setAttr ".mtze" yes;
+	setAttr ".xtxe" yes;
+	setAttr ".xtye" yes;
+	setAttr ".xtze" yes;
+	setAttr ".mnrl" -type "double3" 0 0 0 ;
+	setAttr ".mxrl" -type "double3" 0 0 0 ;
+	setAttr ".mrxe" yes;
+	setAttr ".mrye" yes;
+	setAttr ".mrze" yes;
+	setAttr ".xrxe" yes;
+	setAttr ".xrye" yes;
+	setAttr ".xrze" yes;
+createNode mesh -n "CTRL_C_tongue_outShape" -p "CTRL_C_tongue_out";
+	rename -uid "E3956651-4C2A-5E4B-6D26-2DB3403C171F";
+	setAttr -k off ".v";
+	setAttr ".ove" yes;
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".csh" no;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 21 ".uvst[0].uvsp[0:20]" -type "float2" 0.64860266 0.79546607
+		 0.62640899 0.75190848 0.59184152 0.71734101 0.54828393 0.69514734 0.5 0.68749994
+		 0.45171607 0.69514734 0.40815851 0.71734107 0.37359107 0.75190854 0.3513974 0.79546607
+		 0.34374997 0.84375 0.3513974 0.89203393 0.37359107 0.93559146 0.40815854 0.97015893
+		 0.4517161 0.9923526 0.5 1 0.54828387 0.9923526 0.59184146 0.97015893 0.62640893 0.93559146
+		 0.6486026 0.89203393 0.65625 0.84375 0.5 0.83749998;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr ".ugsdt" no;
+	setAttr -s 21 ".pt[0:20]" -type "float3"  -0.14062816 0.017886013 -0.27368659 
+		-0.11962546 0.034020782 -0.27368659 -0.08691299 0.046824872 -0.27368659 -0.045692854 
+		0.055045694 -0.27368659 -1.0280274e-08 0.057879239 -0.27368659 0.045692831 0.055045694 
+		-0.27368659 0.08691296 0.046824872 -0.27368659 0.1196254 0.034020782 -0.27368659 
+		0.14062808 0.017886013 -0.27368659 0.14786512 0 -0.27368659 0.14062808 -0.017885268 
+		-0.27368659 0.11962542 -0.034020573 -0.27368659 0.086912945 -0.046824872 -0.27368659 
+		0.045692839 -0.05504626 -0.27368659 -5.8735559e-09 -0.057879031 -0.27368659 -0.045692831 
+		-0.05504626 -0.27368659 -0.08691293 -0.046824872 -0.27368659 -0.1196254 -0.034020573 
+		-0.27368659 -0.14062802 -0.017885268 -0.27368659 -0.1478651 0 -0.27368659 -1.0280274e-08 
+		0 -0.27368659;
+	setAttr -s 21 ".vt[0:20]"  0.26089889 0.021192795 0.27432513 0.22193384 0.040311091 0.27432513
+		 0.16124436 0.055483457 0.27432513 0.084771171 0.065224707 0.27432513 0 0.068581313 0.27432513
+		 -0.084771171 0.065224707 0.27432513 -0.16124433 0.055483446 0.27432513 -0.22193377 0.040311079 0.27432513
+		 -0.26089877 0.021192787 0.27432513 -0.27432519 6.0912416e-17 0.27432513 -0.26089877 -0.021192787 0.27432513
+		 -0.22193375 -0.040311076 0.27432513 -0.1612443 -0.055483431 0.27432513 -0.084771149 -0.065224685 0.27432513
+		 -8.175526e-09 -0.068581291 0.27432513 0.084771119 -0.065224685 0.27432513 0.16124426 -0.055483427 0.27432513
+		 0.22193369 -0.040311072 0.27432513 0.26089871 -0.021192782 0.27432513 0.27432513 6.0912416e-17 0.27432513
+		 0 6.0912416e-17 0.27432513;
+	setAttr -s 40 ".ed[0:39]"  0 1 0 1 2 0 2 3 0 3 4 0 4 5 0 5 6 0 6 7 0
+		 7 8 0 8 9 0 9 10 0 10 11 0 11 12 0 12 13 0 13 14 0 14 15 0 15 16 0 16 17 0 17 18 0
+		 18 19 0 19 0 0 0 20 1 1 20 1 2 20 1 3 20 1 4 20 1 5 20 1 6 20 1 7 20 1 8 20 1 9 20 1
+		 10 20 1 11 20 1 12 20 1 13 20 1 14 20 1 15 20 1 16 20 1 17 20 1 18 20 1 19 20 1;
+	setAttr -s 20 -ch 60 ".fc[0:19]" -type "polyFaces" 
+		f 3 0 21 -21
+		mu 0 3 18 17 20
+		f 3 1 22 -22
+		mu 0 3 17 16 20
+		f 3 2 23 -23
+		mu 0 3 16 15 20
+		f 3 3 24 -24
+		mu 0 3 15 14 20
+		f 3 4 25 -25
+		mu 0 3 14 13 20
+		f 3 5 26 -26
+		mu 0 3 13 12 20
+		f 3 6 27 -27
+		mu 0 3 12 11 20
+		f 3 7 28 -28
+		mu 0 3 11 10 20
+		f 3 8 29 -29
+		mu 0 3 10 9 20
+		f 3 9 30 -30
+		mu 0 3 9 8 20
+		f 3 10 31 -31
+		mu 0 3 8 7 20
+		f 3 11 32 -32
+		mu 0 3 7 6 20
+		f 3 12 33 -33
+		mu 0 3 6 5 20
+		f 3 13 34 -34
+		mu 0 3 5 4 20
+		f 3 14 35 -35
+		mu 0 3 4 3 20
+		f 3 15 36 -36
+		mu 0 3 3 2 20
+		f 3 16 37 -37
+		mu 0 3 2 1 20
+		f 3 17 38 -38
+		mu 0 3 1 0 20
+		f 3 18 39 -39
+		mu 0 3 0 19 20
+		f 3 19 20 -40
+		mu 0 3 19 18 20;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+	setAttr ".dr" 1;
+	setAttr ".vnm" 0;
+	setAttr ".ai_translator" -type "string" "polymesh";
 createNode transform -n "GRP_jawGUI" -p "FRM_faceGUI";
 	rename -uid "38346070-4491-1290-D93F-829A61BE8ACE";
 	setAttr ".ove" yes;
@@ -6259,16 +6442,17 @@ createNode mesh -n "CTRL_C_mouthCloseShape" -p "CTRL_C_mouthClose";
 createNode transform -s -n "persp";
 	rename -uid "CB1DFCC8-4EF1-B1B0-367D-BD9DDDA3D8BB";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 15.178906114417183 37.811040249510384 141.32921407707744 ;
-	setAttr ".r" -type "double3" -9.3383527296026809 3.4000000000000239 0 ;
+	setAttr ".t" -type "double3" 3.0827632771769053 27.549044184742236 41.034347506544528 ;
+	setAttr ".r" -type "double3" 3.26164727039705 4.2000000000001574 0 ;
 createNode camera -s -n "perspShape" -p "persp";
 	rename -uid "B4E0E46C-45C6-8C2C-3564-FEAF2DCE71DE";
 	setAttr -k off ".v" no;
 	setAttr ".fl" 34.999999999999993;
-	setAttr ".coi" 144.55613247046779;
+	setAttr ".coi" 41.708265764538233;
 	setAttr ".imn" -type "string" "persp";
 	setAttr ".den" -type "string" "persp_depth";
 	setAttr ".man" -type "string" "persp_mask";
+	setAttr ".tp" -type "double3" -0.0047737647834291963 16.729341762993517 0.0026113053018660347 ;
 	setAttr ".hc" -type "string" "viewSet -p %camera";
 	setAttr ".ai_translator" -type "string" "perspective";
 createNode transform -s -n "top";
@@ -6291,16 +6475,17 @@ createNode camera -s -n "topShape" -p "top";
 createNode transform -s -n "front";
 	rename -uid "E1CE3802-4494-8A53-D6FE-FF951A737A71";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 0 0 1000.1 ;
+	setAttr ".t" -type "double3" 0 29.288759083578853 1000.5287809002184 ;
 createNode camera -s -n "frontShape" -p "front";
 	rename -uid "F09BAA3C-4445-19F1-9EC3-118E22CB4BCA";
 	setAttr -k off ".v" no;
 	setAttr ".rnd" no;
-	setAttr ".coi" 1000.1;
-	setAttr ".ow" 30;
+	setAttr ".coi" 1000.5287797092816;
+	setAttr ".ow" 35.057579127520654;
 	setAttr ".imn" -type "string" "front";
 	setAttr ".den" -type "string" "front_depth";
 	setAttr ".man" -type "string" "front_mask";
+	setAttr ".tp" -type "double3" 0 29.288759083578853 1.1909368455853553e-06 ;
 	setAttr ".hc" -type "string" "viewSet -f %camera";
 	setAttr ".o" yes;
 	setAttr ".ai_translator" -type "string" "orthographic";
@@ -6495,7 +6680,7 @@ createNode materialInfo -n "pasted__materialInfo1";
 createNode shadingEngine -n "pasted__GUI2D_black_shaderSG";
 	rename -uid "C50B0B25-4A5D-2701-1F02-EA9115573B41";
 	setAttr ".ihi" 0;
-	setAttr -s 17 ".dsm";
+	setAttr -s 18 ".dsm";
 	setAttr ".ro" yes;
 createNode lambert -n "pasted__GUI2D_black_shader";
 	rename -uid "A87225C8-4AF3-07C4-2F3E-078AA502BB7A";
@@ -6506,7 +6691,7 @@ createNode materialInfo -n "pasted__materialInfo2";
 createNode shadingEngine -n "pasted__GUI2D_yellow_shaderSG";
 	rename -uid "DD4FF180-4C8D-76BD-C4C2-819F2B5AF39B";
 	setAttr ".ihi" 0;
-	setAttr -s 17 ".dsm";
+	setAttr -s 18 ".dsm";
 	setAttr ".ro" yes;
 createNode lambert -n "pasted__GUI2D_yellow_shader";
 	rename -uid "DE81C18A-43B8-E500-F7D5-2393695073FA";
@@ -6536,26 +6721,31 @@ createNode lambert -n "pasted__GUI2D_orange_shader";
 	setAttr ".dc" 1;
 	setAttr ".c" -type "float3" 1 0.58333331 0 ;
 createNode lightLinker -s -n "lightLinker1";
-	rename -uid "811E9D34-46CE-0A13-C513-A09DCE23D278";
+	rename -uid "A583D4F2-4BF7-7E92-F74D-8EB51284A309";
 	setAttr -s 13 ".lnk";
 	setAttr -s 12 ".slnk";
 createNode displayLayerManager -n "layerManager";
-	rename -uid "C4FDE402-4CCB-C03C-2A85-D9B60228C61F";
+	rename -uid "407AE0BA-4759-460E-62C4-60B885D3D9ED";
 createNode displayLayer -n "defaultLayer";
 	rename -uid "CBAD5465-4A25-7A55-CA52-DC81DE42FF21";
 createNode renderLayerManager -n "renderLayerManager";
-	rename -uid "BC0D6387-4B95-6756-B08E-CB8022B3CB6C";
+	rename -uid "A5C283BE-493B-63E2-1D37-6D887D8DF922";
 createNode renderLayer -n "defaultRenderLayer";
 	rename -uid "7A7FB631-425D-6312-8EC9-2782C3FCF241";
 	setAttr ".g" yes;
 createNode shapeEditorManager -n "shapeEditorManager";
-	rename -uid "682F57FB-4297-4A5E-9449-C3B0016C4E52";
+	rename -uid "DF8D2744-4467-68DD-BA62-B6AAA9E681BC";
 createNode poseInterpolatorManager -n "poseInterpolatorManager";
-	rename -uid "1496FC94-423E-11CC-ED86-25813D75D343";
+	rename -uid "DC5A82F0-48FE-DF47-1F0B-308D1748E2F6";
 createNode script -n "sceneConfigurationScriptNode";
 	rename -uid "1CE913F9-45A3-8D1B-0009-E8AEF86C5B7B";
 	setAttr ".b" -type "string" "playbackOptions -min 0 -max 150 -ast 0 -aet 500 ";
 	setAttr ".st" 6;
+createNode nodeGraphEditorInfo -n "MayaNodeEditorSavedTabsInfo";
+	rename -uid "E9376F7E-4241-7606-8E07-10895975AEEA";
+	setAttr ".tgi[0].tn" -type "string" "Untitled_1";
+	setAttr ".tgi[0].vl" -type "double2" -376.65727083661216 -433.48184643976953 ;
+	setAttr ".tgi[0].vh" -type "double2" 383.57454028389242 479.94168556565756 ;
 select -ne :time1;
 	setAttr -av -k on ".cch";
 	setAttr -av -cb on ".ihi";
@@ -6799,6 +6989,7 @@ select -ne :hardwareRenderGlobals;
 	setAttr -k on ".bswa";
 	setAttr -k on ".shml";
 	setAttr -k on ".hwel";
+connectAttr "CTRL_C_tongue_out.ty" "facial_attrs_out.tongueOut";
 connectAttr "CTRL_C_browInnerUp.ty" "facial_attrs_out.browInnerUp";
 connectAttr "CTRL_L_brow_down.ty" "facial_attrs_out.browDownLeft";
 connectAttr "CTRL_R_brow_down.ty" "facial_attrs_out.browDownRight";
@@ -6999,6 +7190,7 @@ connectAttr "FRM_R_mouth_lowerLipDepressShape.iog" "pasted__GUI2D_black_shaderSG
 connectAttr "FRM_C_mouthShape.iog" "pasted__GUI2D_black_shaderSG.dsm" -na;
 connectAttr "FRM_C_jawShape.iog.og[0]" "pasted__GUI2D_black_shaderSG.dsm" -na;
 connectAttr "FRM_C_jaw_fwdBackShape.iog" "pasted__GUI2D_black_shaderSG.dsm" -na;
+connectAttr "FRM_C_tongue_outShape.iog" "pasted__GUI2D_black_shaderSG.dsm" -na;
 connectAttr "pasted__groupId31.msg" "pasted__GUI2D_black_shaderSG.gn" -na;
 connectAttr "pasted__GUI2D_yellow_shaderSG.msg" "pasted__materialInfo2.sg";
 connectAttr "pasted__GUI2D_yellow_shader.msg" "pasted__materialInfo2.m";
@@ -7034,6 +7226,8 @@ connectAttr "CTRL_R_mouth_lowerLipDepressShape.iog" "pasted__GUI2D_yellow_shader
 connectAttr "CTRL_C_mouthShape.iog" "pasted__GUI2D_yellow_shaderSG.dsm" -na;
 connectAttr "CTRL_C_jawShape.iog" "pasted__GUI2D_yellow_shaderSG.dsm" -na;
 connectAttr "CTRL_C_jaw_fwdBackShape.iog" "pasted__GUI2D_yellow_shaderSG.dsm" -na
+		;
+connectAttr "CTRL_C_tongue_outShape.iog" "pasted__GUI2D_yellow_shaderSG.dsm" -na
 		;
 connectAttr "pasted__GUI2D_black_shaderSG4.msg" "pasted__materialInfo9.sg";
 connectAttr "pasted__GUI2D_black_shader4.msg" "pasted__materialInfo9.m";
