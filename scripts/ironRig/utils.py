@@ -817,3 +817,14 @@ def symmetryMatrix(matrix):
     )
     resultMtx = matrix * symMtx
     return resultMtx
+
+
+def connectScaleWithConstraint(moduleGroup):
+    modGrp = pm.PyNode(moduleGroup)
+    outJnts = [jnt for jnt in modGrp.getChildren(ad=True, type='joint') if 'out' in jnt.name()]
+    for outJnt in outJnts:
+        skelJnt = outJnt.scaleX.outputs(type='joint')[0]
+        outJnt.scaleX // skelJnt.scaleX
+        outJnt.scaleY // skelJnt.scaleY
+        outJnt.scaleZ // skelJnt.scaleZ
+        pm.scaleConstraint(outJnt, skelJnt, mo=True)
