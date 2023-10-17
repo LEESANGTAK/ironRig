@@ -295,7 +295,7 @@ class SplineIK(System):
 
         dynCrv =  pm.duplicate(self.__curve, n='{0}dyn_crv'.format(self._prefix))[0]
 
-        enableCond = pm.createNode('condition', n='{0}_dynEnable_cond'.format(self._prefix))
+        enableCond = pm.createNode('condition', n='{0}dynEnable_cond'.format(self._prefix))
         enableCond.secondTerm.set(1)
         enableCond.colorIfTrueR.set(3)
 
