@@ -199,7 +199,7 @@ def getInbetweenJoints(startJoint, endJoint):
     for childJnt in startJoint.getChildren(ad=True, type='joint'):
         childJntPnt = pm.dt.Point(pm.xform(childJnt, q=True, rp=True, ws=True))
         startToChildVec = childJntPnt - startPnt
-        if (startToEndVector.normal() * startToChildVec.normal()) == 1.0 and startToChildVec.length() < startToEndVector.length():
+        if (startToEndVector.normal() * startToChildVec.normal()) >= 0.99 and startToChildVec.length() < startToEndVector.length():
             inbJointsInfo[childJnt] = startToChildVec.length()
 
     inbJoints = [element[0] for element in sorted(inbJointsInfo.items(), key=lambda item: item[1])]
