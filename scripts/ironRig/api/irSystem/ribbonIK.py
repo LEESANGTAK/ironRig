@@ -33,6 +33,9 @@ class RibbonIK(System):
         pm.parent(self.__surface, self._noTrsfGrp)
 
     def __attachJointsToSurface(self):
+        folScaleDecMtx = pm.createNode('decomposeMatrix', n='{}folScale_decMtx'.format(self._prefix))
+        self._topGrp.worldMatrix >> folScaleDecMtx.inputMatrix
+
         for joint in self._joints:
             jntPoint = pm.dt.Point(pm.xform(joint, q=True, t=True, ws=True))
             closestPoint, paramU, paramV = self.__surface.closestPoint(jntPoint, space='world')
@@ -45,6 +48,7 @@ class RibbonIK(System):
             self.__surface.worldMatrix >> fol.inputWorldMatrix
             fol.outTranslate >> folTransform.translate
             fol.outRotate >> folTransform.rotate
+            folScaleDecMtx.outputScale >> folTransform.scale
             pm.parentConstraint(folTransform, joint, mo=True)
             pm.parent(folTransform, self._noTrsfGrp)
 
