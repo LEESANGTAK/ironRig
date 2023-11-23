@@ -25,7 +25,7 @@ class String(Module):
         # Properties
         self.__numberOfControllers = 3
         self.__fk = False
-        self.__hybridIK = True
+        self.__hybridIK = False
         self.__wave = False
         self.__coil = False
         self.__dynamic = False
