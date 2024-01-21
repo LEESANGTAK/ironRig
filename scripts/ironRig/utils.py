@@ -129,6 +129,7 @@ def createJointsOnCurve(curve, numJoints, prefix):
         jnt = pm.createNode('joint', n='{}{:02d}_crvJnt'.format(prefix, i))
         pm.xform(jnt, t=pointOnCrv, ws=True)
         joints.append(jnt)
+    joints[-1].rename('_'.join(joints[-1].split('_')[:-2]) + '_end_crvJnt')
 
     pm.makeIdentity(joints, apply=True)
 
@@ -148,6 +149,7 @@ def createJointsOnSurface(surface, numJoints, prefix):
         jnt = pm.createNode('joint', n='{}{:02d}_srfcJnt'.format(prefix, i))
         pm.xform(jnt, t=pointOnSurface, ws=True)
         joints.append(jnt)
+    joints[-1].rename('_'.join(joints[-1].split('_')[:-2]) + '_end_srfcJnt')
 
     pm.makeIdentity(joints, apply=True)
 
