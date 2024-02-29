@@ -94,7 +94,9 @@ class Rope(Module):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             utils.removeConnections(skelJnt)
             pm.parentConstraint(outJnt, skelJnt, mo=True)
-            outJnt.scale >> skelJnt.scale
+            pm.scaleConstraint(outJnt, skelJnt, mo=True)
+            # for axis in 'XYZ':
+            #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def postBuild(self):
         super(Rope, self).postBuild()

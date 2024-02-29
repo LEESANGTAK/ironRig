@@ -231,5 +231,6 @@ class String(Module):
     def _connectSkeleton(self):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             pm.parentConstraint(outJnt, skelJnt, mo=True)
-            for axis in 'XYZ':
-                outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
+            pm.scaleConstraint(outJnt, skelJnt, mo=True)
+            # for axis in 'XYZ':
+            #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)

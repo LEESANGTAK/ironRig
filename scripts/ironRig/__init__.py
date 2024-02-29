@@ -1,11 +1,6 @@
-import imp
+from imp import reload
 
-from . import api
-from . import gui
-from . import utils
-from . import decorators
-
-imp.reload(api)
-imp.reload(gui)
-imp.reload(utils)
-imp.reload(decorators)
+from . import api; reload(api)
+from . import gui; reload(gui)
+from . import utils; reload(utils)
+from . import decorators; reload(decorators)

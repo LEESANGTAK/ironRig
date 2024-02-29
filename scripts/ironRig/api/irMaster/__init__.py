@@ -1,14 +1,9 @@
-import imp
+from imp import reload
 
-from . import master
-from . import globalMaster
-from . import fingersMaster
-from . import eyesMaster
-
-imp.reload(master)
-imp.reload(globalMaster)
-imp.reload(fingersMaster)
-imp.reload(eyesMaster)
+from . import master; reload(master)
+from . import globalMaster; reload(globalMaster)
+from . import fingersMaster; reload(fingersMaster)
+from . import eyesMaster; reload(eyesMaster)
 
 
 from .globalMaster import GlobalMaster
