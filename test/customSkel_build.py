@@ -1,3 +1,5 @@
+from imp import reload
+
 # -------------- Module Build ---------------------
 import ironRig as ir; reload(ir)
 from ironRig.api import irGlobal

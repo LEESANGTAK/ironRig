@@ -1,18 +1,11 @@
-import imp
+from imp import reload
 
-from . import obb
-from . import plane
-from . import aligner
-from . import container
-from . import controller
-from . import spaceSwitchBuilder
-
-imp.reload(obb)
-imp.reload(plane)
-imp.reload(aligner)
-imp.reload(container)
-imp.reload(controller)
-imp.reload(spaceSwitchBuilder)
+from . import obb; reload(obb)
+from . import plane; reload(plane)
+from . import aligner; reload(aligner)
+from . import container; reload(container)
+from . import controller; reload(controller)
+from . import spaceSwitchBuilder; reload(spaceSwitchBuilder)
 
 
 from .obb import OBB

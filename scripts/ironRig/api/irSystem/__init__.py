@@ -1,28 +1,16 @@
-import imp
+from imp import reload
 
-from . import system
-from . import single
-from . import fk
-from . import splineIK
-from . import ribbonIK
-from . import twoBoneIK
-from . import threeBoneIK
-from . import revFootIK
-from . import aim
-from . import squash
-from . import corrective
-
-imp.reload(system)
-imp.reload(single)
-imp.reload(fk)
-imp.reload(splineIK)
-imp.reload(ribbonIK)
-imp.reload(twoBoneIK)
-imp.reload(threeBoneIK)
-imp.reload(revFootIK)
-imp.reload(aim)
-imp.reload(squash)
-imp.reload(corrective)
+from . import system; reload(system)
+from . import single; reload(single)
+from . import fk; reload(fk)
+from . import splineIK; reload(splineIK)
+from . import ribbonIK; reload(ribbonIK)
+from . import twoBoneIK; reload(twoBoneIK)
+from . import threeBoneIK; reload(threeBoneIK)
+from . import revFootIK; reload(revFootIK)
+from . import aim; reload(aim)
+from . import squash; reload(squash)
+from . import corrective; reload(corrective)
 
 
 from .single import Single
