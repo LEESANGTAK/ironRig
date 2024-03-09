@@ -263,6 +263,9 @@ class TwoBoneLimb(Module):
             skelJnt = outJnt.replace(self._prefix+'out_', '')
             utils.removeConnections(skelJnt)
             pm.parentConstraint(outJnt, skelJnt, mo=True)
+            pm.scaleConstraint(outJnt, skelJnt, mo=True)
+            # for axis in 'XYZ':
+            #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def __buildControls(self):
         moduleCtrl = Controller('{}module_ctrl'.format(self._prefix), Controller.SHAPE.SPHERE)

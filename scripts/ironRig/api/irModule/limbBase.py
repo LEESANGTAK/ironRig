@@ -36,4 +36,6 @@ class LimbBase(Module):
             if outJnt == self._outJoints[-1]:
                 break
             pm.parentConstraint(outJnt, skelJnt, mo=True)
-
+            pm.scaleConstraint(outJnt, skelJnt, mo=True)
+            # for axis in 'XYZ':
+            #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)

@@ -5,17 +5,18 @@ from .master import Master
 
 
 class GlobalMaster(Master):
-    def __init__(self, rootJoint=None):
-        self.__mastersGrp = None
+    def __init__(self, rootJoint, buildRootController=False):
+        self._mastersGrp = None
 
         super(GlobalMaster, self).__init__(prefix='controlRig_',)
 
-        self.__rootJoint = pm.PyNode(rootJoint)
-        self.__globalController = None
-        self.__mainController = None
+        self._rootJoint = pm.PyNode(rootJoint)
+        self._globalController = None
+        self._mainController = None
+        self._buildRootController=buildRootController
 
     def mainController(self):
-        return self.__mainController
+        return self._mainController
 
     def addModules(self, *args):
         modules = sum([module if isinstance(module, list) else [module] for module in args], [])
@@ -29,48 +30,54 @@ class GlobalMaster(Master):
         masters = sum([master if isinstance(master, list) else [master] for master in args], [])
         for master in masters:
             self.set().forceElement(master.set())
-            self.__mastersGrp | master.topGrp()
+            self._mastersGrp | master.topGrp()
         self._masters.extend(masters)
 
     def build(self):
         super(GlobalMaster, self).build()
-        pm.parent([self._modulesGrp, self.__mastersGrp], self.__mainController)
+        pm.parent([self._modulesGrp, self._mastersGrp], self._mainController)
 
-        for jnt in self.__rootJoint.getChildren(type='joint'):
-            jnt.segmentScaleCompensate.set(False)
+        # for jnt in self._rootJoint.getChildren(type='joint'):
+        #     jnt.segmentScaleCompensate.set(False)
 
     def _createGroups(self):
         super(GlobalMaster, self)._createGroups()
-        self.__spaceSwtichGrp = pm.createNode('transform', n='spaceSwitches_grp'.format(self._prefix))
-        self.__spaceSwtichGrp.hide()
-        self.__mastersGrp = pm.createNode('transform', n='{}masters'.format(self._prefix))
-        self._topGrp | self.__spaceSwtichGrp
+        self._spaceSwtichGrp = pm.createNode('transform', n='spaceSwitches_grp'.format(self._prefix))
+        self._spaceSwtichGrp.hide()
+        self._mastersGrp = pm.createNode('transform', n='{}masters'.format(self._prefix))
+        self._topGrp | self._spaceSwtichGrp
         self._topGrp.rename('controlRig')
 
     def _buildSystems(self):
         pass
 
     def _buildControls(self):
-        self.__globalController = Controller(name='global_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
-        GlobalMaster.setupGlobalScaleAttr(self.__globalController)
-        self.__globalController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
-        self.__mainController = Controller(name='main_ctrl', color=self._controllerColor, direction=Controller.DIRECTION.Y)
-        self.__mainController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
-        self.setupVisibilityAttr(self.__globalController)
-        self._controllers = [self.__globalController, self.__mainController]
+        self._globalController = Controller(name='global_ctrl', color=Controller.COLOR.YELLOW, direction=Controller.DIRECTION.Y)
+        GlobalMaster.setupGlobalScaleAttr(self._globalController)
+        self._globalController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        self._mainController = Controller(name='main_ctrl', color=Controller.COLOR.DARKBLUE, direction=Controller.DIRECTION.Y, size=0.9)
+        self._mainController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
+        self.setupVisibilityAttr(self._mainController)
+        self._controllers = [self._globalController, self._mainController]
 
-        self.__globalController | self.__mainController
-        pm.parent(self.__globalController.zeroGrp(), self._topGrp)
+        self._globalController | self._mainController
+        pm.parent(self._globalController.zeroGrp(), self._topGrp)
 
-        pm.parentConstraint(self.__mainController, self.__rootJoint, mo=True)
-        self.__globalController.scale >> self.__rootJoint.scale
+        self.addMembers(self._globalController.controllerNode(), self._mainController.controllerNode())
 
-        self.addMembers(self.__globalController.controllerNode(), self.__mainController.controllerNode())
+        if self._buildRootController:
+            rootCtrl = Controller(name='root_ctrl', color=Controller.COLOR.GREEN, shape=Controller.SHAPE.TRIANGLE, direction=Controller.DIRECTION.Y)
+            pm.parentConstraint(rootCtrl, self._rootJoint, mo=True)
+            pm.parent(rootCtrl.zeroGrp(), self._globalController)
+            self.addMembers(rootCtrl.controllerNode())
+
+        pm.parentConstraint(self._globalController, self._rootJoint, mo=True)
+        self._globalController.scale >> self._rootJoint.scale
 
     def postBuild(self):
         super(GlobalMaster, self).postBuild()
-        self.__globalController.color = Controller.COLOR.YELLOW
-        self.__mainController.size = self._controllerSize * 0.85
+        self._globalController.color = Controller.COLOR.YELLOW
+        self._mainController.size = self._controllerSize * 0.85
 
     @staticmethod
     def setupGlobalScaleAttr(globalController):
@@ -78,18 +85,9 @@ class GlobalMaster(Master):
         for scaleAttr in [ch + axis for ch in 's' for axis in 'xyz']:
             globalController.globalScale >> globalController.attr(scaleAttr)
 
-    def setupVisibilityAttr(self, globalController):
+    def setupVisibilityAttr(self, mainController):
         geoLayer = pm.createNode('displayLayer', n='geo_layer')
-        pm.addAttr(globalController, ln='geometryVis', at='enum', en='Normal:Template:Reference', dv=2, keyable=True)
-        pm.setAttr(globalController.geometryVis, channelBox=True)
-        globalController.geometryVis >> geoLayer.displayType
-        geoLayer.addMembers(utils.getMeshesFromJoints(pm.ls(self.__rootJoint, dag=True, type='joint')))
-
-        # skelLayer = pm.createNode('displayLayer', n='skel_layer')
-        # pm.addAttr(globalController, ln='skeletonDisplayType', at='enum', en='Normal:Template:Reference', dv=1, keyable=True)
-        # pm.setAttr(globalController.skeletonDisplayType, channelBox=True)
-        # pm.addAttr(globalController, ln='skeletonVisibility', at='bool', dv=False, keyable=True)
-        # pm.setAttr(globalController.skeletonVisibility, channelBox=True)
-        # globalController.skeletonDisplayType >> skelLayer.displayType
-        # globalController.skeletonVisibility >> skelLayer.visibility
-        # skelLayer.addMembers(self.__rootJoint)
+        pm.addAttr(mainController, ln='geometryVis', at='enum', en='Normal:Template:Reference', dv=2, keyable=True)
+        pm.setAttr(mainController.geometryVis, channelBox=True)
+        mainController.geometryVis >> geoLayer.displayType
+        geoLayer.addMembers(utils.getMeshesFromJoints(pm.ls(self._rootJoint, dag=True, type='joint')))

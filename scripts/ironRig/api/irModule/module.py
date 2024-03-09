@@ -343,6 +343,9 @@ class Module(Container):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             utils.removeConnections(skelJnt)
             pm.parentConstraint(outJnt, skelJnt, mo=True)
+            pm.scaleConstraint(outJnt, skelJnt, mo=True)
+            # for axis in 'XYZ':
+            #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def __buildGlobalController(self):
         modGlobalCtrl = Controller('{}global_ctrl'.format(self._prefix),

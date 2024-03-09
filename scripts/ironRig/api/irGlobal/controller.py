@@ -37,6 +37,7 @@ class Color:
     LIGHTGREEN = (0.5, 1.0, 0.5)
     BLUE = (0.0, 0.0, 1.0)
     SKYBLUE = (0.4, 0.8, 1.0)
+    DARKBLUE = (0.0, 0.1, 0.2)
     YELLOW = (1.0, 1.0, 0.0)
     ORANGE = (1.0, 0.15, 0.0)
     PURPLE = (0.15, 0.0, 1.0)
