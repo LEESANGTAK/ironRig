@@ -1,4 +1,4 @@
-import pymel.core as pm
+from maya import cmds
 from ... import utils
 from ..irGlobal import Container
 from ..irGlobal import Controller
@@ -40,8 +40,8 @@ class Master(Container):
         self._controllerSize = size
 
     def _createGroups(self):
-        self._topGrp.rename('{}master'.format(self._prefix))
-        self._modulesGrp = pm.createNode('transform', n='{}modules'.format(self._prefix))
+        self._topGrp.rename('{}master'.format(self._name))
+        self._modulesGrp = cmds.createNode('transform', n='{}modules'.format(self._name))
         self._topGrp | self._modulesGrp
 
     def addModules(self, *args):
@@ -64,8 +64,8 @@ class Master(Container):
 
     def _buildSystems(self):
         for module in self._modules:
-            self.set().forceElement(module.set())
-            self._modulesGrp | module.topGrp()
+            self.set.forceElement(module.set)
+            self._modulesGrp | module.topGrp
 
     def _buildControls(self):
         raise NotImplementedError()
@@ -76,18 +76,18 @@ class Master(Container):
             ctrl.size = self._controllerSize
 
     def attachTo(self, module):
-        closestOutJnt = utils.findClosestObject(pm.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints())
-        pm.matchTransform(self._topGrp, closestOutJnt, pivots=True)
-        pm.parentConstraint(closestOutJnt, self._topGrp, mo=True)
+        closestOutJnt = utils.findClosestObject(cmds.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints)
+        cmds.matchTransform(self._topGrp, closestOutJnt, pivots=True)
+        cmds.parentConstraint(closestOutJnt, self._topGrp, mo=True)
         closestOutJnt.scale >> self._topGrp.scale
         outJnts = []
         for module in self._modules:
-            outJnts.extend(module.outJoints())
+            outJnts.extend(module.outJoints)
         for outJnt in outJnts:
             scaleMult = outJnt.inputs(type='multiplyDivide')[0]
             closestOutJnt.scale >> scaleMult.input2
 
-    def remove(self):
+    def delete(self):
         for module in self._modules:
             module.remove()
         for master in self._masters:
@@ -95,4 +95,4 @@ class Master(Container):
         self._modules = []
         self._masters = []
         self._controllers = []
-        super(Master, self).remove()
+        super(Master, self).delete()

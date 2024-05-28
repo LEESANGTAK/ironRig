@@ -1,4 +1,4 @@
-import pymel.core as pm
+from maya import cmds
 from ... import utils
 from ..irGlobal import Aligner
 from ..irSystem import Aim
@@ -28,8 +28,8 @@ class Eye(Module):
         if len(self._skelJoints) == 1:
             initJoints = []
             for initSkelLoc in self._initSkelLocators:
-                initJnt = pm.createNode('joint', n=initSkelLoc.replace('_loc', ''))
-                pm.matchTransform(initJnt, initSkelLoc)
+                initJnt = cmds.createNode('joint', n=initSkelLoc.replace('_loc', ''))
+                cmds.matchTransform(initJnt, initSkelLoc)
                 initJnt.segmentScaleCompensate.set(False)
                 initJnt.displayLocalAxis.set(True)
                 self._initGrp | initJnt
@@ -46,24 +46,24 @@ class Eye(Module):
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__aimSystem = Aim(self._prefix+'ik_', ikJoints)
+        self.__aimSystem = Aim(self._name+'ik_', ikJoints)
         if self._negateScaleX:
             self.__aimSystem.negateSclaeX = True
         self.__aimSystem.build()
         self.addSystems(self.__aimSystem)
 
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self._prefix+'fk_', fkJoints)
+        self.__fkSystem = FK(self._name+'fk_', fkJoints)
         if self._negateScaleX:
             self.__fkSystem.negateSclaeX = True
         if len(self._skelJoints) == 1:
             self.__fkSystem.endController = True
         self.__fkSystem.build()
-        shapeOffset = utils.getDistance(self.__fkSystem.joints()[0], self.__fkSystem.joints()[-1])*1.2 * (self.__aimSystem.aimSign() * utils.axisStrToVector(self.__aimSystem.aimAxis()))
-        self.__fkSystem.controllers()[0].shapeOffset = shapeOffset
+        shapeOffset = utils.getDistance(self.__fkSystem.joints[0], self.__fkSystem.joints[-1])*1.2 * (self.__aimSystem.aimSign * utils.axisStrToVector(self.__aimSystem.aimAxis()))
+        self.__fkSystem.controllers[0].shapeOffset = shapeOffset
         self.addSystems(self.__fkSystem)
 
-        self._sysJoints = self.__fkSystem.joints()
+        self._sysJoints = self.__fkSystem.joints
 
     def _connectSystems(self):
-        pm.parentConstraint(self.__aimSystem.joints()[0], self.__fkSystem.controllers()[0].zeroGrp())
+        cmds.parentConstraint(self.__aimSystem.joints[0], self.__fkSystem.controllers[0].zeroGrp)

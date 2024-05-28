@@ -3,8 +3,7 @@ Author: Sangtak Lee
 Contact: chst27@gmail.com
 """
 
-
-import pymel.core as pm
+from maya import cmds, mel
 
 
 def getHairSystems(nucleus):
@@ -60,7 +59,7 @@ def getControls(dynCrv):
     for pntOnCrvInfo in pntOnCrvInfos:
         bakeLocParent = pntOnCrvInfo.outputs(type='transform')[0]
         ctrlName = bakeLocParent.getChildren()[0].replace('_bake_loc', '')
-        controls.append(pm.PyNode(ctrlName))
+        controls.append(ctrlName)
     return controls
 
 
@@ -75,23 +74,23 @@ def getJoints(splineIkCurve):
 
 
 def bakeDynToControllers(bakeLocators):
-    minFrame = pm.playbackOptions(q=True, min=True)
-    maxFrame = pm.playbackOptions(q=True, max=True)
+    minFrame = cmds.playbackOptions(q=True, min=True)
+    maxFrame = cmds.playbackOptions(q=True, max=True)
 
     ctrls = []
     ctrlSpaceLocs = []
     for bakeLoc in bakeLocators:
-        ctrl = pm.PyNode(bakeLoc.split('_bake_loc')[0])
+        ctrl = bakeLoc.split('_bake_loc')[0]
         ctrls.append(ctrl)
-        pm.matchTransform(bakeLoc, ctrl)
-        pm.cutKey(ctrl, attribute=['tx', 'ty', 'tz', 'rx', 'ry', 'rz'], clear=True)
+        cmds.matchTransform(bakeLoc, ctrl)
+        cmds.cutKey(ctrl, attribute=['tx', 'ty', 'tz', 'rx', 'ry', 'rz'], clear=True)
 
-        ctrlSpaceLoc = pm.spaceLocator(n='{}_space_loc'.format(ctrl))
+        ctrlSpaceLoc = cmds.spaceLocator(n='{}_space_loc'.format(ctrl))
         ctrlSpaceLocs.append(ctrlSpaceLoc)
-        # pm.parent(ctrlSpaceLoc, ctrl.getParent())
-        pm.parentConstraint(bakeLoc, ctrlSpaceLoc, mo=False)
+        # cmds.parent(ctrlSpaceLoc, ctrl.getParent())
+        cmds.parentConstraint(bakeLoc, ctrlSpaceLoc, mo=False)
 
-    pm.bakeResults(
+    cmds.bakeResults(
         ctrlSpaceLocs,
         simulation=True,
         time=(minFrame, maxFrame),
@@ -107,16 +106,16 @@ def bakeDynToControllers(bakeLocators):
     )
 
     # for ctrlSpaceLoc, ctrl in zip(ctrlSpaceLocs, ctrls):
-    #     pm.cutKey(ctrlSpaceLoc, time=':', attribute=['tx', 'ty', 'tz', 'rx', 'ry', 'rz'], hierarchy='none')
-    #     pm.pasteKey(ctrl, option='insert', copies=1, connect=True, timeOffset=0, floatOffset=0, valueOffset=0)
+    #     cmds.cutKey(ctrlSpaceLoc, time=':', attribute=['tx', 'ty', 'tz', 'rx', 'ry', 'rz'], hierarchy='none')
+    #     cmds.pasteKey(ctrl, option='insert', copies=1, connect=True, timeOffset=0, floatOffset=0, valueOffset=0)
 
-    # pm.delete(ctrlSpaceLocs)
+    # cmds.delete(ctrlSpaceLocs)
 
     print(ctrlSpaceLocs)
     print(ctrls)
     for ctrlSpaceLoc, ctrl in zip(ctrlSpaceLocs, ctrls):
-        pm.parentConstraint(ctrlSpaceLoc, ctrl, mo=False)
-    pm.bakeResults(
+        cmds.parentConstraint(ctrlSpaceLoc, ctrl, mo=False)
+    cmds.bakeResults(
         ctrls,
         simulation=True,
         time=(minFrame, maxFrame),
@@ -130,13 +129,13 @@ def bakeDynToControllers(bakeLocators):
         controlPoints=False,
         shape=False
     )
-    pm.delete(ctrlSpaceLocs)
+    cmds.delete(ctrlSpaceLocs)
 
 def bakeDynToJoints(joints, endCtrs=[]):
-    minFrame = pm.playbackOptions(q=True, min=True)
-    maxFrame = pm.playbackOptions(q=True, max=True)
+    minFrame = cmds.playbackOptions(q=True, min=True)
+    maxFrame = cmds.playbackOptions(q=True, max=True)
 
-    pm.bakeResults(
+    cmds.bakeResults(
         joints,
         simulation=True,
         time=(minFrame, maxFrame),
@@ -159,40 +158,40 @@ def bakeDynToJoints(joints, endCtrs=[]):
 
 def deleteKeys(objects):
     if not objects:
-        pm.error('There is no transform to delete keys')
-    pm.select(objects, r=True)
-    pm.mel.eval('DeleteKeys;')
-    pm.select(cl=True)
+        cmds.error('There is no transform to delete keys')
+    cmds.select(objects, r=True)
+    mel.eval('DeleteKeys;')
+    cmds.select(cl=True)
 
 
 def getIhHairchainData(endCtrs):
     ihHairchainData = {'ctrList': [], 'bakeCtrList': [], 'bakeOutList': [], 'jointList': []}
     for ctr in endCtrs:
         prefix = ctr.replace('_ctrEnd_crv', '')
-        ihHairchainData['ctrList'].extend(pm.ls(prefix + '_ctr*_crv'))
-        ihHairchainData['bakeCtrList'].extend(pm.ls(prefix + '_bake*_crv'))
-        ihHairchainData['bakeOutList'].extend(pm.ls(prefix + '_bakeOut*_jnt', type='joint'))
-        ihHairchainData['jointList'].extend(pm.ls(prefix + '_*_jnt', type='joint'))
+        ihHairchainData['ctrList'].extend(cmds.ls(prefix + '_ctr*_crv'))
+        ihHairchainData['bakeCtrList'].extend(cmds.ls(prefix + '_bake*_crv'))
+        ihHairchainData['bakeOutList'].extend(cmds.ls(prefix + '_bakeOut*_jnt', type='joint'))
+        ihHairchainData['jointList'].extend(cmds.ls(prefix + '_*_jnt', type='joint'))
     return ihHairchainData
 
 
 def bakeIhHairchainControl(ihHairchainData):
-    pm.cutKey(ihHairchainData['ctrList'], attribute=['tx', 'ty', 'tz'], clear=True)
+    cmds.cutKey(ihHairchainData['ctrList'], attribute=['tx', 'ty', 'tz'], clear=True)
 
     for bakeCtr in ihHairchainData['bakeCtrList']:
         bakeCtrZero = bakeCtr.replace('_crv', '_zero')
         ctrZero = bakeCtrZero.replace('_bake', '_ctr')
-        pm.delete(pm.parentConstraint(ctrZero, bakeCtrZero, mo=False))
-        pm.delete(pm.pointConstraint(bakeCtr.replace('_bake', '_ctr'), bakeCtr, mo=False))
+        cmds.delete(cmds.parentConstraint(ctrZero, bakeCtrZero, mo=False))
+        cmds.delete(cmds.pointConstraint(bakeCtr.replace('_bake', '_ctr'), bakeCtr, mo=False))
 
     pntConstraints = []
     for bakeOut in ihHairchainData['bakeOutList']:
         bakeCtr = bakeOut.replace('_bakeOut', '_bake').replace('_jnt', '_crv')
-        pntConstraints.append(pm.pointConstraint(bakeOut, bakeCtr, mo=True))
+        pntConstraints.append(cmds.pointConstraint(bakeOut, bakeCtr, mo=True))
 
-    minFrame = pm.playbackOptions(q=True, min=True)
-    maxFrame = pm.playbackOptions(q=True, max=True)
-    pm.bakeResults(
+    minFrame = cmds.playbackOptions(q=True, min=True)
+    maxFrame = cmds.playbackOptions(q=True, max=True)
+    cmds.bakeResults(
         ihHairchainData['bakeCtrList'],
         simulation=True,
         time=(minFrame, maxFrame),
@@ -206,16 +205,16 @@ def bakeIhHairchainControl(ihHairchainData):
         controlPoints=False,
         shape=False
         )
-    pm.delete(pntConstraints)
+    cmds.delete(pntConstraints)
 
     for bakeCtr in ihHairchainData['bakeCtrList']:
         ctr = bakeCtr.replace('_bake', '_ctr')
-        pm.cutKey(bakeCtr, time=':', attribute=['tx', 'ty', 'tz'], hierarchy='none')
-        pm.pasteKey(ctr, option='insert', copies=1, connect=True, timeOffset=0, floatOffset=0, valueOffset=0)
+        cmds.cutKey(bakeCtr, time=':', attribute=['tx', 'ty', 'tz'], hierarchy='none')
+        cmds.pasteKey(ctr, option='insert', copies=1, connect=True, timeOffset=0, floatOffset=0, valueOffset=0)
 
 
 def bakeIhHairchainJoint(joints, endCtrs):
-    pm.bakeResults()
+    cmds.bakeResults()
 
 
 class DynamicSplineBaker(object):
@@ -233,61 +232,61 @@ class DynamicSplineBaker(object):
     def __init__(self):
         super(DynamicSplineBaker, self).__init__()
 
-        if pm.window(DynamicSplineBaker.name, q=True, exists=True):
-            pm.deleteUI(DynamicSplineBaker.name)
+        if cmds.window(DynamicSplineBaker.name, q=True, exists=True):
+            cmds.deleteUI(DynamicSplineBaker.name)
 
-        win = pm.window(DynamicSplineBaker.name, title='Dynamic Spline Baker', mnb=False, mxb=False)
+        win = cmds.window(DynamicSplineBaker.name, title='Dynamic Spline Baker', mnb=False, mxb=False)
 
-        pm.tabLayout(tabsVisible=False)
-        pm.columnLayout(adj=True, rowSpacing=5)
-        self.namespaceMenu = pm.optionMenu(label='Namespace: ', cc=lambda item: self.populateDynPartsTxtScrlList(item))
+        cmds.tabLayout(tabsVisible=False)
+        cmds.columnLayout(adj=True, rowSpacing=5)
+        self.namespaceMenu = cmds.optionMenu(label='Namespace: ', cc=lambda item: self.populateDynPartsTxtScrlList(item))
 
-        pm.separator(style='in', h=3)
+        cmds.separator(style='in', h=3)
 
-        pm.rowColumnLayout(numberOfColumns=3, columnSpacing=[(2, 5), (3, 5)], columnWidth=[(1,150), (2,150)])
+        cmds.rowColumnLayout(numberOfColumns=3, columnSpacing=[(2, 5), (3, 5)], columnWidth=[(1,150), (2,150)])
 
-        pm.columnLayout(adj=True, rowSpacing=5, columnAlign='left')
-        pm.text(label='Solvers')
-        self.solverTxtScrlList = pm.textScrollList(sc=self.populateDynCtrlsTxtScrlList)
+        cmds.columnLayout(adj=True, rowSpacing=5, columnAlign='left')
+        cmds.text(label='Solvers')
+        self.solverTxtScrlList = cmds.textScrollList(sc=self.populateDynCtrlsTxtScrlList)
 
-        pm.setParent('..')
-        pm.columnLayout(adj=True, rowSpacing=5, columnAlign='left')
-        pm.text(label='Dynamic Controllers')
-        self.dynCtrlsTxtScrlList = pm.textScrollList(allowMultiSelection=True, sc=self.selectDynCtrls)
-        pm.popupMenu()
-        pm.menuItem(label='Select All Controllers', c=self.selectAllDynCtrls)
+        cmds.setParent('..')
+        cmds.columnLayout(adj=True, rowSpacing=5, columnAlign='left')
+        cmds.text(label='Dynamic Controllers')
+        self.dynCtrlsTxtScrlList = cmds.textScrollList(allowMultiSelection=True, sc=self.selectDynCtrls)
+        cmds.popupMenu()
+        cmds.menuItem(label='Select All Controllers', c=self.selectAllDynCtrls)
 
-        pm.setParent('..')
-        pm.columnLayout(adj=True, rowSpacing=5)
-        pm.separator(h=10, style='none')
-        self.dynOnOffBtn = pm.button(label='Dynamic On/Off', c=self.dynOnOff)
-        pm.rowColumnLayout(numberOfColumns=2)
+        cmds.setParent('..')
+        cmds.columnLayout(adj=True, rowSpacing=5)
+        cmds.separator(h=10, style='none')
+        self.dynOnOffBtn = cmds.button(label='Dynamic On/Off', c=self.dynOnOff)
+        cmds.rowColumnLayout(numberOfColumns=2)
 
-        pm.setParent('..')
-        self.bakeTypeMenu = pm.optionMenu(label='Bake Type: ')
-        pm.menuItem(label='Controller')
-        pm.menuItem(label='Joint')
-        pm.separator(h=10, style='in')
-        pm.button(label='Bake Dynamic', h=70, c=lambda x: self.bakeDynamic(pm.optionMenu(self.bakeTypeMenu, q=True, value=True)))
-        pm.button(label='Delete Keys', c=self.delKeys)
-        pm.button(label='Reset Controls', c=self.resetControls)
+        cmds.setParent('..')
+        self.bakeTypeMenu = cmds.optionMenu(label='Bake Type: ')
+        cmds.menuItem(label='Controller')
+        cmds.menuItem(label='Joint')
+        cmds.separator(h=10, style='in')
+        cmds.button(label='Bake Dynamic', h=70, c=lambda x: self.bakeDynamic(cmds.optionMenu(self.bakeTypeMenu, q=True, value=True)))
+        cmds.button(label='Delete Keys', c=self.delKeys)
+        cmds.button(label='Reset Controls', c=self.resetControls)
 
-        pm.window(DynamicSplineBaker.name, e=True, w=100, h=100)
-        pm.showWindow(win)
+        cmds.window(DynamicSplineBaker.name, e=True, w=100, h=100)
+        cmds.showWindow(win)
 
         self.buildObjects()
         self.populateNamespaceMenu()
-        self.populateDynPartsTxtScrlList(pm.optionMenu(self.namespaceMenu, q=True, value=True))
+        self.populateDynPartsTxtScrlList(cmds.optionMenu(self.namespaceMenu, q=True, value=True))
 
     def buildObjects(self):
         namespaces = []
         defaultNamespaces = set(['UI', 'shared'])
-        namespaces = list(set(pm.namespaceInfo(listOnlyNamespaces=True, r=True)) - defaultNamespaces)
+        namespaces = list(set(cmds.namespaceInfo(listOnlyNamespaces=True, r=True)) - defaultNamespaces)
         if not namespaces:
-            hairChainNucleuses = [nucleus for nucleus in pm.ls(type='nucleus') if nucleus.startFrame.connections(source=False, type='hairSystem', shapes=True)]
+            hairChainNucleuses = [nucleus for nucleus in cmds.ls(type='nucleus') if nucleus.startFrame.connections(source=False, type='hairSystem', shapes=True)]
             self.objects.append({'namespace': ':', 'nucleuses': hairChainNucleuses})
         for namespace in namespaces:
-            nucleuses = [pm.PyNode(item) for item in pm.namespaceInfo(namespace, listOnlyDependencyNodes=True) if isinstance(pm.PyNode(item), pm.nodetypes.Nucleus)]
+            nucleuses = [item for item in cmds.namespaceInfo(namespace, listOnlyDependencyNodes=True) if cmds.nodeType(item) == 'nucleus']
             hairChainNucleuses = [nucleus for nucleus in nucleuses if nucleus.startFrame.connections(source=False, type='hairSystem', shapes=True)]
             if hairChainNucleuses:
                 self.objects.append({'namespace': namespace, 'nucleuses': hairChainNucleuses})
@@ -295,31 +294,31 @@ class DynamicSplineBaker(object):
     def populateNamespaceMenu(self):
         for obj in self.objects:
 
-            pm.menuItem(label=obj['namespace'], parent=self.namespaceMenu)
+            cmds.menuItem(label=obj['namespace'], parent=self.namespaceMenu)
 
     def populateDynPartsTxtScrlList(self, namespace):
-        pm.textScrollList(self.solverTxtScrlList, e=True, removeAll=True)
+        cmds.textScrollList(self.solverTxtScrlList, e=True, removeAll=True)
         for obj in self.objects:
             if namespace == obj['namespace']:
                 for nucleus in obj['nucleuses']:
-                    pm.textScrollList(self.solverTxtScrlList, e=True, append=nucleus.replace(namespace+':', ''))
+                    cmds.textScrollList(self.solverTxtScrlList, e=True, append=nucleus.replace(namespace+':', ''))
 
     def populateDynCtrlsTxtScrlList(self, *args):
-        namespace = pm.optionMenu(self.namespaceMenu, q=True, value=True)
-        pm.textScrollList(self.dynCtrlsTxtScrlList, e=True, removeAll=True)
-        nucleus = [pm.PyNode(namespace+':'+item) for item in pm.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
+        namespace = cmds.optionMenu(self.namespaceMenu, q=True, value=True)
+        cmds.textScrollList(self.dynCtrlsTxtScrlList, e=True, removeAll=True)
+        nucleus = [namespace+':'+item for item in cmds.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
 
         dyn_ctrl = list(set(nucleus.inputs(type='transform')))
-        pm.select(dyn_ctrl, r=True)
-        # pm.select(nucleus, r=True)
+        cmds.select(dyn_ctrl, r=True)
+        # cmds.select(nucleus, r=True)
 
         enableAttr, startFrameAttr = getNucleusControllerAttributes(nucleus)
-        pm.cutKey(enableAttr, startFrameAttr, clear=True)
+        cmds.cutKey(enableAttr, startFrameAttr, clear=True)
 
         self.updateDynOfOffBtn()
 
         dynCtrls = []
-        hairSystems = getHairSystems(pm.PyNode(nucleus))
+        hairSystems = getHairSystems(nucleus)
         for hairSystem in hairSystems:
             try:  # In case JH Hairchain Rig or TAK's spline rig
                 splineIkCurve = getSplineIkCurve(hairSystem)
@@ -329,72 +328,72 @@ class DynamicSplineBaker(object):
                 dynCtrls.append(hairSystem.startCurveAttract.connections(destination=False, type='transform')[0])
 
         for dynCtrl in dynCtrls:
-            pm.textScrollList(self.dynCtrlsTxtScrlList, e=True, append=dynCtrl.replace(namespace+':', ''))
+            cmds.textScrollList(self.dynCtrlsTxtScrlList, e=True, append=dynCtrl.replace(namespace+':', ''))
 
     def dynOnOff(self, *args):
-        namespace = pm.optionMenu(self.namespaceMenu, q=True, value=True)
-        nucleus = [pm.PyNode(namespace+':'+item) for item in pm.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
+        namespace = cmds.optionMenu(self.namespaceMenu, q=True, value=True)
+        nucleus = [namespace+':'+item for item in cmds.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
         enableAttr, startFrameAttr = getNucleusControllerAttributes(nucleus)
         enabled = enableAttr.get()
         hairSystem = getHairSystems(nucleus)[0]
-        endCtrs = [pm.PyNode(namespace+':'+ctr) for ctr in pm.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True)]
+        endCtrs = [namespace+':'+ctr for ctr in cmds.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True)]
         if enabled and hairSystem.simulationMethod.get() == 3:
             enableAttr.set(False)
             startFrameAttr.set(100000)
-            pm.button(self.dynOnOffBtn, e=True, bgc=(0.75, 0.25, 0.0), label='Dynamic Off')
+            cmds.button(self.dynOnOffBtn, e=True, bgc=(0.75, 0.25, 0.0), label='Dynamic Off')
             if endCtrs[0].hasAttr('dynamicType'):
                 endCtrs[0].dynamicType.connections(destination=False, plugs=True)[0].set(0)
             for endCtr in endCtrs:
                 if endCtr.hasAttr('Constraint'):
-                    pm.cutKey(endCtr.Constraint, clear=True)
+                    cmds.cutKey(endCtr.Constraint, clear=True)
                     endCtr.Constraint.set(1)
         else:
             enableAttr.set(True)
-            startFrameAttr.set(pm.playbackOptions(q=True, min=True))
-            pm.button(self.dynOnOffBtn, e=True, bgc=(0.0, 0.75, 0.25), label='Dynamic On')
+            startFrameAttr.set(cmds.playbackOptions(q=True, min=True))
+            cmds.button(self.dynOnOffBtn, e=True, bgc=(0.0, 0.75, 0.25), label='Dynamic On')
             if endCtrs[0].hasAttr('dynamicType'):
                 endCtrs[0].dynamicType.connections(destination=False, plugs=True)[0].set(2)
             for endCtr in endCtrs:
                 if endCtr.hasAttr('Constraint'):
-                    pm.cutKey(endCtr.Constraint, clear=True)
+                    cmds.cutKey(endCtr.Constraint, clear=True)
                     endCtr.Constraint.set(0)
 
     def updateDynOfOffBtn(self):
-        namespace = pm.optionMenu(self.namespaceMenu, q=True, value=True)
-        nucleus = [pm.PyNode(namespace+':'+item) for item in pm.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
+        namespace = cmds.optionMenu(self.namespaceMenu, q=True, value=True)
+        nucleus = [namespace+':'+item for item in cmds.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
         enableAttr, startFrameAttr = getNucleusControllerAttributes(nucleus)
         enabled = enableAttr.get()
         hairSystem = getHairSystems(nucleus)[0]
         if enabled and hairSystem.simulationMethod.get() == 3:
-            pm.button(self.dynOnOffBtn, e=True, bgc=(0.0, 0.75, 0.25), label='Dynamic On')
+            cmds.button(self.dynOnOffBtn, e=True, bgc=(0.0, 0.75, 0.25), label='Dynamic On')
         else:
-            pm.button(self.dynOnOffBtn, e=True, bgc=(0.75, 0.25, 0.0), label='Dynamic Off')
+            cmds.button(self.dynOnOffBtn, e=True, bgc=(0.75, 0.25, 0.0), label='Dynamic Off')
 
     def selectDynCtrls(self):
-        namespace = pm.optionMenu(self.namespaceMenu, q=True, value=True)
-        dynCtrls = [namespace+':'+ctrl for ctrl in pm.textScrollList(self.dynCtrlsTxtScrlList, q=True, selectItem=True)]
-        pm.select(dynCtrls, r=True)
+        namespace = cmds.optionMenu(self.namespaceMenu, q=True, value=True)
+        dynCtrls = [namespace+':'+ctrl for ctrl in cmds.textScrollList(self.dynCtrlsTxtScrlList, q=True, selectItem=True)]
+        cmds.select(dynCtrls, r=True)
 
     def selectAllDynCtrls(self, *args):
-        namespace = pm.optionMenu(self.namespaceMenu, q=True, value=True)
-        allDynCtrls = [namespace+':'+ctrl for ctrl in pm.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True)]
-        pm.textScrollList(self.dynCtrlsTxtScrlList, e=True, selectItem=pm.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True))
-        pm.select(allDynCtrls, r=True)
+        namespace = cmds.optionMenu(self.namespaceMenu, q=True, value=True)
+        allDynCtrls = [namespace+':'+ctrl for ctrl in cmds.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True)]
+        cmds.textScrollList(self.dynCtrlsTxtScrlList, e=True, selectItem=cmds.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True))
+        cmds.select(allDynCtrls, r=True)
 
     def bakeDynamic(self, bakeType):
-        namespace = pm.optionMenu(self.namespaceMenu, q=True, value=True)
-        nucleus = [pm.PyNode(namespace+':'+item) for item in pm.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
+        namespace = cmds.optionMenu(self.namespaceMenu, q=True, value=True)
+        nucleus = [namespace+':'+item for item in cmds.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
 
         enableAttr, startFrameAttr = getNucleusControllerAttributes(nucleus)
         enableAttr.set(True)
-        pm.button(self.dynOnOffBtn, e=True, bgc=(0.0, 0.75, 0.25), label='Dynamic On')
-        startFrameAttr.set(pm.playbackOptions(q=True, min=True))
-        endCtrs = [pm.PyNode(namespace+':'+ctr) for ctr in pm.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True)]
+        cmds.button(self.dynOnOffBtn, e=True, bgc=(0.0, 0.75, 0.25), label='Dynamic On')
+        startFrameAttr.set(cmds.playbackOptions(q=True, min=True))
+        endCtrs = [namespace+':'+ctr for ctr in cmds.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True)]
         if endCtrs[0].hasAttr('dynamicType'):
             endCtrs[0].dynamicType.connections(destination=False, plugs=True)[0].set(2)
         for endCtr in endCtrs:
             if endCtr.hasAttr('Constraint'):
-                pm.cutKey(endCtr.Constraint, clear=True)
+                cmds.cutKey(endCtr.Constraint, clear=True)
                 endCtr.Constraint.set(0)
 
         hairSystems = getHairSystems(nucleus)
@@ -411,9 +410,9 @@ class DynamicSplineBaker(object):
                 break
 
         try:  # In case JH Hairchain Rig or TAK's spline rig
-            pm.refresh(su=True)
+            cmds.refresh(su=True)
             bakeDynToControllers(allBakeLocs) if bakeType == 'Controller' else bakeDynToJoints(allJoints)
-            pm.refresh(su=False)
+            cmds.refresh(su=False)
         except:  # In case IH Hairchain Rig
             for endCtr in endCtrs:
                 if endCtr.hasAttr('Constraint'):
@@ -428,8 +427,8 @@ class DynamicSplineBaker(object):
         self.updateDynOfOffBtn()
 
     def delKeys(self, *args):
-        namespace = pm.optionMenu(self.namespaceMenu, q=True, value=True)
-        nucleus = [pm.PyNode(namespace+':'+item) for item in pm.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
+        namespace = cmds.optionMenu(self.namespaceMenu, q=True, value=True)
+        nucleus = [namespace+':'+item for item in cmds.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
         allJoints = []
         allControls = []
         allIkHandles = []
@@ -449,7 +448,7 @@ class DynamicSplineBaker(object):
             for ikHandle in allIkHandles:
                 ikHandle.ikBlend.set(1)
         except:  # In case IH Hairchain Rig
-            endCtrs = [pm.PyNode(namespace+':'+ctr) for ctr in pm.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True)]
+            endCtrs = [namespace+':'+ctr for ctr in cmds.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True)]
             ihHairchainData = getIhHairchainData(endCtrs)
             deleteKeys(ihHairchainData['ctrList'])
             deleteKeys(ihHairchainData['jointList'])
@@ -458,8 +457,8 @@ class DynamicSplineBaker(object):
                 endCtr.IkBlend.set(1)
 
     def resetControls(self, *args):
-        namespace = pm.optionMenu(self.namespaceMenu, q=True, value=True)
-        nucleus = [pm.PyNode(namespace+':'+item) for item in pm.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
+        namespace = cmds.optionMenu(self.namespaceMenu, q=True, value=True)
+        nucleus = [namespace+':'+item for item in cmds.textScrollList(self.solverTxtScrlList, q=True, selectItem=True)][0]
         allControls = []
         hairSystems = getHairSystems(nucleus)
         for hairSystem in hairSystems:
@@ -474,7 +473,7 @@ class DynamicSplineBaker(object):
                 for attr in attrs:
                     ctrl.attr(attr).set(0)
         except:  # In case IH Hairchain Rig
-            endCtrs = [pm.PyNode(namespace+':'+ctr) for ctr in pm.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True)]
+            endCtrs = [namespace+':'+ctr for ctr in cmds.textScrollList(self.dynCtrlsTxtScrlList, q=True, allItems=True)]
             ihHairchainData = getIhHairchainData(endCtrs)
             for ctr in ihHairchainData['ctrList']:
                 for attr in attrs:

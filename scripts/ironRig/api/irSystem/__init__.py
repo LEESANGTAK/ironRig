@@ -10,9 +10,9 @@ from . import threeBoneIK; reload(threeBoneIK)
 from . import revFootIK; reload(revFootIK)
 from . import aim; reload(aim)
 from . import squash; reload(squash)
-from . import corrective; reload(corrective)
 
 
+from .system import System
 from .single import Single
 from .fk import FK
 from .splineIK import SplineIK
@@ -22,4 +22,3 @@ from .threeBoneIK import ThreeBoneIK
 from .revFootIK import RevFootIK
 from .aim import Aim
 from .squash import Squash
-from .corrective import Corrective

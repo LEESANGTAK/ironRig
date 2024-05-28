@@ -1,31 +1,24 @@
-import pymel.core as pm
 
 
 class Plane(object):
     def __init__(self, points):
-        self.__points = points
-        self.__normal = self.__getNormal()
+        self._points = points
+        self._normal = self._getNormal()
 
     def getClosestPoint(self, sourcePoint):
-        closestPoint = pm.dt.Point()
-
         # Decide sign depend on direction between normal and toSourcePoint vector
-        planePointToSourcePoint = sourcePoint - self.__points[0]
+        planePointToSourcePoint = sourcePoint - self._points[0]
         sign = 1
-        if (self.__normal * planePointToSourcePoint) > 1:
+        if (self._normal * planePointToSourcePoint) > 1:
             sign = -1
-        rayVector = self.__normal * sign  # Ray vector is signed normal vector
-        sourceToPlanePointVector = self.__points[0] - sourcePoint
-        closestPoint = sourcePoint + ( ( (sourceToPlanePointVector * self.__normal) / (rayVector * self.__normal) ) * rayVector  )
-
+        rayVector = self._normal * sign  # Ray vector is that signed normal vector
+        sourceToPlanePointVector = self._points[0] - sourcePoint
+        closestPoint = sourcePoint + ( ( (sourceToPlanePointVector * self._normal) / (rayVector * self._normal) ) * rayVector  )
         return closestPoint
 
-    def __getNormal(self):
-        normal = pm.dt.Vector()
-
-        pnt0ToEndPntVector = self.__points[-1] - self.__points[0]
-        pnt0ToMidPntVector = self.__points[len(self.__points)/2] - self.__points[0]
+    def _getNormal(self):
+        pnt0ToEndPntVector = self._points[-1] - self._points[0]
+        pnt0ToMidPntVector = self._points[len(self._points)/2] - self._points[0]
         normal = pnt0ToEndPntVector ^ pnt0ToMidPntVector
         normal.normalize()
-
         return normal

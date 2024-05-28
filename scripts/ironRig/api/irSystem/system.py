@@ -1,4 +1,4 @@
-import pymel.core as pm
+from maya import cmds
 from ... import utils
 from ..irGlobal import Container
 from ..irGlobal import Controller
@@ -8,8 +8,8 @@ class System(Container):
     """
     System contains joints, joint driving systems, controllers.
     """
-    def __init__(self, prefix='', joints=[]):
-        super(System, self).__init__(prefix)
+    def __init__(self, name='new', side=Container.SIDE.CENTER, type=Container.TYPE.FK_SYSTEM, joints=[]):
+        super(System, self).__init__(name, side, type)
 
         self._blbxGrp = None
         self._noTrsfGrp = None
@@ -18,38 +18,44 @@ class System(Container):
         self._aimSign = None
         self._aimAxis = None
         self._negateScaleX = False
-        self._joints = [pm.PyNode(jnt) for jnt in joints] if joints else []
+        self._joints = joints or []
         self._controllers = []
 
-        self.__controllerColor = Controller.COLOR.YELLOW
-        self.__controllerShape = Controller.SHAPE.CIRCLE
-        self.__controllerSize = 10
+        self._controllerColor = Controller.COLOR.YELLOW
+        self._controllerShape = Controller.SHAPE.CIRCLE
+        self._controllerSize = 10
 
-        self.__createGroups()
+        self._createGroups()
 
-    def __createGroups(self):
-        self._topGrp.rename('{}system'.format(self._prefix))
-        self._blbxGrp = pm.createNode('transform', n='{}blbx_grp'.format(self._prefix))
-        self._blbxGrp.v.set(False)
-        self._noTrsfGrp = pm.createNode('transform', n='{}noTrsf_grp'.format(self._prefix))
-        self._noTrsfGrp.inheritsTransform.set(False)
-        self._controllerGrp = pm.createNode('transform', n='{}ctrl_grp'.format(self._prefix))
+    def _createGroups(self):
+        self._blbxGrp = cmds.createNode('transform', n='{}_blbx_grp'.format(self.fullName))
+        cmds.setAttr('{}.visibility'.format(self._blbxGrp), False)
+        self._noTrsfGrp = cmds.createNode('transform', n='{}_noTrsf_grp'.format(self.fullName))
+        cmds.setAttr('{}.inheritsTransform'.format(self._noTrsfGrp), False)
+        self._controllerGrp = cmds.createNode('transform', n='{}_ctrl_grp'.format(self.fullName))
 
-        self._blbxGrp | self._noTrsfGrp
-        pm.parent(self._blbxGrp, self._controllerGrp, self._topGrp)
+        cmds.parent(self._noTrsfGrp, self._blbxGrp)
+        cmds.parent(self._blbxGrp, self._controllerGrp, self._topGrp)
 
+        self.addMembers(self._blbxGrp, self._noTrsfGrp, self._controllerGrp)
+
+    @property
     def aimSign(self):
         return self._aimSign
 
+    @property
     def aimAxis(self):
         return self._aimAxis
 
+    @property
     def blackboxGrp(self):
         return self._blbxGrp
 
+    @property
     def joints(self):
         return self._joints
 
+    @property
     def controllers(self):
         return self._controllers
 
@@ -63,33 +69,33 @@ class System(Container):
 
     @property
     def controllerShape(self):
-        return self.__controllerShape
+        return self._controllerShape
 
     @controllerShape.setter
     def controllerShape(self, shape):
-        self.__controllerShape = shape
+        self._controllerShape = shape
         for ctrl in self._controllers:
-            ctrl.shape = self.__controllerShape
+            ctrl.shape = self._controllerShape
 
     @property
     def controllerSize(self):
-        return self.__controllerSize
+        return self._controllerSize
 
     @controllerSize.setter
     def controllerSize(self, size):
-        self.__controllerSize = size
+        self._controllerSize = size
         for ctrl in self._controllers:
-            ctrl.size = self.__controllerSize
+            ctrl.size = self._controllerSize
 
     @property
     def controllerColor(self):
-        return self.__controllerColor
+        return self._controllerColor
 
     @controllerColor.setter
     def controllerColor(self, color):
-        self.__controllerColor = color
+        self._controllerColor = color
         for ctrl in self._controllers:
-            ctrl.color = self.__controllerColor
+            ctrl.color = self._controllerColor
 
     def build(self):
         self._getAimAxisInfo()
@@ -97,23 +103,23 @@ class System(Container):
         self._buildControls()
 
     def _getAimAxisInfo(self):
-        if len(self.joints()) == 1:
+        if len(self.joints) == 1:
             self._aimSign = 1
             self._aimAxis = 'Z'
         else:
             self._aimSign, self._aimAxis = utils.getAimAxisInfo(self._joints[0], self._joints[1])
 
     def _buildSystems(self):
-        self._blbxGrp | self._joints[0]
-        pm.matchTransform(self._topGrp, self._joints[0], pivots=True)
+        cmds.parent(self._joints[0], self._blbxGrp)
+        cmds.matchTransform(self._topGrp, self._joints[0], pivots=True)
 
     def _buildControls(self):
         raise NotImplementedError()
 
-    def remove(self):
+    def delete(self):
         attrs = [ch + axis for ch in 'trs' for axis in 'xyz']
         for jnt in self._joints:
             for attrStr in attrs:
-                jnt.attr(attrStr).disconnect()
+                utils.disconnectAttr('{}.{}'.format(jnt, attrStr))
         self._controllers = []
-        super(System, self).remove()
+        super(System, self).delete()

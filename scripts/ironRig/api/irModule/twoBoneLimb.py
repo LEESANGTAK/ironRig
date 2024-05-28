@@ -1,4 +1,5 @@
-import pymel.core as pm
+from maya.api import OpenMaya as om
+from maya import cmds
 from ... import utils
 from ..irGlobal import Controller
 from ..irSystem import TwoBoneIK
@@ -61,12 +62,12 @@ class TwoBoneLimb(Module):
         self.__limbJnt2Index = skelJoints.index(self._skelJoints[2])
 
         for skelJnt in skelJoints:
-            initSkelLoc = pm.spaceLocator(n='{}init_{}_loc'.format(self._prefix, skelJnt))
-            pm.matchTransform(initSkelLoc, skelJnt, position=True)
+            initSkelLoc = cmds.spaceLocator(n='{}init_{}_loc'.format(self._name, skelJnt))
+            cmds.matchTransform(initSkelLoc, skelJnt, position=True)
             initSkelLoc.hide()
             initSkelLocs.append(initSkelLoc)
         self._initSkelLocators = initSkelLocs
-        pm.parent(self._initSkelLocators, self._initGrp)
+        cmds.parent(self._initSkelLocators, self._initGrp)
 
     def _buildInitJoints(self):
         super(TwoBoneLimb, self)._buildInitJoints()
@@ -87,14 +88,14 @@ class TwoBoneLimb(Module):
         # Create init joints with skeleton joints
         initJoints = []
         for skelJnt in skelJoints:
-            initJnt = pm.createNode('joint', n='{}init_{}'.format(self._prefix, skelJnt))
-            pm.matchTransform(initJnt, skelJnt, position=True, rotation=True)
+            initJnt = cmds.createNode('joint', n='{}init_{}'.format(self._name, skelJnt))
+            cmds.matchTransform(initJnt, skelJnt, position=True, rotation=True)
             initJoints.append(initJnt)
 
         utils.makeHierarchy(initJoints)
 
-        pm.parent(initJoints[0], self._initGrp)
-        pm.makeIdentity(initJoints[0], apply=True)
+        cmds.parent(initJoints[0], self._initGrp)
+        cmds.makeIdentity(initJoints[0], apply=True)
 
         self._initJoints = initJoints
 
@@ -109,19 +110,19 @@ class TwoBoneLimb(Module):
 
     def _buildGroups(self):
         super(TwoBoneLimb, self)._buildGroups()
-        self.__controllerGrp = pm.group(n='{}ctrl_grp'.format(self._prefix), empty=True)
-        pm.parent(self.__controllerGrp, self._topGrp)
+        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self._name), empty=True)
+        cmds.parent(self.__controllerGrp, self._topGrp)
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self.__initLimbJoints, searchStr='init', replaceStr='ik')
 
         # Find pole vector controller position
         if self._oriPlaneLocators:
-            poleVecCtrlPos = pm.xform(self._oriPlaneLocators[1], q=True, rp=True, ws=True)
+            poleVecCtrlPos = cmds.xform(self._oriPlaneLocators[1], q=True, rp=True, ws=True)
         else:
             poleVector = TwoBoneIK.getPoleVector(self.__initLimbJoints[0], self.__initLimbJoints[1], self.__initLimbJoints[2])
             poleVecCtrlPos = utils.getWorldPoint(self.__initLimbJoints[1]) + (poleVector * utils.getDistance(self.__initLimbJoints[0], self.__initLimbJoints[2]))
-        self.__ikSystem = TwoBoneIK(self._prefix+'ik_', ikJoints, poleVecCtrlPos)
+        self.__ikSystem = TwoBoneIK(self._name+'ik_', ikJoints, poleVecCtrlPos)
 
         if self._negateScaleX:
             self.__ikSystem.negateSclaeX = True
@@ -133,7 +134,7 @@ class TwoBoneLimb(Module):
         self.addSystems(self.__ikSystem)
 
         fkJoints = utils.buildNewJointChain(self.__initLimbJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self._prefix+'fk_', fkJoints)
+        self.__fkSystem = FK(self._name+'fk_', fkJoints)
         self.__fkSystem.endController = True
         if self._negateScaleX:
             self.__fkSystem.negateSclaeX = True
@@ -143,7 +144,7 @@ class TwoBoneLimb(Module):
 
         if self.__upperLimbInbJoints:
             upperTwistJoints = utils.buildNewJointChain([self.__initLimbJoints[0]]+self.__initUpperLimbInbJoints+[self.__initLimbJoints[1]], searchStr='init', replaceStr='upTwist')
-            self.__upperTwistSystem = SplineIK(self._prefix+'upTwist_', upperTwistJoints, 3)
+            self.__upperTwistSystem = SplineIK(self._name+'upTwist_', upperTwistJoints, 3)
             self.__upperTwistSystem.curveSpans = 1
             self.__upperTwistSystem.build()
             self.__upperTwistSystem.setupTwist()
@@ -154,7 +155,7 @@ class TwoBoneLimb(Module):
 
         if self.__lowerLimbInbJoints:
             lowerTwistJoints = utils.buildNewJointChain([self.__initLimbJoints[1]]+self.__initLowerLimbInbJoints+[self.__initLimbJoints[2]], searchStr='init', replaceStr='lowTwist')
-            self.__lowerTwistSystem = SplineIK(self._prefix+'lowTwist_', lowerTwistJoints, 3)
+            self.__lowerTwistSystem = SplineIK(self._name+'lowTwist_', lowerTwistJoints, 3)
             self.__lowerTwistSystem.curveSpans = 1
             self.__lowerTwistSystem.build()
             self.__lowerTwistSystem.setupTwist()
@@ -167,8 +168,8 @@ class TwoBoneLimb(Module):
         self.__blendJoints = utils.buildNewJointChain(self.__initLimbJoints, searchStr='init', replaceStr='blend')
         utils.parentKeepHierarchy(self.__blendJoints, self._systemGrp)
         self.__blendJoints[0].hide()
-        for ikJnt, fkJnt, blendJnt in zip(self.__ikSystem.joints(), self.__fkSystem.joints(), self.__blendJoints):
-            blendCnst = pm.parentConstraint(ikJnt, fkJnt, blendJnt, mo=True)
+        for ikJnt, fkJnt, blendJnt in zip(self.__ikSystem.joints, self.__fkSystem.joints, self.__blendJoints):
+            blendCnst = cmds.parentConstraint(ikJnt, fkJnt, blendJnt, mo=True)
             blendCnst.interpType.set(2)
             self.__blendConstraints.append(blendCnst)
 
@@ -176,74 +177,74 @@ class TwoBoneLimb(Module):
 
         if self.__upperTwistSystem:
             self.__setupNonroll(self.__blendJoints[1])
-            blendJnt1LocalMtx = pm.createNode('multMatrix', n='{}_local_multMtx'.format(self.__blendJoints[1]))
-            blendJnt1LocalDecMtx = pm.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self.__blendJoints[1]))
+            blendJnt1LocalMtx = cmds.createNode('multMatrix', n='{}_local_multMtx'.format(self.__blendJoints[1]))
+            blendJnt1LocalDecMtx = cmds.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self.__blendJoints[1]))
             blendJnt1LocalDecMtx.inputRotateOrder.set(3)  # Set rotate order to xzy since the primary axis of rotation is the Y.
             self.__blendJoints[0].worldMatrix >> blendJnt1LocalMtx.matrixIn[0]
             self.__nonrollJoints[0].worldInverseMatrix >> blendJnt1LocalMtx.matrixIn[1]
             blendJnt1LocalMtx.matrixSum >> blendJnt1LocalDecMtx.inputMatrix
-            blendJnt1LocalDecMtx.outputRotateX >> self.__upperTwistSystem.controllers()[-1].twist
-            upTwistUnitConversion = self.__upperTwistSystem.controllers()[-1].twist.inputs()[0]
+            blendJnt1LocalDecMtx.outputRotateX >> self.__upperTwistSystem.controllers[-1].twist
+            upTwistUnitConversion = self.__upperTwistSystem.controllers[-1].twist.inputs()[0]
             upTwistUnitConversion.conversionFactor.set(self._aimSign * upTwistUnitConversion.conversionFactor.get())
-            pm.parentConstraint(self.__nonrollJoints[0], self.__upperTwistSystem.topGrp(), mo=True)
+            cmds.parentConstraint(self.__nonrollJoints[0], self.__upperTwistSystem.topGrp, mo=True)
             self.addMembers(blendJnt1LocalMtx, blendJnt1LocalDecMtx)
-            pm.parentConstraint(self.__blendJoints[0], self.__upperTwistSystem.controllers()[0], mo=True)
-            pm.pointConstraint(self.__upperTwistSystem.controllers()[0],
-                               self.__upperTwistSystem.controllers()[2],
-                               self.__upperTwistSystem.controllers()[1].zeroGrp(),
+            cmds.parentConstraint(self.__blendJoints[0], self.__upperTwistSystem.controllers[0], mo=True)
+            cmds.pointConstraint(self.__upperTwistSystem.controllers[0],
+                               self.__upperTwistSystem.controllers[2],
+                               self.__upperTwistSystem.controllers[1].zeroGrp,
                                mo=True)
-            self.__upperTwistSystem.controllers()[0].hide()
+            self.__upperTwistSystem.controllers[0].hide()
 
         if self.__lowerTwistSystem:
             blendJnt2NonrollGrp = self.__setupNonroll(self.__blendJoints[2])
-            blendJnt2LocalMtx = pm.createNode('multMatrix', n='{}_local_multMtx'.format(self.__blendJoints[2]))
-            blendJnt2LocalDecMtx = pm.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self.__blendJoints[2]))
+            blendJnt2LocalMtx = cmds.createNode('multMatrix', n='{}_local_multMtx'.format(self.__blendJoints[2]))
+            blendJnt2LocalDecMtx = cmds.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self.__blendJoints[2]))
             blendJnt2LocalDecMtx.inputRotateOrder.set(3)
             self.__blendJoints[-1].worldMatrix >> blendJnt2LocalMtx.matrixIn[0]
             self.__nonrollJoints[-1].worldInverseMatrix >> blendJnt2LocalMtx.matrixIn[1]
             blendJnt2LocalMtx.matrixSum >> blendJnt2LocalDecMtx.inputMatrix
-            blendJnt2LocalDecMtx.outputRotateX >> self.__lowerTwistSystem.controllers()[-1].twist
-            lowTwistUnitConversion = self.__lowerTwistSystem.controllers()[-1].twist.inputs()[0]
+            blendJnt2LocalDecMtx.outputRotateX >> self.__lowerTwistSystem.controllers[-1].twist
+            lowTwistUnitConversion = self.__lowerTwistSystem.controllers[-1].twist.inputs()[0]
             lowTwistUnitConversion.conversionFactor.set(self._aimSign * lowTwistUnitConversion.conversionFactor.get())
-            pm.parentConstraint(self.__blendJoints[1], self.__lowerTwistSystem.topGrp(), mo=True)
-            pm.parentConstraint(self.__blendJoints[1], blendJnt2NonrollGrp, mo=True)
+            cmds.parentConstraint(self.__blendJoints[1], self.__lowerTwistSystem.topGrp, mo=True)
+            cmds.parentConstraint(self.__blendJoints[1], blendJnt2NonrollGrp, mo=True)
             self.addMembers(blendJnt2LocalMtx, blendJnt2LocalDecMtx)
-            pm.parentConstraint(self.__blendJoints[-1], self.__lowerTwistSystem.controllers()[-1], mo=True)
-            pm.pointConstraint(self.__lowerTwistSystem.controllers()[0],
-                               self.__lowerTwistSystem.controllers()[2],
-                               self.__lowerTwistSystem.controllers()[1].zeroGrp(),
+            cmds.parentConstraint(self.__blendJoints[-1], self.__lowerTwistSystem.controllers[-1], mo=True)
+            cmds.pointConstraint(self.__lowerTwistSystem.controllers[0],
+                               self.__lowerTwistSystem.controllers[2],
+                               self.__lowerTwistSystem.controllers[1].zeroGrp,
                                mo=True)
-            self.__lowerTwistSystem.controllers()[-1].hide()
+            self.__lowerTwistSystem.controllers[-1].hide()
 
         self._sysJoints = [self.__nonrollJoints[0]] + self.__blendJoints[1:]
         if self.__upperTwistSystem:
-            self._sysJoints = self.__upperTwistSystem.joints()[:-1] + self.__blendJoints[1:]
+            self._sysJoints = self.__upperTwistSystem.joints[:-1] + self.__blendJoints[1:]
         if self.__lowerTwistSystem:
-            self._sysJoints = self._sysJoints[:-2] + self.__lowerTwistSystem.joints()[:-1] + [self.__blendJoints[-1]]
+            self._sysJoints = self._sysJoints[:-2] + self.__lowerTwistSystem.joints[:-1] + [self.__blendJoints[-1]]
 
     def __setupNonroll(self, blendJoint):
-        nonrollGrp = pm.createNode('transform', n=blendJoint.replace('_blend', '_nonroll_grp'))
+        nonrollGrp = cmds.createNode('transform', n=blendJoint.replace('_blend', '_nonroll_grp'))
         nonrollGrp.hide()
-        pm.matchTransform(nonrollGrp, blendJoint, pivots=True)
+        cmds.matchTransform(nonrollGrp, blendJoint, pivots=True)
 
-        nonrollJntStart = pm.duplicate(blendJoint, n=blendJoint.replace('_blend', '_nonroll_start'), po=True)[0]
-        nonrollJntEnd = pm.duplicate(blendJoint, n=blendJoint.replace('_blend', '_nonroll_end'), po=True)[0]
+        nonrollJntStart = cmds.duplicate(blendJoint, n=blendJoint.replace('_blend', '_nonroll_start'), po=True)[0]
+        nonrollJntEnd = cmds.duplicate(blendJoint, n=blendJoint.replace('_blend', '_nonroll_end'), po=True)[0]
         nonrollJntStart | nonrollJntEnd
         childJnt = blendJoint.getChildren(type='joint')
         if childJnt:
-            pm.matchTransform(nonrollJntEnd, childJnt[0], position=True)
+            cmds.matchTransform(nonrollJntEnd, childJnt[0], position=True)
         else:
             nonrollJntEnd.attr('translate{}'.format(self._aimAxis)).set(self._aimSign)
 
-        nonrollIkh = pm.ikHandle(startJoint=nonrollJntStart, endEffector=nonrollJntEnd, solver='ikRPsolver', n=blendJoint.replace('_blend', '_nonroll_ikh'))[0]
+        nonrollIkh = cmds.ikHandle(startJoint=nonrollJntStart, endEffector=nonrollJntEnd, solver='ikRPsolver', n=blendJoint.replace('_blend', '_nonroll_ikh'))[0]
         for attrStr in ['poleVector' + axis for axis in 'XYZ']:
             nonrollIkh.attr(attrStr).set(0)
 
-        pm.pointConstraint(blendJoint, nonrollJntStart, mo=True)
-        pm.parentConstraint(blendJoint, nonrollIkh, mo=True)
+        cmds.pointConstraint(blendJoint, nonrollJntStart, mo=True)
+        cmds.parentConstraint(blendJoint, nonrollIkh, mo=True)
 
-        pm.parent([nonrollJntStart, nonrollIkh], nonrollGrp)
-        pm.parent(nonrollGrp, self._systemGrp)
+        cmds.parent([nonrollJntStart, nonrollIkh], nonrollGrp)
+        cmds.parent(nonrollGrp, self._systemGrp)
 
         self.__nonrollJoints.append(nonrollJntStart)
 
@@ -260,83 +261,83 @@ class TwoBoneLimb(Module):
 
     def _connectSkeleton(self):
         for outJnt in self._outJoints:
-            skelJnt = outJnt.replace(self._prefix+'out_', '')
+            skelJnt = outJnt.replace(self._name+'out_', '')
             utils.removeConnections(skelJnt)
-            pm.parentConstraint(outJnt, skelJnt, mo=True)
-            pm.scaleConstraint(outJnt, skelJnt, mo=True)
+            cmds.parentConstraint(outJnt, skelJnt, mo=True)
+            cmds.scaleConstraint(outJnt, skelJnt, mo=True)
             # for axis in 'XYZ':
             #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def __buildControls(self):
-        moduleCtrl = Controller('{}module_ctrl'.format(self._prefix), Controller.SHAPE.SPHERE)
+        moduleCtrl = Controller('{}module_ctrl'.format(self._name), Controller.SHAPE.SPHERE)
         moduleCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'])
-        pm.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
-        pm.matchTransform(moduleCtrl.zeroGrp(), self.__blendJoints[-1], position=True)
-        pm.parentConstraint(self.__blendJoints[-1], moduleCtrl.zeroGrp(), mo=True)
-        moduleCtrl.shapeOffset = pm.dt.Vector.zNegAxis * 10
+        cmds.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
+        cmds.matchTransform(moduleCtrl.zeroGrp, self.__blendJoints[-1], position=True)
+        cmds.parentConstraint(self.__blendJoints[-1], moduleCtrl.zeroGrp, mo=True)
+        moduleCtrl.shapeOffset = om.MVector.kZnegAxisVector * 10
 
-        fkIkRev = pm.createNode('reverse', n='{}fkIk_rev'.format(self._prefix))
-        moduleCtrl.ik >> self.__ikSystem.topGrp().visibility
+        fkIkRev = cmds.createNode('reverse', n='{}fkIk_rev'.format(self._name))
+        moduleCtrl.ik >> self.__ikSystem.topGrp.visibility
         moduleCtrl.ik >> fkIkRev.inputX
-        fkIkRev.outputX >> self.__fkSystem.topGrp().visibility
+        fkIkRev.outputX >> self.__fkSystem.topGrp.visibility
         for cnst in self.__blendConstraints:
             moduleCtrl.ik >> cnst.target[0].targetWeight
             fkIkRev.outputX >> cnst.target[1].targetWeight
 
-        pm.parent(moduleCtrl.zeroGrp(), self.__controllerGrp)
+        cmds.parent(moduleCtrl.zeroGrp, self.__controllerGrp)
         self._controllers.append(moduleCtrl)
-        self.addMembers(moduleCtrl.controllerNode())
+        self.addMembers(moduleCtrl.controllerNode)
 
         if self.__upperTwistSystem or self.__lowerTwistSystem:
-            pm.addAttr(moduleCtrl, ln='bendCtrlVis', at='bool', dv=False, keyable=True)
-            moduleTwistCtrl = Controller('{}twist_ctrl'.format(self._prefix))
-            pm.matchTransform(moduleTwistCtrl.zeroGrp(), self.__blendJoints[1], position=True)
-            pm.pointConstraint(self.__blendJoints[1], moduleTwistCtrl.zeroGrp(), mo=False)
-            oCnst = pm.orientConstraint(self.__blendJoints[0], self.__blendJoints[1], moduleTwistCtrl.zeroGrp(), mo=False)
+            cmds.addAttr(moduleCtrl, ln='bendCtrlVis', at='bool', dv=False, keyable=True)
+            moduleTwistCtrl = Controller('{}twist_ctrl'.format(self._name))
+            cmds.matchTransform(moduleTwistCtrl.zeroGrp, self.__blendJoints[1], position=True)
+            cmds.pointConstraint(self.__blendJoints[1], moduleTwistCtrl.zeroGrp, mo=False)
+            oCnst = cmds.orientConstraint(self.__blendJoints[0], self.__blendJoints[1], moduleTwistCtrl.zeroGrp, mo=False)
             oCnst.interpType.set(2)
-            pvLineDecMtx = self.__ikSystem.joints()[1].worldMatrix.outputs(type='decomposeMatrix')[0]
+            pvLineDecMtx = self.__ikSystem.joints[1].worldMatrix.outputs(type='decomposeMatrix')[0]
             moduleTwistCtrl.worldMatrix >> pvLineDecMtx.inputMatrix
-            pm.parent(moduleTwistCtrl.zeroGrp(), self.__controllerGrp)
+            cmds.parent(moduleTwistCtrl.zeroGrp, self.__controllerGrp)
             moduleTwistCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
-            moduleCtrl.bendCtrlVis >> moduleTwistCtrl.zeroGrp().visibility
+            moduleCtrl.bendCtrlVis >> moduleTwistCtrl.zeroGrp.visibility
             self._controllers.append(moduleTwistCtrl)
 
             upAxis = list(set(['X', 'Y', 'Z']) - set(self._aimAxis))[0]
             if self.__upperTwistSystem:
-                moduleCtrl.bendCtrlVis >> self.__upperTwistSystem.topGrp().visibility
-                pm.parentConstraint(moduleTwistCtrl, self.__upperTwistSystem.controllers()[-1].zeroGrp(), mo=True)
-                pm.aimConstraint(moduleTwistCtrl,
-                                self.__upperTwistSystem.controllers()[1].zeroGrp(),
+                moduleCtrl.bendCtrlVis >> self.__upperTwistSystem.topGrp.visibility
+                cmds.parentConstraint(moduleTwistCtrl, self.__upperTwistSystem.controllers[-1].zeroGrp, mo=True)
+                cmds.aimConstraint(moduleTwistCtrl,
+                                self.__upperTwistSystem.controllers[1].zeroGrp,
                                 aimVector=self._aimSign * utils.axisStrToVector(self._aimAxis),
                                 upVector=utils.axisStrToVector(upAxis),
                                 worldUpType='objectrotation',
                                 worldUpVector=utils.axisStrToVector(upAxis),
                                 worldUpObject=moduleTwistCtrl)
-                self.__upperTwistSystem.controllers()[-1].hide()
+                self.__upperTwistSystem.controllers[-1].hide()
             if self.__lowerTwistSystem:
-                moduleCtrl.bendCtrlVis >> self.__lowerTwistSystem.topGrp().visibility
-                pm.parentConstraint(moduleTwistCtrl, self.__lowerTwistSystem.controllers()[0].zeroGrp(), mo=True)
-                pm.aimConstraint(moduleTwistCtrl,
-                                self.__lowerTwistSystem.controllers()[1].zeroGrp(),
+                moduleCtrl.bendCtrlVis >> self.__lowerTwistSystem.topGrp.visibility
+                cmds.parentConstraint(moduleTwistCtrl, self.__lowerTwistSystem.controllers[0].zeroGrp, mo=True)
+                cmds.aimConstraint(moduleTwistCtrl,
+                                self.__lowerTwistSystem.controllers[1].zeroGrp,
                                 aimVector=-self._aimSign * utils.axisStrToVector(self._aimAxis),
                                 upVector=utils.axisStrToVector(upAxis),
                                 worldUpType='objectrotation',
                                 worldUpVector=utils.axisStrToVector(upAxis),
                                 worldUpObject=moduleTwistCtrl)
-                self.__lowerTwistSystem.controllers()[0].hide()
+                self.__lowerTwistSystem.controllers[0].hide()
 
     def postBuild(self):
         super(TwoBoneLimb, self).postBuild()
 
         if self.__upperTwistSystem:
-            self.__upperTwistSystem.controllerColor = tuple(pm.dt.Vector(self._controllerColor) + 0.5)
+            self.__upperTwistSystem.controllerColor = tuple(om.MVector(self._controllerColor) + 0.5)
         if self.__lowerTwistSystem:
-            self.__lowerTwistSystem.controllerColor = tuple(pm.dt.Vector(self._controllerColor) + 0.5)
+            self.__lowerTwistSystem.controllerColor = tuple(om.MVector(self._controllerColor) + 0.5)
         if self.__upperTwistSystem or self.__lowerTwistSystem:
-            self._controllers[1].color = tuple(pm.dt.Vector(self._controllerColor) + 0.5)
+            self._controllers[1].color = tuple(om.MVector(self._controllerColor) + 0.5)
 
         self._controllers[0].size = self._controllerSize * 0.1  # Set scale of module controller
-        self.__ikSystem.controllers()[1].size = self._controllerSize * 0.3  # Set scale of pole vector controller
+        self.__ikSystem.controllers[1].size = self._controllerSize * 0.3  # Set scale of pole vector controller
         if self.__upperTwistSystem:
             self.__upperTwistSystem.controllerSize = self._controllerSize * 0.9
         if self.__lowerTwistSystem:
@@ -346,28 +347,28 @@ class TwoBoneLimb(Module):
 
     def attachTo(self, module):
         if module.__class__.__name__ == 'LimbBase':
-            limbBaseCtrl = module.fkSystem().controllers()[0]
+            limbBaseCtrl = module.fkSystem().controllers[0]
 
-            aimLoc = pm.spaceLocator(n='{}_aim_loc'.format(limbBaseCtrl))
-            staticLoc = pm.spaceLocator(n='{}_static_loc'.format(limbBaseCtrl))
+            aimLoc = cmds.spaceLocator(n='{}_aim_loc'.format(limbBaseCtrl))
+            staticLoc = cmds.spaceLocator(n='{}_static_loc'.format(limbBaseCtrl))
             for loc in [staticLoc, aimLoc]:
-                pm.matchTransform(loc, limbBaseCtrl.zeroGrp())
-            pm.parent([staticLoc, aimLoc], module.fkSystem().blackboxGrp())
-            cnst = pm.orientConstraint([aimLoc, staticLoc], limbBaseCtrl.zeroGrp(), mo=True)
+                cmds.matchTransform(loc, limbBaseCtrl.zeroGrp)
+            cmds.parent([staticLoc, aimLoc], module.fkSystem().blackboxGrp)
+            cnst = cmds.orientConstraint([aimLoc, staticLoc], limbBaseCtrl.zeroGrp, mo=True)
             cnst.interpType.set(2)
 
-            pm.addAttr(limbBaseCtrl, ln='aim', at='float', min=0.0, max=1.0, dv=0.5, keyable=True)
-            revNode = pm.createNode('reverse', n='{}_aim_rev'.format(limbBaseCtrl))
+            cmds.addAttr(limbBaseCtrl, ln='aim', at='float', min=0.0, max=1.0, dv=0.5, keyable=True)
+            revNode = cmds.createNode('reverse', n='{}_aim_rev'.format(limbBaseCtrl))
             limbBaseCtrl.aim >> cnst.target[0].targetWeight
             limbBaseCtrl.aim >> revNode.inputX
             revNode.outputX >> cnst.target[1].targetWeight
 
-            tempPoleVectorLoc = pm.spaceLocator(n='tempPoleVector_loc')
-            tempPoleVectorLocPos = utils.getWorldPoint(limbBaseCtrl.zeroGrp()) + (utils.getWorldPoint(self.__ikSystem.poleVectorController()) - utils.getWorldPoint(self.__ikSystem.joints()[1]))
-            pm.xform(tempPoleVectorLoc, t=tempPoleVectorLocPos, ws=True)
-            upAxisInfo = utils.getAimAxisInfo(limbBaseCtrl.zeroGrp(), tempPoleVectorLoc)
-            pm.delete(tempPoleVectorLoc)
-            pm.aimConstraint(
+            tempPoleVectorLoc = cmds.spaceLocator(n='tempPoleVector_loc')
+            tempPoleVectorLocPos = utils.getWorldPoint(limbBaseCtrl.zeroGrp) + (utils.getWorldPoint(self.__ikSystem.poleVectorController()) - utils.getWorldPoint(self.__ikSystem.joints[1]))
+            cmds.xform(tempPoleVectorLoc, t=tempPoleVectorLocPos, ws=True)
+            upAxisInfo = utils.getAimAxisInfo(limbBaseCtrl.zeroGrp, tempPoleVectorLoc)
+            cmds.delete(tempPoleVectorLoc)
+            cmds.aimConstraint(
                 self.__ikSystem.ikHandleController(), aimLoc,
                 aimVector=self._aimSign*utils.axisStrToVector(self._aimAxis),
                 upVector=upAxisInfo[0]*utils.axisStrToVector(upAxisInfo[1]),
@@ -379,11 +380,11 @@ class TwoBoneLimb(Module):
             self.addMembers(revNode)
 
             if self.__ikStartController:
-                ikStartObject = self.__ikSystem.controllers()[-1].zeroGrp()
+                ikStartObject = self.__ikSystem.controllers[-1].zeroGrp
             else:
-                ikStartObject = self.__ikSystem.joints()[0].getParent()
-            pm.parentConstraint(module.outJoints()[-1], ikStartObject, mo=True)
+                ikStartObject = self.__ikSystem.joints[0].getParent()
+            cmds.parentConstraint(module.outJoints[-1], ikStartObject, mo=True)
 
-            pm.parentConstraint(module.outJoints()[-1], self.__fkSystem.controllers()[0].zeroGrp(), mo=True)
+            cmds.parentConstraint(module.outJoints[-1], self.__fkSystem.controllers[0].zeroGrp, mo=True)
         else:
             super(TwoBoneLimb, self).attachTo(module)

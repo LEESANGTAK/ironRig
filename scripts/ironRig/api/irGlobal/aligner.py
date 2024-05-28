@@ -1,4 +1,5 @@
-import pymel.core as pm
+from maya.api import OpenMaya as om
+from maya import cmds
 from ... import decorators
 from ... import utils
 from .plane import Plane
@@ -8,7 +9,7 @@ class Aligner(object):
     @staticmethod
     def alignJointsToPlane(joints):
         if len(joints) < 3:
-            pm.warning('The number of joints have to be more than 3.')
+            cmds.warning('The number of joints have to be more than 3.')
             return
 
         startPoint = utils.getWorldPoint(joints[0])
@@ -19,12 +20,10 @@ class Aligner(object):
         for jnt in joints:
             jntPoint = utils.getWorldPoint(jnt)
             closestPointOnPlane = planeObj.getClosestPoint(jntPoint)
-            pm.xform(jnt, t=closestPointOnPlane, ws=True)
+            cmds.xform(jnt, t=closestPointOnPlane, ws=True)
 
     @staticmethod
     def orientJoints(chainJoints, upVector=None, mirror=True):
-        chainJoints = [pm.PyNode(jnt) for jnt in chainJoints]
-
         # Store hierarchy information
         parentInfo = {}
         for joint in chainJoints:
@@ -32,7 +31,7 @@ class Aligner(object):
 
         # Destroy hierarchy
         for joint in chainJoints:
-            pm.parent(joint, w=True)
+            cmds.parent(joint, w=True)
 
         for index, joint in enumerate(chainJoints):
             if joint == chainJoints[-1]:  # Skip the end joint
@@ -47,9 +46,9 @@ class Aligner(object):
             if not upVector:
                 if index == 0:
                     if len(chainJoints) <= 2:
-                        upVec = pm.dt.Vector.zAxis
+                        upVec = om.MVector.kZaxisVector
                         if utils.isParallel(aimVec, upVec):
-                            upVec = pm.dt.Vector.xNegAxis
+                            upVec = om.MVector.kXnegAxisVector
                     else:
                         grandChildJntPoint = utils.getWorldPoint(chainJoints[index+2])
                         upVec = Aligner.getUpVector(curJntPoint, childJntPoint, grandChildJntPoint)
@@ -79,11 +78,11 @@ class Aligner(object):
                 curJntPoint.x, curJntPoint.y, curJntPoint.z, 1.0
             ]
 
-            pm.xform(joint, matrix=jntMatrix, ws=True)
+            cmds.xform(joint, matrix=jntMatrix, ws=True)
 
         # Restore hierarchy
         for joint, parent in parentInfo.items():
-            pm.parent(joint, parent)
+            cmds.parent(joint, parent)
 
         # Orient end joint
         endJoint = chainJoints[-1]
@@ -91,18 +90,18 @@ class Aligner(object):
         endJoint.rotate.set(0, 0, 0)
 
         # Transfer rotate values to the orient value
-        pm.makeIdentity(chainJoints[0], apply=True)
+        cmds.makeIdentity(chainJoints[0], apply=True)
 
     @staticmethod
     @decorators.undoAtOnce
     def alignSelectedJointsOnPlane():
-        jnts = pm.selected(type='joint')
+        jnts = cmds.ls(type='joint')
         Aligner.alignJointsToPlane(jnts)
 
     @staticmethod
     @decorators.undoAtOnce
     def orientSelectedJoints():
-        jnts = pm.selected(type='joint')
+        jnts = cmds.ls(type='joint')
         Aligner.orientJoints(jnts)
 
     @staticmethod
@@ -111,7 +110,7 @@ class Aligner(object):
 
     @staticmethod
     def getUpVector(parentPoint, currentPoint, childPoint):
-        upVector = pm.dt.Vector()
+        upVector = om.MVector()
 
         aimVector = childPoint - currentPoint
         negAimVector = parentPoint - currentPoint
@@ -121,11 +120,11 @@ class Aligner(object):
 
         # Up vector can be zero vector when aimVector and negAimVector is parallel
         if utils.isParallel(aimVector, negAimVector):
-            upVector = pm.dt.Vector.zAxis
+            upVector = om.MVector.kZaxisVector
 
         # In case of up vector same as aim vector
         if utils.isParallel(aimVector, upVector):
-            upVector = pm.dt.Vector.xNegAxis
+            upVector = om.MVector.kXnegAxisVector
 
         upVector.normalize()
         return upVector

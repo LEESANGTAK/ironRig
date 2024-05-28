@@ -1,4 +1,4 @@
-import pymel.core as pm
+from maya import cmds
 from ... import utils
 from ..irGlobal import Controller
 from ..irSystem import Single
@@ -58,8 +58,8 @@ class Simple(Module):
         elif self.__type == Simple.TYPE.SINGLE:
             initJoints = []
             for initSkelLoc in self._initSkelLocators:
-                initJnt = pm.createNode('joint', n=initSkelLoc.replace('_loc', ''))
-                pm.matchTransform(initJnt, initSkelLoc)
+                initJnt = cmds.createNode('joint', n=initSkelLoc.replace('_loc', ''))
+                cmds.matchTransform(initJnt, initSkelLoc)
                 initJnt.segmentScaleCompensate.set(False)
                 initJnt.displayLocalAxis.set(True)
                 self._initGrp | initJnt
@@ -73,17 +73,17 @@ class Simple(Module):
     def _buildSystems(self):
         if self.__type == Simple.TYPE.FK:
             fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-            self.__system = FK(self._prefix+'fk_', fkJoints)
+            self.__system = FK(self._name+'fk_', fkJoints)
         elif self.__type == Simple.TYPE.SINGLE:
             singleJoints = utils.buildNewJoints(self._initJoints, searchStr='init', replaceStr='sg')
-            self.__system = Single(self._prefix+'sg_', singleJoints)
+            self.__system = Single(self._name+'sg_', singleJoints)
 
         if self._negateScaleX:
             self.__system.negateSclaeX = True
 
         self.__system.build()
         self.addSystems(self.__system)
-        self._sysJoints = self.__system.joints()
+        self._sysJoints = self.__system.joints
 
     def _connectSystems(self):
         pass
@@ -97,13 +97,13 @@ class Simple(Module):
 
     def _connectSkeleton(self):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
-            pm.parentConstraint(outJnt, skelJnt, mo=True)
-            pm.scaleConstraint(outJnt, skelJnt, mo=True)
+            cmds.parentConstraint(outJnt, skelJnt, mo=True)
+            cmds.scaleConstraint(outJnt, skelJnt, mo=True)
             # for axis in 'XYZ':
             #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def postBuild(self):
         super(Simple, self).postBuild()
 
-        for ctrl in self.__system.controllers():
+        for ctrl in self.__system.controllers:
             ctrl.shape = self.__controllerShape

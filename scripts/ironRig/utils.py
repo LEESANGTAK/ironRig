@@ -1,36 +1,36 @@
 from math import sqrt
-import maya.OpenMaya as om
-import maya.OpenMayaAnim as oma
-import pymel.core as pm
+from maya.api import OpenMaya as om
+from maya.api import OpenMayaAnim as oma
+from maya import cmds, mel
 
 
 def makeHierarchy(objects):
     for index, jnt in enumerate(objects):
         if index == 0:
             continue
-        objects[index-1] | jnt
+        cmds.parent(jnt, objects[index-1])
 
 def parentKeepHierarchy(childObjects, parentObject):
     if not isinstance(childObjects, list):
         childObjects = [childObjects]
-    childObjects = [pm.PyNode(item) for item in childObjects]
+    childObjects = childObjects
 
     parentInfo = {}
     for childObj in childObjects:
-        parentInfo[childObj] = childObj.getParent()
+        parentInfo[childObj] = cmds.listRelatives(childObj, p=True)[0]
 
     if parentObject == 'world':
-        pm.parent(childObjects, w=True)
+        cmds.parent(childObjects, w=True)
     else:
-        pm.parent(childObjects, parentObject)
+        cmds.parent(childObjects, parentObject)
 
     for childObj, parent in parentInfo.items():
         if parent and parent in childObjects:
-            pm.parent(childObj, parent)
+            cmds.parent(childObj, parent)
 
 
 def getWorldPoint(object):
-    return pm.dt.Point(pm.xform(object, q=True, rp=True, ws=True))
+    return om.MPoint(cmds.xform(object, q=True, rp=True, ws=True))
 
 
 def findClosestObject(searchPoint, objects):
@@ -38,7 +38,7 @@ def findClosestObject(searchPoint, objects):
 
     minDist = 100000.0
     for obj in objects:
-        objPnt = pm.dt.Point(pm.xform(obj, q=True, rp=True, ws=True))
+        objPnt = om.MPoint(cmds.xform(obj, q=True, rp=True, ws=True))
         delta = objPnt - searchPoint
         if delta.length() < minDist:
             closestObj = obj
@@ -52,7 +52,7 @@ def findClosestController(searchPoint, controllers):
 
     minDist = 100000.0
     for ctrl in controllers:
-        ctrlPnt = pm.dt.Point(pm.xform(ctrl, q=True, rp=True, ws=True))
+        ctrlPnt = om.MPoint(cmds.xform(ctrl, q=True, rp=True, ws=True))
         delta = ctrlPnt - searchPoint
         if delta.length() < minDist:
             closestCtrl = ctrl
@@ -67,9 +67,9 @@ def buildNewJointChain(joints, prefix='', searchStr='', replaceStr=''):
     for index, newJnt in enumerate(newJoints):
         if index == 0:
             continue
-        newJoints[index-1] | newJnt
+        cmds.parent(newJnt, newJoints[index-1])
 
-    pm.makeIdentity(newJoints[0], apply=True)
+    cmds.makeIdentity(newJoints[0], apply=True)
 
     return newJoints
 
@@ -77,11 +77,11 @@ def buildNewJointChain(joints, prefix='', searchStr='', replaceStr=''):
 def buildNewJoints(joints, prefix='', searchStr='', replaceStr=''):
     newJoints = []
     for jnt in joints:
-        newJnt = pm.createNode('joint', n=prefix + jnt.replace(searchStr, replaceStr))
-        pm.matchTransform(newJnt, jnt)
+        newJnt = cmds.createNode('joint', n=prefix + jnt.replace(searchStr, replaceStr))
+        cmds.matchTransform(newJnt, jnt)
         newJoints.append(newJnt)
 
-    pm.makeIdentity(newJoints, apply=True)
+    cmds.makeIdentity(newJoints, apply=True)
 
     return newJoints
 
@@ -92,9 +92,9 @@ def duplicateJointChain(joints, prefix='', searchStr='', replaceStr=''):
     for index, dupJnt in enumerate(dupJnts):
         if index == 0:
             continue
-        dupJnts[index-1] | dupJnt
+        cmds.parent(dupJnt, dupJnts[index-1])
 
-    pm.makeIdentity(dupJnts[0], apply=True)
+    cmds.makeIdentity(dupJnts[0], apply=True)
 
     return dupJnts
 
@@ -104,76 +104,69 @@ def duplicateJoints(joints, prefix='', searchStr='', replaceStr=''):
 
     for jnt in joints:
         if prefix:
-            dupJnt = pm.duplicate(jnt, n='{}{}'.format(prefix, jnt), po=True)[0]
+            dupJnt = cmds.duplicate(jnt, n='{}{}'.format(prefix, jnt), po=True)[0]
         else:
-            dupJnt = pm.duplicate(jnt, n=jnt.replace(searchStr, replaceStr), po=True)[0]
+            dupJnt = cmds.duplicate(jnt, n=jnt.replace(searchStr, replaceStr), po=True)[0]
         dupJnts.append(dupJnt)
 
-    pm.makeIdentity(dupJnts, apply=True)
+    cmds.makeIdentity(dupJnts, apply=True)
 
     return dupJnts
 
 
 def createJointsOnCurve(curve, numJoints, prefix):
     joints = []
-
-    curve = pm.PyNode(curve)
-
-    crvLength = curve.length()
+    crvFn = om.MFnNurbsCurve(getDagPath(curve))
+    crvLength = crvFn.length()
     segments = numJoints - 1
     increment = crvLength / segments
 
     for i in range(numJoints):
-        parm = curve.findParamFromLength(increment * i)
-        pointOnCrv = curve.getPointAtParam(parm, space='world')
-        jnt = pm.createNode('joint', n='{}{:02d}_crvJnt'.format(prefix, i))
-        pm.xform(jnt, t=pointOnCrv, ws=True)
+        parm = crvFn.findParamFromLength(increment * i)
+        pointOnCrv = crvFn.getPointAtParam(parm, space=om.MSpace.kWorld)
+        jnt = cmds.createNode('joint', n='{}{:02d}_crvJnt'.format(prefix, i))
+        cmds.xform(jnt, t=pointOnCrv, ws=True)
         joints.append(jnt)
     joints[-1].rename('_'.join(joints[-1].split('_')[:-2]) + '_end_crvJnt')
 
-    pm.makeIdentity(joints, apply=True)
+    cmds.makeIdentity(joints, apply=True)
 
     return joints
 
 
 def createJointsOnSurface(surface, numJoints, prefix):
     joints = []
-
-    surface = pm.PyNode(surface)
-
+    srfcFn = om.MFnNurbsSurface(getDagPath(surface))
     segments = numJoints - 1
     increment = 1.0 / segments
 
     for i in range(numJoints):
-        pointOnSurface = surface.getPointAtParam(increment * i, 0.5, space='world')
-        jnt = pm.createNode('joint', n='{}{:02d}_srfcJnt'.format(prefix, i))
-        pm.xform(jnt, t=pointOnSurface, ws=True)
+        pointOnSurface = srfcFn.getPointAtParam(increment * i, 0.5, space=om.MSpace.kWorld)
+        jnt = cmds.createNode('joint', n='{}{:02d}_srfcJnt'.format(prefix, i))
+        cmds.xform(jnt, t=pointOnSurface, ws=True)
         joints.append(jnt)
     joints[-1].rename('_'.join(joints[-1].split('_')[:-2]) + '_end_srfcJnt')
 
-    pm.makeIdentity(joints, apply=True)
+    cmds.makeIdentity(joints, apply=True)
 
     return joints
 
 
 def getAimAxisInfo(startObject, endObject, space='local'):
-    startObject = pm.PyNode(startObject)
-    endObject = pm.PyNode(endObject)
-
-    startPnt = pm.dt.Point(pm.xform(startObject, q=True, rp=True, ws=True))
-    endPnt = pm.dt.Point(pm.xform(endObject, q=True, rp=True, ws=True))
+    startPnt = om.MPoint(cmds.xform(startObject, q=True, rp=True, ws=True))
+    endPnt = om.MPoint(cmds.xform(endObject, q=True, rp=True, ws=True))
     aimVector = endPnt - startPnt
     aimVector.normalize()
 
     if space == 'local':
-        startObjectMtx = startObject.worldMatrix.get()
-        mtxXVec = pm.dt.Vector(startObjectMtx[0][:3])
-        mtxYVec = pm.dt.Vector(startObjectMtx[1][:3])
-        mtxZVec = pm.dt.Vector(startObjectMtx[2][:3])
+        startObjectMtx = cmds.getAttr('{}.worldMatrix'.format(startObject))
+        mtxXVec = om.MVector(startObjectMtx[0][:3])
+        mtxYVec = om.MVector(startObjectMtx[1][:3])
+        mtxZVec = om.MVector(startObjectMtx[2][:3])
     elif space == 'world':
-        mtxXVec = pm.dt.Vector.xAxis
-        mtxYVec = pm.dt.Vector.yAxis
-        mtxZVec = pm.dt.Vector.zAxis
+        mtxXVec = om.MVector.kXaxisVector
+        mtxYVec = om.MVector.kYaxisVector
+        mtxZVec = om.MVector.kZaxisVector
 
     aimDotMtxXVecInfo = [round(aimVector * mtxXVec), 1, 'X']
     aimDotMtxNegXVecInfo = [round(aimVector * -mtxXVec), -1, 'X']
@@ -191,15 +184,13 @@ def getInbetweenJoints(startJoint, endJoint):
     inbJoints = []
 
     inbJointsInfo = {}
-    startJoint = pm.PyNode(startJoint)
-    endJoint = pm.PyNode(endJoint)
 
-    startPnt = pm.dt.Point(pm.xform(startJoint, q=True, rp=True, ws=True))
-    endPnt = pm.dt.Point(pm.xform(endJoint, q=True, rp=True, ws=True))
+    startPnt = om.MPoint(cmds.xform(startJoint, q=True, rp=True, ws=True))
+    endPnt = om.MPoint(cmds.xform(endJoint, q=True, rp=True, ws=True))
     startToEndVector = endPnt - startPnt
 
-    for childJnt in startJoint.getChildren(ad=True, type='joint'):
-        childJntPnt = pm.dt.Point(pm.xform(childJnt, q=True, rp=True, ws=True))
+    for childJnt in cmds.listRelatives(startJoint, ad=True, type='joint'):
+        childJntPnt = om.MPoint(cmds.xform(childJnt, q=True, rp=True, ws=True))
         startToChildVec = childJntPnt - startPnt
         if (startToEndVector.normal() * startToChildVec.normal()) >= 0.99 and startToChildVec.length() < startToEndVector.length():
             inbJointsInfo[childJnt] = startToChildVec.length()
@@ -210,9 +201,9 @@ def getInbetweenJoints(startJoint, endJoint):
 
 
 def axisStrToVector(axis):
-    axisTable = {'X': pm.dt.Vector(1, 0, 0),
-                 'Y': pm.dt.Vector(0, 1, 0),
-                 'Z': pm.dt.Vector(0, 0, 1)}
+    axisTable = {'X': om.MVector.kXaxisVector,
+                 'Y': om.MVector.kYaxisVector,
+                 'Z': om.MVector.kZaxisVector}
     return axisTable[axis]
 
 
@@ -228,7 +219,7 @@ def getMeshesFromJoints(joints):
     skinClusters = []
 
     for jnt in joints:
-        jntSkinClusters = jnt.worldMatrix.outputs(type='skinCluster')
+        jntSkinClusters = cmds.listConnections('{}.worldMatrix'.format(jnt), source=False, type='skinCluster')[0]
         if jntSkinClusters:
             skinClusters.extend(jntSkinClusters)
     skinClusters = list(set(skinClusters))
@@ -236,18 +227,17 @@ def getMeshesFromJoints(joints):
         return meshes
 
     for skinCluster in skinClusters:
-        meshes.extend(skinCluster.outputGeometry.outputs())
+        meshes.extend(cmds.listConnections('{}.outputGeometry'.format(skinCluster), source=False))
     meshes = list(set(meshes))
 
     return meshes
 
 
 def getAffectedVertices(joints, minWeight=0.1):
-    preSels = pm.selected()
-    pm.select(cl=True)
+    preSels = cmds.ls()
+    cmds.select(cl=True)
     for jnt in joints:
-        jnt = pm.PyNode(jnt)
-        skinClusters = jnt.worldMatrix.outputs(type='skinCluster')
+        skinClusters = cmds.listConnections('{}.worldMatrix'.format(jnt), source=False, type='skinCluster')[0]
         if skinClusters:
             selLs = om.MSelectionList()
             jntDagPath = om.MDagPath()
@@ -255,14 +245,14 @@ def getAffectedVertices(joints, minWeight=0.1):
             for skinCluster in skinClusters:
                 # Get skin cluster function
                 skinNode = om.MObject()
-                selLs.add(skinCluster.name())
+                selLs.add(skinCluster)
                 selLs.getDependNode(0, skinNode)
                 if not skinNode.hasFn(om.MFn.kSkinClusterFilter):
                     continue
                 skinFn = oma.MFnSkinCluster(skinNode)
 
                 # Get affected points
-                selLs.add(jnt.name())
+                selLs.add(jnt)
                 selLs.getDagPath(1, jntDagPath)
                 componentsSelLs = om.MSelectionList()
                 weights = om.MDoubleArray()
@@ -284,28 +274,28 @@ def getAffectedVertices(joints, minWeight=0.1):
                     om.MGlobal.select(geoDagPath, filteredVtxs, om.MGlobal.kAddToList)
 
                 selLs.clear()
-    affectedVtxs = pm.selected(fl=True)
-    pm.select(preSels, r=True)
+    affectedVtxs = cmds.ls(fl=True)
+    cmds.select(preSels, r=True)
     return affectedVtxs
 
 
 def filterGroundLevelVertices(vertices, threshold=1.0):
     groundLevelVertices = []
     for vtx in vertices:
-        if abs(vtx.getPosition(space='world').y) < threshold:
+        if abs(cmds.pointPosition(vtx, world=True)[1]) < threshold:
             groundLevelVertices.append(vtx)
     return groundLevelVertices
 
 
 def getFacingFaces(faces, direction, tol=0.5):
-    preSel = pm.selected()
+    preSel = cmds.ls()
     facingFaces = []
 
-    pm.select(faces, r=True)
+    cmds.select(faces, r=True)
     sels = om.MSelectionList()
     om.MGlobal.getActiveSelectionList(sels)
     itSels = om.MItSelectionList(sels)
-    pm.select(cl=True)
+    cmds.select(cl=True)
     while not itSels.isDone():
         meshDag = om.MDagPath()
         facesObj = om.MObject()
@@ -322,8 +312,8 @@ def getFacingFaces(faces, direction, tol=0.5):
             itFaces.next()
         om.MGlobal.select(meshDag, facingFaces, om.MGlobal.kAddToList)
         itSels.next()
-    facingFaces = pm.selected(fl=True)
-    pm.select(preSel, r=True)
+    facingFaces = cmds.ls(fl=True)
+    cmds.select(preSel, r=True)
 
     return facingFaces
 
@@ -409,7 +399,7 @@ def duplicateFace(faces):
     # Get meshes
     meshes = []
     for face in faces:
-        meshes.append(face.node())
+        meshes.append(cmds.ls(face, objectsOnly=True))
     meshes = list(set(meshes))
 
     # Get faces matching mesh
@@ -417,27 +407,27 @@ def duplicateFace(faces):
     for mesh in meshes:
         meshFaces = []
         for face in faces:
-            if mesh.name() in face.name():
+            if mesh in face:
                 meshFaces.append(face)
         meshFaceInfo[mesh] = meshFaces
 
     # Duplicate meshes and delete unselected faces of duplicated mesh
     dupMeshes = []
     for mesh, faces in meshFaceInfo.items():
-        dupMesh = pm.duplicate(mesh)[0]
-        dupMeshFaces = [face.replace(mesh.name(), dupMesh.name()) for face in faces]
-        pm.select(dupMesh, r=True)
-        pm.selectMode(component=True)
-        pm.select(dupMeshFaces, r=True)
-        pm.mel.eval('InvertSelection();')
-        pm.delete()
-        pm.selectMode(object=True)
+        dupMesh = cmds.duplicate(mesh)[0]
+        dupMeshFaces = [face.replace(mesh, dupMesh) for face in faces]
+        cmds.select(dupMesh, r=True)
+        cmds.selectMode(component=True)
+        cmds.select(dupMeshFaces, r=True)
+        mel.eval('InvertSelection();')
+        cmds.delete()
+        cmds.selectMode(object=True)
         dupMeshes.append(dupMesh)
 
     # Combine meshes
     if len(dupMeshes) >= 2:
-        resultMesh = pm.polyUnite(dupMeshes, ch=False)[0]
-        pm.delete(dupMeshes)
+        resultMesh = cmds.polyUnite(dupMeshes, ch=False)[0]
+        cmds.delete(dupMeshes)
     else:
         resultMesh = dupMeshes[0]
 
@@ -470,7 +460,7 @@ def getOrientMatrix(point1, point2, point3):
            yAxisVec.x, yAxisVec.y, yAxisVec.z, 0,
            zAxisVec.x, zAxisVec.y, zAxisVec.z, 0,
            0, 0, 0, 1]
-    return pm.dt.Matrix(mtx)
+    return om.MMatrix(mtx)
 
 
 def getProjectedVector(vector1, vector2):
@@ -487,35 +477,33 @@ def getDistance(transform1, transform2):
 
 
 def getCenterVector(transforms):
-    trsfVectors = [pm.dt.Vector(getWorldPoint(trsf)) for trsf in transforms]
-    sumVectors = pm.dt.Vector()
+    trsfVectors = [om.MVector(getWorldPoint(trsf)) for trsf in transforms]
+    sumVectors = om.MVector()
     for trsfVector in trsfVectors:
         sumVectors += trsfVector
     return sumVectors / len(trsfVectors)
 
 
 def removeConnections(node):
-    node = pm.PyNode(node)
-    cnsts = node.inputs(type='constraint')
+    cnsts = cmds.listConnections(node, destination=False, type='constraint')
     if cnsts:
-        pm.delete(cnsts)
+        cmds.delete(cnsts)
 
-    for attr in node.listAttr(keyable=True):
-        attr.disconnect()
+    for attr in cmds.listAttr(node, keyable=True):
+        disconnectAttr(attr)
 
-    for dynAttr in node.listAttr(userDefined=True):
-        dynAttr.disconnect()
+    for dynAttr in cmds.listAttr(node, userDefined=True):
+        disconnectAttr(dynAttr)
 
 
 def makeGroup(object, groupName):
     grp = None
-    object = pm.PyNode(object)
-    objParent = object.getParent()
-    grp = pm.createNode('transform', n=groupName)
-    pm.matchTransform(grp, object)
-    grp | object
+    objParent = cmds.listRelatives(object, p=True)
+    grp = cmds.createNode('transform', n=groupName)
+    cmds.matchTransform(grp, object)
+    cmds.parent(object, grp)
     if objParent:
-        objParent | grp
+        cmds.parent(grp, objParent)
     return grp
 
 
@@ -535,14 +523,13 @@ def getCleanName(name):
 
 
 def cloneUserDefinedAttrs(sourceNode, targetNode, keyable=True):
-    for attr in sourceNode.listAttr(ud=True, keyable=keyable):
-        attrName = attr.attrName()
+    for attr in cmds.listAttr(sourceNode, ud=True, keyable=keyable):
         attrType = attr.type()
         minVal = attr.getMin()
         maxVal = attr.getMax()
         dftVal = attr.get(default=True)
-        pm.addAttr(targetNode, ln=attrName, at=attrType, min=minVal, max=maxVal, dv=dftVal, keyable=True)
-        targetNode.attr(attrName) >> sourceNode.attr(attrName)
+        cmds.addAttr(targetNode, ln=attr, at=attrType, min=minVal, max=maxVal, dv=dftVal, keyable=keyable)
+        targetNode.attr(attr) >> sourceNode.attr(attr)
 
 
 def getWorldMatrixMirrorX(inMatrix):
@@ -550,7 +537,7 @@ def getWorldMatrixMirrorX(inMatrix):
                     0, 1, 0, 0,
                     0, 0, 1, 0,
                     0, 0, 0, 1]
-    mirrorXMtx = pm.dt.Matrix(mirrorXMtxLs)
+    mirrorXMtx = om.MMatrix(mirrorXMtxLs)
     return inMatrix * mirrorXMtx
 
 
@@ -559,46 +546,46 @@ def isOddNumber(number):
 
 
 def getSkinCluster(geo):
-    return pm.mel.findRelatedSkinCluster(geo.node())
+    return mel.findRelatedSkinCluster(geo)
 
 
 def cleanupRig():
     cleanupControllers()
 
     # Connect controlRig set to controlRig group
-    rigGrp = pm.PyNode('controlRig')
-    masterSet = pm.PyNode('controlRig_set')
-    if not pm.objExists('controlRig.rigSet'):
-        pm.addAttr(rigGrp, ln='rigSet', at='message', keyable=False)
+    rigGrp = 'controlRig'
+    masterSet = 'controlRig_set'
+    if not cmds.objExists('controlRig.rigSet'):
+        cmds.addAttr(rigGrp, ln='rigSet', at='message', keyable=False)
     masterSet.message >> rigGrp.rigSet
 
     # Hide private groups
-    privateGrps = pm.ls(['*_init_grp', '*_blbx_grp', '*_out_grp'])
+    privateGrps = cmds.ls(['*_init_grp', '*_blbx_grp', '*_out_grp'])
     for privateGrp in privateGrps:
         privateGrp.hide()
 
     # Hide secondary and tertiary controllers
     try:
-        pm.ls('*.extraCtrlVis')[0].set(False)
-        pm.ls('*.facialCtrlVis')[0].set(False)
+        cmds.ls('*.extraCtrlVis')[0].set(False)
+        cmds.ls('*.facialCtrlVis')[0].set(False)
     except:
         pass
 
     # Convert multiRemap nodes to maya node networks
-    if pm.pluginInfo('multiRemapValue', q=True, loaded=True):
-        multiRemapNodes = pm.ls(type='multiRemapValue')
+    if cmds.pluginInfo('multiRemapValue', q=True, loaded=True):
+        multiRemapNodes = cmds.ls(type='multiRemapValue')
         if multiRemapNodes:
             for multiRemapNode in multiRemapNodes:
                 convertMultiRemapToMayaRemap(multiRemapNode)
 
 
 def cleanupControllers():
-    rigSet = pm.PyNode('controlRig_set')
-    ctrlTrsfs = [ctrlNode.inputs()[0] for ctrlNode in pm.ls(rigSet.members(flatten=True), type='controller')]
+    rigSet = 'controlRig_set'
+    ctrlTrsfs = [ctrlNode.inputs()[0] for ctrlNode in cmds.ls(rigSet.members(flatten=True), type='controller')]
 
     # Remove keyframe
     for ctrlTrsf in ctrlTrsfs:
-        pm.cutKey(ctrlTrsf)
+        cmds.cutKey(ctrlTrsf)
 
     # Set default value
     for ctrlTrsf in ctrlTrsfs:
@@ -623,7 +610,7 @@ def convertMultiRemapToMayaRemap(multiRemapNode):
     outConnectInfo = []
     set = None
 
-    valueArray = pm.listAttr(multiRemapNode.value, multi=True, string='value')
+    valueArray = cmds.listAttr(multiRemapNode.value, multi=True, string='value')
     for element in valueArray:
         attr = multiRemapNode.attr(element)
         elementInfo = {}
@@ -651,7 +638,7 @@ def convertMultiRemapToMayaRemap(multiRemapNode):
 
     # Setup parent remap value
     nodeName = multiRemapNode.rsplit('_', 1)[0]
-    parentRemap = pm.createNode('remapValue', n='{}_parent_remap'.format(nodeName))
+    parentRemap = cmds.createNode('remapValue', n='{}_parent_remap'.format(nodeName))
     for valName, valInfo in valueInfo.items():
         for name, val in valInfo.items():
             parentRemap.attr(valName).attr('value_{}'.format(name)).set(val)
@@ -659,7 +646,7 @@ def convertMultiRemapToMayaRemap(multiRemapNode):
         parentRemap.attr(name).set(val)
     for inConnect in inConnectInfo:
         driverPlug = inConnect[0]
-        drivenPlug = pm.PyNode('{}.{}'.format(parentRemap, inConnect[1].split('.', 1)[-1]))
+        drivenPlug = '{}.{}'.format(parentRemap, inConnect[1].split('.', 1)[-1])
         driverPlug >> drivenPlug
 
     set.forceElement(parentRemap)
@@ -667,11 +654,11 @@ def convertMultiRemapToMayaRemap(multiRemapNode):
     # Setup child remap values
     childRemaps = []
     for i, inputVal in enumerate(inputValues):
-        childRemap = pm.duplicate(parentRemap, n='{}_child_{:02d}_remap'.format(nodeName, i))[0]
+        childRemap = cmds.duplicate(parentRemap, n='{}_child_{:02d}_remap'.format(nodeName, i))[0]
         childRemap.inputValue.set(inputVal)
-        for attrName in pm.listAttr(parentRemap.value, multi=True, string='value'):
-            parentValAttr = pm.PyNode('{}.{}'.format(parentRemap, attrName))
-            childValAttr = pm.PyNode('{}.{}'.format(childRemap, attrName))
+        for attrName in cmds.listAttr(parentRemap.value, multi=True, string='value'):
+            parentValAttr = '{}.{}'.format(parentRemap, attrName)
+            childValAttr = '{}.{}'.format(childRemap, attrName)
             parentValAttr >> childValAttr
 
         for attrName in minMaxInfo.keys():
@@ -683,76 +670,69 @@ def convertMultiRemapToMayaRemap(multiRemapNode):
 
         childRemaps.append(childRemap)
 
-    pm.delete(multiRemapNode)
+    cmds.delete(multiRemapNode)
     set.forceElement(childRemaps)
 
 
 def setupGlobalDynamicController(moduleGroups, name):
-    moduleGroups = [pm.PyNode(moduleGrp) for moduleGrp in moduleGroups]
-
-    pm.undoInfo(openChunk=True)
+    cmds.undoInfo(openChunk=True)
 
     hairSystems = [moduleGrp.getChildren(ad=True, type='hairSystem')[0] for moduleGrp in moduleGroups]
 
-    solver = pm.createNode('nucleus', n='{}_nucleus'.format(name))
+    solver = cmds.createNode('nucleus', n='{}_nucleus'.format(name))
     solver.inheritsTransform.set(False)
     solver.spaceScale.set(0.05)
 
     # Create controller
     dynCtrlName = 'dyn_ctrl'
-    if not pm.objExists(dynCtrlName):
-        dynCtrl = pm.curve(d=1, p=[[-1, 6, 0], [0, 5, 0], [1, 6, 0], [2, 6, 0], [4, 4, 0], [3, 3, 0], [2, 4, 0], [2, 1, 0], [-2, 1, 0], [-2, 4, 0], [-3, 3, 0], [-4, 4, 0], [-2, 6, 0], [-1, 6, 0]], n=dynCtrlName)
-        pm.group(dynCtrl, n='{}_zero'.format(dynCtrl))
-        for attr in dynCtrl.listAttr(keyable=True):
+    if not cmds.objExists(dynCtrlName):
+        dynCtrlName = cmds.curve(d=1, p=[[-1, 6, 0], [0, 5, 0], [1, 6, 0], [2, 6, 0], [4, 4, 0], [3, 3, 0], [2, 4, 0], [2, 1, 0], [-2, 1, 0], [-2, 4, 0], [-3, 3, 0], [-4, 4, 0], [-2, 6, 0], [-1, 6, 0]], n=dynCtrlName)
+        cmds.group(dynCtrlName, n='{}_zero'.format(dynCtrlName))
+        for attr in dynCtrlName.listAttr(keyable=True):
             attr.lock(True)
             attr.setKeyable(False)
-    else:
-        dynCtrl = pm.PyNode(dynCtrlName)
 
-    pm.addAttr(dynCtrl, ln=name, at='enum', en='---------------:')
-    pm.setAttr('{}.{}'.format(dynCtrl, name), channelBox=True)
-    pm.addAttr(dynCtrl, ln='{}_enable'.format(name), at='bool', keyable=True, dv=False)
-    pm.addAttr(dynCtrl, ln='{}_startFrame'.format(name), at='long', keyable=True, dv=100000)
-    pm.addAttr(dynCtrl, ln='{}_subSteps'.format(name), at='long', keyable=True, dv=3)
-    pm.addAttr(dynCtrl, ln='{}_bendResistance'.format(name), at='double', keyable=True, dv=0.1)
-    pm.addAttr(dynCtrl, ln='{}_stiffness'.format(name), at='double', keyable=True, dv=0.1)
-    pm.addAttr(dynCtrl, ln='{}_damp'.format(name), at='double', keyable=True, dv=0.1)
-    pm.addAttr(dynCtrl, ln='{}_drag'.format(name), at='double', keyable=True, dv=0.05)
-    pm.addAttr(dynCtrl, ln='{}_startCurveAttract'.format(name), at='double', keyable=True, dv=1)
-    pm.addAttr(dynCtrl, ln='{}_attractionDamp'.format(name), at='double', keyable=True, dv=0)
+    cmds.addAttr(dynCtrlName, ln=name, at='enum', en='---------------:')
+    cmds.setAttr('{}.{}'.format(dynCtrlName, name), channelBox=True)
+    cmds.addAttr(dynCtrlName, ln='{}_enable'.format(name), at='bool', keyable=True, dv=False)
+    cmds.addAttr(dynCtrlName, ln='{}_startFrame'.format(name), at='long', keyable=True, dv=100000)
+    cmds.addAttr(dynCtrlName, ln='{}_subSteps'.format(name), at='long', keyable=True, dv=3)
+    cmds.addAttr(dynCtrlName, ln='{}_bendResistance'.format(name), at='double', keyable=True, dv=0.1)
+    cmds.addAttr(dynCtrlName, ln='{}_stiffness'.format(name), at='double', keyable=True, dv=0.1)
+    cmds.addAttr(dynCtrlName, ln='{}_damp'.format(name), at='double', keyable=True, dv=0.1)
+    cmds.addAttr(dynCtrlName, ln='{}_drag'.format(name), at='double', keyable=True, dv=0.05)
+    cmds.addAttr(dynCtrlName, ln='{}_startCurveAttract'.format(name), at='double', keyable=True, dv=1)
+    cmds.addAttr(dynCtrlName, ln='{}_attractionDamp'.format(name), at='double', keyable=True, dv=0)
 
-    dynCtrl.attr('{}_enable'.format(name)) >> solver.enable
-    dynCtrl.attr('{}_startFrame'.format(name)) >> solver.startFrame
-    dynCtrl.attr('{}_subSteps'.format(name)) >> solver.subSteps
+    dynCtrlName.attr('{}_enable'.format(name)) >> solver.enable
+    dynCtrlName.attr('{}_startFrame'.format(name)) >> solver.startFrame
+    dynCtrlName.attr('{}_subSteps'.format(name)) >> solver.subSteps
 
     for hairSystem in hairSystems:
         changeSolver(hairSystem, solver)
         localDynCtrl = list(set(hairSystem.inputs(type='transform', exactType=True)))[0]
-        dynCtrl.attr('{}_enable'.format(name)) >> localDynCtrl.enable
-        dynCtrl.attr('{}_startFrame'.format(name)) >> localDynCtrl.startFrame
-        dynCtrl.attr('{}_subSteps'.format(name)) >> localDynCtrl.subSteps
-        dynCtrl.attr('{}_bendResistance'.format(name)) >> localDynCtrl.bendResistance
-        dynCtrl.attr('{}_stiffness'.format(name)) >> localDynCtrl.stiffness
-        dynCtrl.attr('{}_damp'.format(name)) >> localDynCtrl.damp
-        dynCtrl.attr('{}_drag'.format(name)) >> localDynCtrl.drag
-        dynCtrl.attr('{}_startCurveAttract'.format(name)) >> localDynCtrl.startCurveAttract
-        dynCtrl.attr('{}_attractionDamp'.format(name)) >> localDynCtrl.attractionDamp
+        dynCtrlName.attr('{}_enable'.format(name)) >> localDynCtrl.enable
+        dynCtrlName.attr('{}_startFrame'.format(name)) >> localDynCtrl.startFrame
+        dynCtrlName.attr('{}_subSteps'.format(name)) >> localDynCtrl.subSteps
+        dynCtrlName.attr('{}_bendResistance'.format(name)) >> localDynCtrl.bendResistance
+        dynCtrlName.attr('{}_stiffness'.format(name)) >> localDynCtrl.stiffness
+        dynCtrlName.attr('{}_damp'.format(name)) >> localDynCtrl.damp
+        dynCtrlName.attr('{}_drag'.format(name)) >> localDynCtrl.drag
+        dynCtrlName.attr('{}_startCurveAttract'.format(name)) >> localDynCtrl.startCurveAttract
+        dynCtrlName.attr('{}_attractionDamp'.format(name)) >> localDynCtrl.attractionDamp
 
-    pm.undoInfo(closeChunk=True)
+    cmds.undoInfo(closeChunk=True)
 
 def changeSolver(dynamicNode, solver=None):
     if not solver:
-        solver = pm.createNode('nucleus')
-    else:
-        solver = pm.PyNode(solver)
+        solver = cmds.createNode('nucleus')
 
-    dynamicNode = pm.PyNode(dynamicNode)
     if dynamicNode.nodeType() == 'transform':
         dynamicNode = dynamicNode.getShape()
 
     oldSolver = list(set(dynamicNode.inputs(type='nucleus')))
 
-    time1 = pm.PyNode('time1')
+    time1 = 'time1'
     time1.outTime.connect(solver.currentTime, f=True)
 
     solver.startFrame.connect(dynamicNode.startFrame, f=True)
@@ -768,30 +748,27 @@ def changeSolver(dynamicNode, solver=None):
     dynamicNode.startState.disconnect()
     dynamicNode.startState.connect(solver.inputActiveStart[index])
 
-    pm.delete(oldSolver)
+    cmds.delete(oldSolver)
 
 def findMultiAttributeEmptyIndex(node, attribute):
-    node = pm.PyNode(node)
     id = 0
     while node.attr(attribute)[id].isConnected():
         id += 1
     return id
 
 def symmeterizeModule(sourceModuleGroup, targetModuleGroup):
-    srcModGrp = pm.PyNode(sourceModuleGroup)
-    trgModGrp = pm.PyNode(targetModuleGroup)
-    srcTrans = srcModGrp.translate.get()
-    srcRotate = srcModGrp.rotate.get()
-    srcScale = srcModGrp.scale.get()
-    trgModGrp.translate.set(-srcTrans.x, srcTrans.y, srcTrans.z)
-    trgModGrp.rotate.set(srcRotate)
-    trgModGrp.scale.set(srcScale)
+    srcTrans = sourceModuleGroup.translate.get()
+    srcRotate = sourceModuleGroup.rotate.get()
+    srcScale = sourceModuleGroup.scale.get()
+    targetModuleGroup.translate.set(-srcTrans.x, srcTrans.y, srcTrans.z)
+    targetModuleGroup.rotate.set(srcRotate)
+    targetModuleGroup.scale.set(srcScale)
 
-    srcPrefix = srcModGrp.split('_module')[0]
-    trgPrefix = trgModGrp.split('_module')[0]
-    srcCtrlNodes = [item for item in pm.PyNode('{}_set'.format(srcPrefix)).members(flatten=True) if item.nodeType() == 'controller']
+    srcPrefix = sourceModuleGroup.split('_module')[0]
+    trgPrefix = targetModuleGroup.split('_module')[0]
+    srcCtrlNodes = [item for item in cmds.sets('{}_set'.format(srcPrefix), q=True) if item.nodeType() == 'controller']
     srcCtrls = [ctrlNode.inputs()[0] for ctrlNode in srcCtrlNodes]
-    trgCtrlNodes = [item for item in pm.PyNode('{}_set'.format(trgPrefix)).members(flatten=True) if item.nodeType() == 'controller']
+    trgCtrlNodes = [item for item in cmds.sets('{}_set'.format(trgPrefix), q=True) if item.nodeType() == 'controller']
     trgCtrls = [ctrlNode.inputs()[0] for ctrlNode in trgCtrlNodes]
 
     for srcCtrl, trgCtrl in zip(sorted(srcCtrls), sorted(trgCtrls)):
@@ -799,19 +776,19 @@ def symmeterizeModule(sourceModuleGroup, targetModuleGroup):
         trgCtrlZeroGrp = trgCtrl.getParent(generations=2)
         srcMtx = srcCtrlZeroGrp.worldMatrix.get()
         trgMtx = symmetryMatrix(srcMtx)
-        pm.xform(trgCtrlZeroGrp, m=trgMtx, ws=True)
-        pm.xform(trgCtrlZeroGrp, t=(-srcMtx[3][0], srcMtx[3][1], srcMtx[3][2]), ws=True)
+        cmds.xform(trgCtrlZeroGrp, m=trgMtx, ws=True)
+        cmds.xform(trgCtrlZeroGrp, t=(-srcMtx[3][0], srcMtx[3][1], srcMtx[3][2]), ws=True)
 
         srcCtrlExtraGrp = srcCtrl.getParent()
         trgCtrlExtraGrp = trgCtrl.getParent()
         srcMtx = srcCtrlExtraGrp.worldMatrix.get()
         trgMtx = symmetryMatrix(srcMtx)
-        pm.xform(trgCtrlExtraGrp, m=trgMtx, ws=True)
-        pm.xform(trgCtrlExtraGrp, t=(-srcMtx[3][0], srcMtx[3][1], srcMtx[3][2]), ws=True)
+        cmds.xform(trgCtrlExtraGrp, m=trgMtx, ws=True)
+        cmds.xform(trgCtrlExtraGrp, t=(-srcMtx[3][0], srcMtx[3][1], srcMtx[3][2]), ws=True)
 
 def symmetryMatrix(matrix):
-    resultMtx = pm.dt.Matrix()
-    symMtx = pm.dt.Matrix(
+    resultMtx = om.MMatrix()
+    symMtx = om.MMatrix(
         1.0, 0.0, 0.0, 0.0,
         0.0, -1.0, 0.0, 0.0,
         0.0, 0.0, -1.0, 0.0,
@@ -822,11 +799,22 @@ def symmetryMatrix(matrix):
 
 
 def connectScaleWithConstraint(moduleGroup):
-    modGrp = pm.PyNode(moduleGroup)
-    outJnts = [jnt for jnt in modGrp.getChildren(ad=True, type='joint') if 'out' in jnt.name()]
+    outJnts = [jnt for jnt in moduleGroup.getChildren(ad=True, type='joint') if 'out' in jnt.name()]
     for outJnt in outJnts:
         skelJnt = outJnt.scaleX.outputs(type='joint')[0]
         outJnt.scaleX // skelJnt.scaleX
         outJnt.scaleY // skelJnt.scaleY
         outJnt.scaleZ // skelJnt.scaleZ
-        pm.scaleConstraint(outJnt, skelJnt, mo=True)
+        cmds.scaleConstraint(outJnt, skelJnt, mo=True)
+
+
+def getDagPath(name):
+    sels = om.MSelectionList()
+    sels.add(name)
+    return sels.getDagPath(0)
+
+
+def disconnectAttr(attribute):
+    inputPlug = cmds.listConnections(attribute, destination=False, plugs=True)
+    if inputPlug:
+        cmds.disconnectAttr(inputPlug[0], attribute)

@@ -1,4 +1,4 @@
-import pymel.core as pm
+from maya import cmds
 from ..irGlobal import Controller
 from ... import utils
 from .system import System
@@ -50,41 +50,41 @@ class ThreeBoneIK(System):
         self.__hindJoints = utils.duplicateJointChain([self._joints[0], self._joints[1], self._joints[3]], prefix='hind_')
         self.__hindJoints[1].tx.set(self._joints[2].tx.get())
         self.__hindJoints[2].tx.set(self._joints[1].tx.get() + self._joints[3].tx.get())
-        self.__hindIkHandle = pm.ikHandle(startJoint=self.__hindJoints[0], endEffector=self.__hindJoints[2], solver='ikRPsolver', n='{}hind_ikh'.format(self._prefix))[0]
+        self.__hindIkHandle = cmds.ikHandle(startJoint=self.__hindJoints[0], endEffector=self.__hindJoints[2], solver='ikRPsolver', n='{}hind_ikh'.format(self._name))[0]
         hindIkhZeroGrp = utils.makeGroup(self.__hindIkHandle, '{}_zero'.format(self.__hindIkHandle))
-        pm.matchTransform(hindIkhZeroGrp, self._joints[3])
+        cmds.matchTransform(hindIkhZeroGrp, self._joints[3])
         self._blbxGrp | hindIkhZeroGrp
 
-        self.__calfIkHandle = pm.ikHandle(startJoint=self._joints[0], endEffector=self._joints[2], solver='ikRPsolver', n='{}calf_ikh'.format(self._prefix))[0]
+        self.__calfIkHandle = cmds.ikHandle(startJoint=self._joints[0], endEffector=self._joints[2], solver='ikRPsolver', n='{}calf_ikh'.format(self._name))[0]
         calfIkhZeroGrp = utils.makeGroup(self.__calfIkHandle, '{}_zero'.format(self.__calfIkHandle))
-        self.__calfRotGrp = pm.createNode('transform', n='{}_rot'.format(self.__calfIkHandle))
-        pm.matchTransform(self.__calfRotGrp, self._joints[3])
-        self.__calfAutoRotGrp = pm.createNode('transform', n='{}_autoRot'.format(self.__calfIkHandle))
-        pm.matchTransform(self.__calfAutoRotGrp, self._joints[3])
+        self.__calfRotGrp = cmds.createNode('transform', n='{}_rot'.format(self.__calfIkHandle))
+        cmds.matchTransform(self.__calfRotGrp, self._joints[3])
+        self.__calfAutoRotGrp = cmds.createNode('transform', n='{}_autoRot'.format(self.__calfIkHandle))
+        cmds.matchTransform(self.__calfAutoRotGrp, self._joints[3])
         self.__calfAutoRotGrp | self.__calfRotGrp | calfIkhZeroGrp
-        self.__ankleIkHandle = pm.ikHandle(startJoint=self._joints[2], endEffector=self._joints[3], solver='ikSCsolver', n='{}ankle_ikh'.format(self._prefix))[0]
+        self.__ankleIkHandle = cmds.ikHandle(startJoint=self._joints[2], endEffector=self._joints[3], solver='ikSCsolver', n='{}ankle_ikh'.format(self._name))[0]
         ankleIkhZeroGrp = utils.makeGroup(self.__ankleIkHandle, '{}_zero'.format(self.__ankleIkHandle))
-        self.__ikHandleLoc = pm.spaceLocator(n='{}ikh_loc'.format(self._prefix))
-        pm.matchTransform(self.__ikHandleLoc, self._joints[3])
-        pm.parent([self.__calfAutoRotGrp, ankleIkhZeroGrp], self.__ikHandleLoc)
+        self.__ikHandleLoc = cmds.spaceLocator(n='{}ikh_loc'.format(self._name))
+        cmds.matchTransform(self.__ikHandleLoc, self._joints[3])
+        cmds.parent([self.__calfAutoRotGrp, ankleIkhZeroGrp], self.__ikHandleLoc)
         self._blbxGrp | self.__ikHandleLoc
 
-        jnt0Loc = pm.spaceLocator(n='{}_loc'.format(self._joints[0]))
-        pm.matchTransform(jnt0Loc, self._joints[0])
-        pm.parent([self._joints[0], self.__hindJoints[0]], jnt0Loc)
+        jnt0Loc = cmds.spaceLocator(n='{}_loc'.format(self._joints[0]))
+        cmds.matchTransform(jnt0Loc, self._joints[0])
+        cmds.parent([self._joints[0], self.__hindJoints[0]], jnt0Loc)
         self._blbxGrp | jnt0Loc
 
     def _buildControls(self):
         self.__ikHandleController = Controller('{0}_ctrl'.format(self.__ankleIkHandle), shape=Controller.SHAPE.CUBE)
-        pm.matchTransform(self.__ikHandleController.zeroGrp(), self._joints[-1], position=True)
+        cmds.matchTransform(self.__ikHandleController.zeroGrp, self._joints[-1], position=True)
         if self._negateScaleX:
-            self.__ikHandleController.zeroGrp().sx.set(-1)
-        pm.pointConstraint(self.__ikHandleController, self.__ikHandleLoc, mo=True)
-        pm.pointConstraint(self.__ikHandleController, self.__hindIkHandle.getParent(), mo=True)
-        pm.orientConstraint(self.__ikHandleController, self._joints[-1], mo=True)
+            self.__ikHandleController.zeroGrp.sx.set(-1)
+        cmds.pointConstraint(self.__ikHandleController, self.__ikHandleLoc, mo=True)
+        cmds.pointConstraint(self.__ikHandleController, self.__hindIkHandle.getParent(), mo=True)
+        cmds.orientConstraint(self.__ikHandleController, self._joints[-1], mo=True)
         self.__ikHandleController.lockHideChannels(['scale', 'visibility'])
-        self.addMembers(self.__ikHandleController.controllerNode())
-        pm.addAttr(self.__ikHandleController, ln='calfLift', at='double', dv=0.0, keyable=True)
+        self.addMembers(self.__ikHandleController.controllerNode)
+        cmds.addAttr(self.__ikHandleController, ln='calfLift', at='double', dv=0.0, keyable=True)
         self.__ikHandleController.calfLift >> self.__calfRotGrp.ry
 
         startToEndVector = utils.getWorldPoint(self._joints[2]) - utils.getWorldPoint(self._joints[0])
@@ -92,26 +92,26 @@ class ThreeBoneIK(System):
         polePos = utils.getWorldPoint(self._joints[1]) + (poleVector.normal() * startToEndVector.length())
         if self.__poleVectorPosition:  # Override pole vector position if is given
             polePos = self.__poleVectorPosition
-        self.__poleVectorController = Controller('{}pv_ctrl'.format(self._prefix), shape=Controller.SHAPE.LOCATOR)
-        pm.xform(self.__poleVectorController.zeroGrp(), t=polePos, ws=True)
+        self.__poleVectorController = Controller('{}pv_ctrl'.format(self._name), shape=Controller.SHAPE.LOCATOR)
+        cmds.xform(self.__poleVectorController.zeroGrp, t=polePos, ws=True)
         if self._negateScaleX:
-            self.__poleVectorController.zeroGrp().sx.set(-1)
+            self.__poleVectorController.zeroGrp.sx.set(-1)
 
-        pm.poleVectorConstraint(self.__poleVectorController, self.__hindIkHandle)
+        cmds.poleVectorConstraint(self.__poleVectorController, self.__hindIkHandle)
         self.__hindIkHandle.twist.set(180)
-        pm.orientConstraint(self.__hindJoints[1], self.__calfAutoRotGrp, mo=True)
+        cmds.orientConstraint(self.__hindJoints[1], self.__calfAutoRotGrp, mo=True)
 
-        pm.poleVectorConstraint(self.__poleVectorController, self.__calfIkHandle)
+        cmds.poleVectorConstraint(self.__poleVectorController, self.__calfIkHandle)
         self.__poleVectorController.lockHideChannels(['rotate', 'scale', 'visibility'])
-        self.addMembers(self.__poleVectorController.controllerNode())
+        self.addMembers(self.__poleVectorController.controllerNode)
 
         self._controllers = [self.__ikHandleController, self.__poleVectorController]
-        pm.parent([ctrl.zeroGrp() for ctrl in self._controllers], self._controllerGrp)
+        cmds.parent([ctrl.zeroGrp for ctrl in self._controllers], self._controllerGrp)
 
     def __createPoleVectorLine(self):
-        midJntDec = pm.createNode('decomposeMatrix', n='{0}_dec'.format(self._joints[1]))
-        poleCtrlDec = pm.createNode('decomposeMatrix', n='{0}_dec'.format(self._controllers[-1]))
-        poleLine = pm.curve(n='{0}_line'.format(self._controllers[-1]), d=1, p=[(0, 0, 0), (0, 1, 0)])
+        midJntDec = cmds.createNode('decomposeMatrix', n='{0}_dec'.format(self._joints[1]))
+        poleCtrlDec = cmds.createNode('decomposeMatrix', n='{0}_dec'.format(self._controllers[-1]))
+        poleLine = cmds.curve(n='{0}_line'.format(self._controllers[-1]), d=1, p=[(0, 0, 0), (0, 1, 0)])
         poleLine.inheritsTransform.set(False)
         poleLine.overrideEnabled.set(True)
         poleLine.overrideDisplayType.set(2)
@@ -126,110 +126,110 @@ class ThreeBoneIK(System):
 
     def setupStretch(self):
         # Setup DAG
-        stretchGrp = pm.createNode('transform', n='{}stretch_grp'.format(self._prefix))
-        pm.addAttr(self._controllers[0], at='double', ln='length1', min=0.01, dv=1.0, keyable=True)
-        pm.addAttr(self._controllers[0], at='double', ln='length2', min=0.01, dv=1.0, keyable=True)
-        pm.addAttr(self._controllers[0], at='double', ln='length3', min=0.01, dv=1.0, keyable=True)
-        pm.addAttr(self._controllers[0], at='double', ln='stretch', min=0.0, max=1.0, dv=1.0, keyable=True)
+        stretchGrp = cmds.createNode('transform', n='{}stretch_grp'.format(self._name))
+        cmds.addAttr(self._controllers[0], at='double', ln='length1', min=0.01, dv=1.0, keyable=True)
+        cmds.addAttr(self._controllers[0], at='double', ln='length2', min=0.01, dv=1.0, keyable=True)
+        cmds.addAttr(self._controllers[0], at='double', ln='length3', min=0.01, dv=1.0, keyable=True)
+        cmds.addAttr(self._controllers[0], at='double', ln='stretch', min=0.0, max=1.0, dv=1.0, keyable=True)
 
-        stretchInputNode = pm.createNode('transform', n='{}stretch_input'.format(self._prefix))
-        pm.addAttr(stretchInputNode, at='double', ln='inLength1')
-        pm.addAttr(stretchInputNode, at='double', ln='inLength2')
-        pm.addAttr(stretchInputNode, at='double', ln='inLength3')
-        pm.addAttr(stretchInputNode, at='double', ln='inStretch')
-        pm.addAttr(stretchInputNode, at='double', ln='inCurLength')
-        pm.addAttr(stretchInputNode, at='double', ln='inLength1Orig')
-        pm.addAttr(stretchInputNode, at='double', ln='inLength2Orig')
-        pm.addAttr(stretchInputNode, at='double', ln='inLength3Orig')
-        pm.addAttr(stretchInputNode, at='double', ln='inHindLength1Orig')
-        pm.addAttr(stretchInputNode, at='double', ln='inHindLength2Orig')
+        stretchInputNode = cmds.createNode('transform', n='{}stretch_input'.format(self._name))
+        cmds.addAttr(stretchInputNode, at='double', ln='inLength1')
+        cmds.addAttr(stretchInputNode, at='double', ln='inLength2')
+        cmds.addAttr(stretchInputNode, at='double', ln='inLength3')
+        cmds.addAttr(stretchInputNode, at='double', ln='inStretch')
+        cmds.addAttr(stretchInputNode, at='double', ln='inCurLength')
+        cmds.addAttr(stretchInputNode, at='double', ln='inLength1Orig')
+        cmds.addAttr(stretchInputNode, at='double', ln='inLength2Orig')
+        cmds.addAttr(stretchInputNode, at='double', ln='inLength3Orig')
+        cmds.addAttr(stretchInputNode, at='double', ln='inHindLength1Orig')
+        cmds.addAttr(stretchInputNode, at='double', ln='inHindLength2Orig')
 
-        stretchOutputNode = pm.createNode('transform', n='{}stretch_output'.format(self._prefix))
-        pm.addAttr(stretchOutputNode, at='double', ln='outLength1')
-        pm.addAttr(stretchOutputNode, at='double', ln='outLength2')
-        pm.addAttr(stretchOutputNode, at='double', ln='outLength3')
-        pm.addAttr(stretchOutputNode, at='double', ln='outHindLength1')
-        pm.addAttr(stretchOutputNode, at='double', ln='outHindLength2')
+        stretchOutputNode = cmds.createNode('transform', n='{}stretch_output'.format(self._name))
+        cmds.addAttr(stretchOutputNode, at='double', ln='outLength1')
+        cmds.addAttr(stretchOutputNode, at='double', ln='outLength2')
+        cmds.addAttr(stretchOutputNode, at='double', ln='outLength3')
+        cmds.addAttr(stretchOutputNode, at='double', ln='outHindLength1')
+        cmds.addAttr(stretchOutputNode, at='double', ln='outHindLength2')
 
-        jnt0StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self._joints[0]))
-        jnt1StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self._joints[1]))
-        jnt2StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self._joints[2]))
-        jnt3StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self._joints[3]))
-        hindJnt0StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self.__hindJoints[0]))
-        hindJnt1StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self.__hindJoints[1]))
-        hindJnt2StretchLoc = pm.spaceLocator(n='{}_stretch_loc'.format(self.__hindJoints[2]))
+        jnt0StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[0]))
+        jnt1StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[1]))
+        jnt2StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[2]))
+        jnt3StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[3]))
+        hindJnt0StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self.__hindJoints[0]))
+        hindJnt1StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self.__hindJoints[1]))
+        hindJnt2StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self.__hindJoints[2]))
 
-        pm.matchTransform(jnt0StretchLoc, self._joints[0])
-        pm.matchTransform(jnt1StretchLoc, self._joints[1])
-        pm.matchTransform(jnt2StretchLoc, self._joints[2])
-        pm.matchTransform(jnt3StretchLoc, self._joints[3])
-        pm.matchTransform(hindJnt0StretchLoc, self.__hindJoints[0])
-        pm.matchTransform(hindJnt1StretchLoc, self.__hindJoints[1])
-        pm.matchTransform(hindJnt2StretchLoc, self.__hindJoints[2])
+        cmds.matchTransform(jnt0StretchLoc, self._joints[0])
+        cmds.matchTransform(jnt1StretchLoc, self._joints[1])
+        cmds.matchTransform(jnt2StretchLoc, self._joints[2])
+        cmds.matchTransform(jnt3StretchLoc, self._joints[3])
+        cmds.matchTransform(hindJnt0StretchLoc, self.__hindJoints[0])
+        cmds.matchTransform(hindJnt1StretchLoc, self.__hindJoints[1])
+        cmds.matchTransform(hindJnt2StretchLoc, self.__hindJoints[2])
 
-        pm.parent([stretchInputNode, stretchOutputNode], stretchGrp)
+        cmds.parent([stretchInputNode, stretchOutputNode], stretchGrp)
         stretchGrp | jnt0StretchLoc | jnt1StretchLoc | jnt2StretchLoc | jnt3StretchLoc
         stretchGrp | hindJnt0StretchLoc | hindJnt1StretchLoc | hindJnt2StretchLoc
         self._blbxGrp | stretchGrp
 
         # Create DG nodes
-        ikhCtrlLocalMtx = pm.createNode('multMatrix', n='{}_local_multMtx'.format(self._controllers[0]))
-        ikhCtrlLocalDist = pm.createNode('distanceBetween', n='{}_local_dist'.format(self._controllers[0]))
+        ikhCtrlLocalMtx = cmds.createNode('multMatrix', n='{}_local_multMtx'.format(self._controllers[0]))
+        ikhCtrlLocalDist = cmds.createNode('distanceBetween', n='{}_local_dist'.format(self._controllers[0]))
 
-        lenOrigAbsSquare = pm.createNode('multiplyDivide', n='{}lenOrigAbs_square'.format(self._prefix))
+        lenOrigAbsSquare = cmds.createNode('multiplyDivide', n='{}lenOrigAbs_square'.format(self._name))
         lenOrigAbsSquare.operation.set(3)
         lenOrigAbsSquare.input2X.set(2)
         lenOrigAbsSquare.input2Y.set(2)
         lenOrigAbsSquare.input2Z.set(2)
-        lenOrigAbsSqrt = pm.createNode('multiplyDivide', n='{}lenOrigAbs_sqrt'.format(self._prefix))
+        lenOrigAbsSqrt = cmds.createNode('multiplyDivide', n='{}lenOrigAbs_sqrt'.format(self._name))
         lenOrigAbsSqrt.operation.set(3)
         lenOrigAbsSqrt.input2X.set(0.5)
         lenOrigAbsSqrt.input2Y.set(0.5)
         lenOrigAbsSqrt.input2Z.set(0.5)
-        hindLenOrigAbsSquare = pm.createNode('multiplyDivide', n='{}hindLenOrigAbs_square'.format(self._prefix))
+        hindLenOrigAbsSquare = cmds.createNode('multiplyDivide', n='{}hindLenOrigAbs_square'.format(self._name))
         hindLenOrigAbsSquare.operation.set(3)
         hindLenOrigAbsSquare.input2X.set(2)
         hindLenOrigAbsSquare.input2Y.set(2)
-        hindLenOrigAbsSqrt = pm.createNode('multiplyDivide', n='{}hindLenOrigAbs_sqrt'.format(self._prefix))
+        hindLenOrigAbsSqrt = cmds.createNode('multiplyDivide', n='{}hindLenOrigAbs_sqrt'.format(self._name))
         hindLenOrigAbsSqrt.operation.set(3)
         hindLenOrigAbsSqrt.input2X.set(0.5)
         hindLenOrigAbsSqrt.input2Y.set(0.5)
 
-        len1OrigMul = pm.createNode('multDoubleLinear', n='{}length1Orig_mul'.format(self._prefix))
-        len2OrigMul = pm.createNode('multDoubleLinear', n='{}length2Orig_mul'.format(self._prefix))
-        len3OrigMul = pm.createNode('multDoubleLinear', n='{}length3Orig_mul'.format(self._prefix))
+        len1OrigMul = cmds.createNode('multDoubleLinear', n='{}length1Orig_mul'.format(self._name))
+        len2OrigMul = cmds.createNode('multDoubleLinear', n='{}length2Orig_mul'.format(self._name))
+        len3OrigMul = cmds.createNode('multDoubleLinear', n='{}length3Orig_mul'.format(self._name))
 
-        wholeLenOrigAdd = pm.createNode('plusMinusAverage', n='{}wholeLenOrig_add'.format(self._prefix))
+        wholeLenOrigAdd = cmds.createNode('plusMinusAverage', n='{}wholeLenOrig_add'.format(self._name))
 
-        stretchFactorDiv = pm.createNode('multiplyDivide', n='{}stretchFactor_div'.format(self._prefix))
+        stretchFactorDiv = cmds.createNode('multiplyDivide', n='{}stretchFactor_div'.format(self._name))
         stretchFactorDiv.operation.set(2)
 
-        stretchLen1OrigMul = pm.createNode('multDoubleLinear', n='{}stretchLen1Orig_mul'.format(self._prefix))
-        stretchLen2OrigMul = pm.createNode('multDoubleLinear', n='{}stretchLen2Orig_mul'.format(self._prefix))
-        stretchLen3OrigMul = pm.createNode('multDoubleLinear', n='{}stretchLen3Orig_mul'.format(self._prefix))
-        stretchHindLen1OrigMul = pm.createNode('multDoubleLinear', n='{}stretchHindLen1Orig_mul'.format(self._prefix))
-        stretchHindLen2OrigMul = pm.createNode('multDoubleLinear', n='{}stretchHindLen2Orig_mul'.format(self._prefix))
+        stretchLen1OrigMul = cmds.createNode('multDoubleLinear', n='{}stretchLen1Orig_mul'.format(self._name))
+        stretchLen2OrigMul = cmds.createNode('multDoubleLinear', n='{}stretchLen2Orig_mul'.format(self._name))
+        stretchLen3OrigMul = cmds.createNode('multDoubleLinear', n='{}stretchLen3Orig_mul'.format(self._name))
+        stretchHindLen1OrigMul = cmds.createNode('multDoubleLinear', n='{}stretchHindLen1Orig_mul'.format(self._name))
+        stretchHindLen2OrigMul = cmds.createNode('multDoubleLinear', n='{}stretchHindLen2Orig_mul'.format(self._name))
 
-        stretchCond = pm.createNode('condition', n='{}stretch_cond'.format(self._prefix))
+        stretchCond = cmds.createNode('condition', n='{}stretch_cond'.format(self._name))
         stretchCond.operation.set(2)
-        hindStretchCond = pm.createNode('condition', n='{}hindStretch_cond'.format(self._prefix))
+        hindStretchCond = cmds.createNode('condition', n='{}hindStretch_cond'.format(self._name))
         hindStretchCond.operation.set(2)
 
-        len1Blend = pm.createNode('blendTwoAttr', n='{}length1_blend'.format(self._prefix))
-        len2Blend = pm.createNode('blendTwoAttr', n='{}length2_blend'.format(self._prefix))
-        len3Blend = pm.createNode('blendTwoAttr', n='{}length3_blend'.format(self._prefix))
-        hindLen1Blend = pm.createNode('blendTwoAttr', n='{}hindLength1_blend'.format(self._prefix))
-        hindLen2Blend = pm.createNode('blendTwoAttr', n='{}hindLength2_blend'.format(self._prefix))
+        len1Blend = cmds.createNode('blendTwoAttr', n='{}length1_blend'.format(self._name))
+        len2Blend = cmds.createNode('blendTwoAttr', n='{}length2_blend'.format(self._name))
+        len3Blend = cmds.createNode('blendTwoAttr', n='{}length3_blend'.format(self._name))
+        hindLen1Blend = cmds.createNode('blendTwoAttr', n='{}hindLength1_blend'.format(self._name))
+        hindLen2Blend = cmds.createNode('blendTwoAttr', n='{}hindLength2_blend'.format(self._name))
 
-        len1SignMult = pm.createNode('multDoubleLinear', n='{}length1Sign_mult'.format(self._prefix))
+        len1SignMult = cmds.createNode('multDoubleLinear', n='{}length1Sign_mult'.format(self._name))
         len1SignMult.input1.set(self._aimSign)
-        len2SignMult = pm.createNode('multDoubleLinear', n='{}length2Sign_mult'.format(self._prefix))
+        len2SignMult = cmds.createNode('multDoubleLinear', n='{}length2Sign_mult'.format(self._name))
         len2SignMult.input1.set(self._aimSign)
-        len3SignMult = pm.createNode('multDoubleLinear', n='{}length3Sign_mult'.format(self._prefix))
+        len3SignMult = cmds.createNode('multDoubleLinear', n='{}length3Sign_mult'.format(self._name))
         len3SignMult.input1.set(self._aimSign)
-        hindLen1SignMult = pm.createNode('multDoubleLinear', n='{}hindLength1Sign_mult'.format(self._prefix))
+        hindLen1SignMult = cmds.createNode('multDoubleLinear', n='{}hindLength1Sign_mult'.format(self._name))
         hindLen1SignMult.input1.set(self._aimSign)
-        hindLen2SignMult = pm.createNode('multDoubleLinear', n='{}hindLength2Sign_mult'.format(self._prefix))
+        hindLen2SignMult = cmds.createNode('multDoubleLinear', n='{}hindLength2Sign_mult'.format(self._name))
         hindLen2SignMult.input1.set(self._aimSign)
 
         # Connect nodes
@@ -368,44 +368,44 @@ class ThreeBoneIK(System):
         )
 
     def setupPin(self):
-        pm.addAttr(self._controllers[-1], at='double', ln='pin', min=0.0, max=1.0, dv=0.0, keyable=True)
+        cmds.addAttr(self._controllers[-1], at='double', ln='pin', min=0.0, max=1.0, dv=0.0, keyable=True)
 
-        pinGrp = pm.createNode('transform', n='{}pin_grp'.format(self._prefix))
+        pinGrp = cmds.createNode('transform', n='{}pin_grp'.format(self._name))
 
-        pinInputNode = pm.createNode('transform', n='{}pin_input'.format(self._prefix))
-        pm.addAttr(pinInputNode, at='double', ln='inPin')
-        pm.addAttr(pinInputNode, at='double', ln='inLength1')
-        pm.addAttr(pinInputNode, at='double', ln='inLength2')
-        pm.addAttr(pinInputNode, at='double', ln='inLength1Pin')
-        pm.addAttr(pinInputNode, at='double', ln='inLength2Pin')
+        pinInputNode = cmds.createNode('transform', n='{}pin_input'.format(self._name))
+        cmds.addAttr(pinInputNode, at='double', ln='inPin')
+        cmds.addAttr(pinInputNode, at='double', ln='inLength1')
+        cmds.addAttr(pinInputNode, at='double', ln='inLength2')
+        cmds.addAttr(pinInputNode, at='double', ln='inLength1Pin')
+        cmds.addAttr(pinInputNode, at='double', ln='inLength2Pin')
 
-        pinOutputNode = pm.createNode('transform', n='{}pin_output'.format(self._prefix))
-        pm.addAttr(pinOutputNode, at='double', ln='outLength1')
-        pm.addAttr(pinOutputNode, at='double', ln='outLength2')
+        pinOutputNode = cmds.createNode('transform', n='{}pin_output'.format(self._name))
+        cmds.addAttr(pinOutputNode, at='double', ln='outLength1')
+        cmds.addAttr(pinOutputNode, at='double', ln='outLength2')
 
-        jnt0PinLoc = pm.spaceLocator(n='{}_pin_loc'.format(self._joints[0]))
-        jnt1PinLoc = pm.spaceLocator(n='{}_pin_loc'.format(self._joints[1]))
-        jnt2PinLoc = pm.spaceLocator(n='{}_pin_loc'.format(self._joints[2]))
-        pm.matchTransform(jnt2PinLoc, self._joints[2], position=True)
+        jnt0PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[0]))
+        jnt1PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[1]))
+        jnt2PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[2]))
+        cmds.matchTransform(jnt2PinLoc, self._joints[2], position=True)
 
-        pm.pointConstraint(self._joints[0].getParent(), jnt0PinLoc, mo=False)
-        pm.pointConstraint(self._controllers[-1], jnt1PinLoc, mo=False)
-        pm.pointConstraint(self.__calfIkHandle, jnt2PinLoc, mo=True)
+        cmds.pointConstraint(self._joints[0].getParent(), jnt0PinLoc, mo=False)
+        cmds.pointConstraint(self._controllers[-1], jnt1PinLoc, mo=False)
+        cmds.pointConstraint(self.__calfIkHandle, jnt2PinLoc, mo=True)
 
-        pm.parent([pinInputNode, pinOutputNode], pinGrp)
+        cmds.parent([pinInputNode, pinOutputNode], pinGrp)
         pinGrp | jnt0PinLoc | jnt1PinLoc | jnt2PinLoc
         self._blbxGrp | pinGrp
 
-        len1PinLocalDist = pm.createNode('distanceBetween', n='{}len1Pin_local_dist'.format(self._prefix))
-        len2PinLocalDist = pm.createNode('distanceBetween', n='{}len2Pin_local_dist'.format(self._prefix))
+        len1PinLocalDist = cmds.createNode('distanceBetween', n='{}len1Pin_local_dist'.format(self._name))
+        len2PinLocalDist = cmds.createNode('distanceBetween', n='{}len2Pin_local_dist'.format(self._name))
 
-        len1PinSignMult = pm.createNode('multDoubleLinear', n='{}len1PinSign_mult'.format(self._prefix))
+        len1PinSignMult = cmds.createNode('multDoubleLinear', n='{}len1PinSign_mult'.format(self._name))
         len1PinSignMult.input1.set(self._aimSign)
-        len2PinSignMult = pm.createNode('multDoubleLinear', n='{}len2PinSign_mult'.format(self._prefix))
+        len2PinSignMult = cmds.createNode('multDoubleLinear', n='{}len2PinSign_mult'.format(self._name))
         len2PinSignMult.input1.set(self._aimSign)
 
-        len1StretchPinBlend = pm.createNode('blendTwoAttr', n='{}len1StretchPin_blend'.format(self._prefix))
-        len2StretchPinBlend = pm.createNode('blendTwoAttr', n='{}len2StretchPin_blend'.format(self._prefix))
+        len1StretchPinBlend = cmds.createNode('blendTwoAttr', n='{}len1StretchPin_blend'.format(self._name))
+        len2StretchPinBlend = cmds.createNode('blendTwoAttr', n='{}len2StretchPin_blend'.format(self._name))
 
         self.addMembers(
             len1PinLocalDist,
@@ -452,9 +452,9 @@ class ThreeBoneIK(System):
 
     def buildStartController(self):
         startCtrl = Controller('{}_ctrl'.format(self._joints[0]), shape=Controller.SHAPE.SPHERE)
-        pm.matchTransform(startCtrl.zeroGrp(), self._joints[0], position=True)
-        pm.matchTransform(startCtrl.zeroGrp(), self.__ikHandleController, rotation=True, scale=True)
-        pm.parentConstraint(startCtrl, self._joints[0].getParent(), mo=True)
+        cmds.matchTransform(startCtrl.zeroGrp, self._joints[0], position=True)
+        cmds.matchTransform(startCtrl.zeroGrp, self.__ikHandleController, rotation=True, scale=True)
+        cmds.parentConstraint(startCtrl, self._joints[0].getParent(), mo=True)
         startCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
         self._controllers.append(startCtrl)
-        pm.parent(startCtrl.zeroGrp(), self._controllerGrp)
+        cmds.parent(startCtrl.zeroGrp, self._controllerGrp)

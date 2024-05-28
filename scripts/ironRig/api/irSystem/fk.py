@@ -27,17 +27,17 @@ class FK(System):
                 break
             ctrl = Controller('{}_ctrl'.format(jnt))
             ctrl.direction = utils.axisStrToEnum(self._aimAxis)
-            pm.matchTransform(ctrl.zeroGrp(), jnt, position=True, rotation=True)
+            pm.matchTransform(ctrl.zeroGrp, jnt, position=True, rotation=True)
             if self._negateScaleX and utils.getWorldPoint(ctrl).x < 0.0:
-                ctrl.zeroGrp().sx.set(-1)
+                ctrl.zeroGrp.sx.set(-1)
             pm.parentConstraint(ctrl, jnt, mo=True)
             ctrl.scale >> jnt.scale
             ctrl.lockHideChannels(['scale', 'visibility'], ['X', 'Y', 'Z'])
             ctrls.append(ctrl)
-            self.addMembers(ctrl.controllerNode())
+            self.addMembers(ctrl.controllerNode)
 
         utils.makeHierarchy(ctrls)
 
-        self._controllerGrp | ctrls[0].zeroGrp()
+        self._controllerGrp | ctrls[0].zeroGrp
 
         self._controllers = ctrls

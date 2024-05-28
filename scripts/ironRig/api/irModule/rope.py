@@ -1,4 +1,4 @@
-import pymel.core as pm
+from maya import cmds
 from ... import utils
 from ..irGlobal import Controller
 from ..irSystem import SplineIK
@@ -20,7 +20,7 @@ class Rope(Module):
     @numberOfControllers.setter
     def numberOfControllers(self, val):
         if not utils.isOddNumber(val):
-            pm.error('Number of controllers should be odd number.')
+            cmds.error('Number of controllers should be odd number.')
         self.__numberOfControllers = val
 
     # Automate controller for odd number indexed controllers
@@ -42,13 +42,13 @@ class Rope(Module):
 
     def _buildSystems(self):
         sgJoints = utils.buildNewJoints(self._initJoints, searchStr='init', replaceStr='sg')
-        self.__sgSystem = Single(self._prefix+'sg_', sgJoints)
+        self.__sgSystem = Single(self._name+'sg_', sgJoints)
         self.__sgSystem.build()
         self.__sgSystem.controllerShape = Controller.SHAPE.CUBE
         self.addSystems(self.__sgSystem)
 
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = SplineIK(self._prefix+'ik_', ikJoints, self.__numberOfControllers)
+        self.__ikSystem = SplineIK(self._name+'ik_', ikJoints, self.__numberOfControllers)
         if self._negateScaleX:
             self.__ikSystem.negateSclaeX = True
         self.__ikSystem.build()
@@ -58,33 +58,33 @@ class Rope(Module):
         if self.__dynamic:
             self.__ikSystem.setupDynamic()
             self.__ikSystem.dynLock = SplineIK.DYNAMIC_LOCK.BOTH
-        utils.removeConnections(self.__ikSystem.joints()[-1])  # Remove orient constraint for the end joint
+        utils.removeConnections(self.__ikSystem.joints[-1])  # Remove orient constraint for the end joint
         self.addSystems(self.__ikSystem)
 
         if self.__autoOddnumController:
-            ikCtrls = self.__ikSystem.controllers()
+            ikCtrls = self.__ikSystem.controllers
             for index, curCtrl in enumerate(ikCtrls):
                 if utils.isOddNumber(index):
-                    cnst = pm.parentConstraint(ikCtrls[index-1], ikCtrls[index+1], curCtrl.zeroGrp(), mo=True)
+                    cnst = cmds.parentConstraint(ikCtrls[index-1], ikCtrls[index+1], curCtrl.zeroGrp, mo=True)
                     cnst.interpType.set(2)
 
-        self._sysJoints = self.__sgSystem.joints()
+        self._sysJoints = self.__sgSystem.joints
 
     def _connectSystems(self):
-        for sgCtrl in self.__sgSystem.controllers():
-            closestIkJnt = utils.findClosestObject(utils.getWorldPoint(sgCtrl), self.__ikSystem.joints())
-            pm.parentConstraint(closestIkJnt, sgCtrl.zeroGrp(), mo=True)
+        for sgCtrl in self.__sgSystem.controllers:
+            closestIkJnt = utils.findClosestObject(utils.getWorldPoint(sgCtrl), self.__ikSystem.joints)
+            cmds.parentConstraint(closestIkJnt, sgCtrl.zeroGrp, mo=True)
 
             sgJnt = sgCtrl.outputs(type='joint')[0]
-            ikScaleMult = pm.createNode('multiplyDivide', n='{}{}_scale_mult'.format(self._prefix, closestIkJnt))
+            ikScaleMult = cmds.createNode('multiplyDivide', n='{}{}_scale_mult'.format(self._name, closestIkJnt))
             closestIkJnt.scale >> ikScaleMult.input1
             sgCtrl.scale >> ikScaleMult.input2
             ikScaleMult.output >> sgJnt.scale
 
-        ikEndCtrl = self.__ikSystem.controllers()[-1]
-        pm.addAttr(ikEndCtrl, ln='detailCtrlVis', at='bool', dv=False, keyable=True)
+        ikEndCtrl = self.__ikSystem.controllers[-1]
+        cmds.addAttr(ikEndCtrl, ln='detailCtrlVis', at='bool', dv=False, keyable=True)
         ikEndCtrl.detailCtrlVis.set(channelBox=True)
-        ikEndCtrl.detailCtrlVis >> self.__sgSystem.topGrp().visibility
+        ikEndCtrl.detailCtrlVis >> self.__sgSystem.topGrp.visibility
 
     def _buildOutputs(self):
         self._outJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='out')
@@ -93,8 +93,8 @@ class Rope(Module):
     def _connectSkeleton(self):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             utils.removeConnections(skelJnt)
-            pm.parentConstraint(outJnt, skelJnt, mo=True)
-            pm.scaleConstraint(outJnt, skelJnt, mo=True)
+            cmds.parentConstraint(outJnt, skelJnt, mo=True)
+            cmds.scaleConstraint(outJnt, skelJnt, mo=True)
             # for axis in 'XYZ':
             #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 

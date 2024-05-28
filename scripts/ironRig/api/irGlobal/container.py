@@ -1,36 +1,88 @@
-import pymel.core as pm
+from maya import cmds
+
+
+class Side:
+    LEFT = 'l'
+    RIGHT = 'r'
+    CENTER = 'c'
+
+
+class Type:
+    FK_SYSTEM = 'fkSys'
+    IK_SYSTEM = 'ikSys'
+    AIM_SYSTEM = 'aimSys'
+    SPLINE_SYSTEM = 'spSys'
+    RIBBON_SYSTEM = 'rbSys'
+    MODULE = 'mod'
+    MASTER = 'mst'
 
 
 class Container(object):
-    def __init__(self, prefix=''):
-        self._prefix = prefix
-        self._topGrp = pm.createNode('transform', n='{}grp'.format(self._prefix))
-        self.__set = pm.createNode('objectSet', n='{}set'.format(self._prefix))
+    SIDE = Side
+    TYPE = Type
+
+    def __init__(self, name='new', side=Side.CENTER, type=Type.FK_SYSTEM):
+        self._name = name
+        self._side = side
+        self._type = type
+        self._set = cmds.createNode('objectSet', n='{}_set'.format(self.fullName))
+        self._topGrp = cmds.createNode('transform', n='{}_grp'.format(self.fullName))
+        self.addMembers(self._topGrp)
 
     @property
-    def prefix(self):
-        return self._prefix
+    def name(self):
+        return self._name
 
-    @prefix.setter
-    def prefix(self, prefix):
-        self._prefix = prefix
+    @name.setter
+    def name(self, name):
+        self._updateMembersName('{}_'.format(self._name), '{}_'.format(name))
+        self._name = name
 
+    @property
+    def fullName(self):
+        return '{}_{}_{}'.format(self._name, self._side, self._type)
+
+    @property
+    def side(self):
+        return self._side
+
+    @side.setter
+    def side(self, side):
+        self._updateMembersName('_{}_'.format(self._side), '_{}_'.format(side))
+        self._side = side
+
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, type):
+        self._updateMembersName('_{}_'.format(self._type), '_{}_'.format(type))
+        self._type = type
+
+    @property
+    def members(self):
+        return cmds.sets(self._set, q=True)
+
+    @property
+    def set(self):
+        return self._set
+
+    @property
     def topGrp(self):
         return self._topGrp
 
-    def set(self):
-        return self.__set
-
     def addMembers(self, *args):
         nodes = sum([node if isinstance(node, list) else [node] for node in args], [])
-        self.__set.forceElement(nodes)
+        cmds.sets(nodes, add=self._set)
 
-    def members(self):
-        return self.__set.members()
+    def delete(self):
+        cmds.delete(self.members)
 
-    def remove(self):
-        try:
-            pm.delete(self.members())
-        except:
-            pass
-        pm.delete(self._topGrp)
+    def _updateMembersName(self, oldStr, newStr):
+        for member in self.members:
+            newMemeberName = member.replace(oldStr, newStr)
+            cmds.rename(member, newMemeberName)
+
+        newSetName = self._set.replace(oldStr, newStr)
+        self._set = cmds.rename(self._set, newSetName)

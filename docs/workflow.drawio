@@ -43,16 +43,19 @@
                 <mxCell id="36" style="edgeStyle=none;html=1;" edge="1" parent="1" source="27" target="35">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
+                <mxCell id="52" style="edgeStyle=none;html=1;endArrow=classic;endFill=1;" edge="1" parent="1" source="27" target="51">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
                 <mxCell id="27" value="connect" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="500" y="780" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="35" value="export rig" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="500" y="890" width="120" height="60" as="geometry"/>
+                <mxCell id="35" value="export ironRig" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="390" y="910" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="46" style="edgeStyle=none;html=1;" edge="1" parent="1" source="43" target="24">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="43" value="[import rig]" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="43" value="[import ironRig]" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="360" y="180" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="48" style="edgeStyle=none;html=1;endArrow=classic;endFill=1;" edge="1" parent="1" source="47" target="43">
@@ -64,6 +67,9 @@
                 </mxCell>
                 <mxCell id="47" value="reference skeletalMesh" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="360" y="70" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="51" value="export rig" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="600" y="910" width="120" height="60" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

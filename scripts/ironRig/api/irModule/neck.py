@@ -1,4 +1,4 @@
-import pymel.core as pm
+from maya import cmds
 from ... import utils
 from ..irGlobal import Controller
 from ..irSystem import SplineIK
@@ -28,7 +28,7 @@ class Neck(Module):
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = SplineIK(self._prefix+'ik_', ikJoints, self.__numControllers)
+        self.__ikSystem = SplineIK(self._name+'ik_', ikJoints, self.__numControllers)
         if self.__numControllers == 2:
             self.__ikSystem.curveDegree = SplineIK.CURVE_DEGREE.LINEAR
             self.__ikSystem.curveSpans = 1
@@ -45,39 +45,39 @@ class Neck(Module):
         self.__ikSystem.setupHybridIK()
 
         self.__ikSystem.controllerShape = Controller.SHAPE.CIRCLE
-        self.__ikSystem.controllers()[-1].shape = Controller.SHAPE.CUBE
-        self.__ikSystem.controllers()[-1].name = 'head_ctrl'.format(self._prefix)
+        self.__ikSystem.controllers[-1].shape = Controller.SHAPE.CUBE
+        self.__ikSystem.controllers[-1].name = 'head_ctrl'.format(self._name)
 
         self.addSystems(self.__ikSystem)
-        self._sysJoints = self.__ikSystem.joints()
+        self._sysJoints = self.__ikSystem.joints
 
     def __setupTwist(self):
         self.__setupNonroll()
-        headCtrlLocalMtx = pm.createNode('multMatrix', n='{}_local_multMtx'.format(self.__ikSystem.controllers()[-1]))
-        headCtrlLocalDecMtx = pm.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self.__ikSystem.controllers()[-1]))
-        self.__ikSystem.controllers()[-1].worldMatrix >> headCtrlLocalMtx.matrixIn[0]
+        headCtrlLocalMtx = cmds.createNode('multMatrix', n='{}_local_multMtx'.format(self.__ikSystem.controllers[-1]))
+        headCtrlLocalDecMtx = cmds.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self.__ikSystem.controllers[-1]))
+        self.__ikSystem.controllers[-1].worldMatrix >> headCtrlLocalMtx.matrixIn[0]
         self.__nonrollJoints[0].worldInverseMatrix >> headCtrlLocalMtx.matrixIn[1]
         headCtrlLocalMtx.matrixSum >> headCtrlLocalDecMtx.inputMatrix
         headCtrlLocalDecMtx.outputRotateX >> self.__ikSystem.ikHandle().twist
 
     def __setupNonroll(self):
-        nonrollGrp = pm.createNode('transform', n='{}nonroll_grp'.format(self._prefix))
+        nonrollGrp = cmds.createNode('transform', n='{}nonroll_grp'.format(self._name))
         nonrollGrp.hide()
-        pm.matchTransform(nonrollGrp, self.__ikSystem.joints()[0], pivots=True)
+        cmds.matchTransform(nonrollGrp, self.__ikSystem.joints[0], pivots=True)
 
-        nonrollJntStart = pm.duplicate(self.__ikSystem.joints()[0], n='{}nonroll_start'.format(self._prefix), po=True)[0]
-        nonrollJntEnd = pm.duplicate(self.__ikSystem.joints()[-1], n='{}nonroll_end'.format(self._prefix), po=True)[0]
+        nonrollJntStart = cmds.duplicate(self.__ikSystem.joints[0], n='{}nonroll_start'.format(self._name), po=True)[0]
+        nonrollJntEnd = cmds.duplicate(self.__ikSystem.joints[-1], n='{}nonroll_end'.format(self._name), po=True)[0]
         nonrollJntStart | nonrollJntEnd
 
-        nonrollIkh = pm.ikHandle(startJoint=nonrollJntStart, endEffector=nonrollJntEnd, solver='ikRPsolver', n='{}nonroll_ikh'.format(self._prefix))[0]
+        nonrollIkh = cmds.ikHandle(startJoint=nonrollJntStart, endEffector=nonrollJntEnd, solver='ikRPsolver', n='{}nonroll_ikh'.format(self._name))[0]
         for attrStr in ['poleVector' + axis for axis in 'XYZ']:
             nonrollIkh.attr(attrStr).set(0)
 
-        pm.pointConstraint(self.__ikSystem.controllers()[0], nonrollJntStart, mo=True)
-        pm.parentConstraint(self.__ikSystem.controllers()[0], nonrollIkh, mo=True)
+        cmds.pointConstraint(self.__ikSystem.controllers[0], nonrollJntStart, mo=True)
+        cmds.parentConstraint(self.__ikSystem.controllers[0], nonrollIkh, mo=True)
 
-        pm.parent([nonrollJntStart, nonrollIkh], nonrollGrp)
-        pm.parent(nonrollGrp, self._systemGrp)
+        cmds.parent([nonrollJntStart, nonrollIkh], nonrollGrp)
+        cmds.parent(nonrollGrp, self._systemGrp)
 
         self.__nonrollJoints.append(nonrollJntStart)
 
@@ -91,6 +91,6 @@ class Neck(Module):
 
     def postBuild(self):
         super(Neck, self).postBuild()
-        shapeOffset = (self.__ikSystem.aimSign() * utils.axisStrToVector(self.__ikSystem.aimAxis())) * self._controllerSize
-        self.__ikSystem.controllers()[-1].shapeOffset = shapeOffset
-        # self.__ikSystem.controllers()[-1].alignShapeTo(utils.getWorldPoint(self._initJoints[-1]), Controller.SIDE.BOTTOM)
+        shapeOffset = (self.__ikSystem.aimSign * utils.axisStrToVector(self.__ikSystem.aimAxis())) * self._controllerSize
+        self.__ikSystem.controllers[-1].shapeOffset = shapeOffset
+        # self.__ikSystem.controllers[-1].alignShapeTo(utils.getWorldPoint(self._initJoints[-1]), Controller.SIDE.BOTTOM)

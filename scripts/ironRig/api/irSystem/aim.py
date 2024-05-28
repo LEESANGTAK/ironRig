@@ -1,64 +1,66 @@
-import pymel.core as pm
+from maya.api import OpenMaya as om
+from maya import cmds
 from ..irGlobal import Controller
-from ... import utils
 from .system import System
+from ... import utils
 
 
 class Aim(System):
-    def __init__(self, prefix='', joints=[]):
-        super(Aim, self).__init__(prefix, joints)
+    def __init__(self, name='new', side=System.SIDE.CENTER, type=System.TYPE.AIM_SYSTEM, joints=[]):
+        super(Aim, self).__init__(name, side, type, joints)
 
-        self.__isSingleJoint = False
-        self.__origJoints = None
-        self.__aimLoc = None
+        self._isSingleJoint = False
+        self._origJoints = None
+        self._aimLoc = None
 
         if len(joints) == 1:
-            self.__isSingleJoint = True
-            self.__origJoints = joints
-            self.__addEndJoint()
+            self._isSingleJoint = True
+            self._origJoints = joints
+            self._addEndJoint()
 
-    def __addEndJoint(self):
-        endJoint = pm.createNode('joint', n='{}_end'.format(self._joints[0]))
-        endJntPos = utils.getWorldPoint(self._joints[0]) + (pm.dt.Vector.zAxis * 3)
-        pm.xform(endJoint, t=endJntPos, ws=True)
-        self._joints[0] | endJoint
-        self._joints.insert(1, endJoint)
-
+    @property
     def joints(self):
-        if self.__isSingleJoint:
-            return self.__origJoints
+        if self._isSingleJoint:
+            return self._origJoints
         else:
             return self._joints
+
+    def _addEndJoint(self):
+        endJoint = cmds.createNode('joint', n='{}_end'.format(self._joints[0]))
+        endJntPos = utils.getWorldPoint(self._joints[0]) + (om.MVector.kZaxisVector * 3)
+        cmds.xform(endJoint, t=endJntPos, ws=True)
+        cmds.parent(endJoint, self._joints[0])
+        self._joints.insert(1, endJoint)
 
     def _buildSystems(self):
         super(Aim, self)._buildSystems()
         aimVec = utils.getWorldPoint(self._joints[1]) - utils.getWorldPoint(self._joints[0])
-        self.__aimLoc = pm.spaceLocator(n='{}aim_loc'.format(self._prefix))
-        pm.xform(self.__aimLoc, t=utils.getWorldPoint(self._joints[0])+aimVec*3, ws=True)
-        self._blbxGrp | self.__aimLoc
+        self._aimLoc = cmds.spaceLocator(n='{}_aim_loc'.format(self.fullName))
+        cmds.xform(self._aimLoc, t=utils.getWorldPoint(self._joints[0]) + (aimVec * 3), ws=True)
+        cmds.parent(self._aimLoc, self._blbxGrp)
 
-        upLoc =  pm.spaceLocator(n='{}up_loc'.format(self._prefix))
-        pm.matchTransform(upLoc, self._joints[0])
-        self._joints[0] | upLoc
-        upLoc.translate.set(0, 1, 0)
-        self._blbxGrp | upLoc
+        upLoc =  cmds.spaceLocator(n='{}_up_loc'.format(self.fullName))
+        cmds.matchTransform(upLoc, self._joints[0])
+        cmds.parent(upLoc, self._joints[0])
+        cmds.setAttr('{}.translate'.format(upLoc), 0, 1, 0)
+        cmds.parent(upLoc, self._blbxGrp)
 
-        pm.aimConstraint(self.__aimLoc,
+        cmds.aimConstraint(self._aimLoc,
                          self._joints[0],
-                         aimVector=self._aimSign*utils.axisStrToVector(self._aimAxis),
+                         aimVector=self._aimSign * utils.axisStrToVector(self._aimAxis),
                          upVector=[0, 1, 0],
                          worldUpType='object',
                          worldUpObject=upLoc)
 
     def _buildControls(self):
-        aimCtrl = Controller('{}aim_ctrl'.format(self._prefix), Controller.SHAPE.LOCATOR)
-        pm.matchTransform(aimCtrl.zeroGrp(), self.__aimLoc, position=True)
+        aimCtrl = Controller('{}_aim_ctrl'.format(self.fullName), Controller.SHAPE.LOCATOR)
+        cmds.matchTransform(aimCtrl.zeroGrp, self._aimLoc, position=True)
         if self._negateScaleX:
-            aimCtrl.zeroGrp().sx.set(-1)
-        pm.pointConstraint(aimCtrl, self.__aimLoc, mo=True)
+            cmds.setAttr('{}.sx'.format(aimCtrl.zeroGrp), -1)
+        cmds.pointConstraint(aimCtrl, self._aimLoc, mo=True)
         aimCtrl.lockHideChannels(['rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
 
         self._controllers.append(aimCtrl)
-        self._controllerGrp | aimCtrl.zeroGrp()
+        cmds.parent(aimCtrl.zeroGrp, self._controllerGrp)
 
-        self.addMembers(aimCtrl.controllerNode())
+        self.addMembers(aimCtrl.controllerNode)

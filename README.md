@@ -21,3 +21,4 @@ Attaching control rig modules to the parts of a `Skeletal Mesh` like **Iron Man*
 - Adding milliped module for creatures who has a bunch of legs
 - Building node editor GUI
 - Adding animation dynamic marking menu
+- Removing pymel dependency

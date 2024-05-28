@@ -1,12 +1,12 @@
 from functools import wraps
-import pymel.core as pm
+from maya import cmds
 
 
 def undoAtOnce(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        pm.undoInfo(openChunk=True)
+        cmds.undoInfo(openChunk=True)
         result = func(*args, **kwargs)
-        pm.undoInfo(closeChunk=True)
+        cmds.undoInfo(closeChunk=True)
         return result
     return wrapper

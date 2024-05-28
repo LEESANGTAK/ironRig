@@ -1,4 +1,4 @@
-import pymel.core as pm
+from maya import cmds
 from .system import System
 from ... import utils
 from ..irGlobal import Controller
@@ -12,22 +12,22 @@ class Single(System):
         pass
 
     def _buildSystems(self):
-        pm.parent(self._joints, self._blbxGrp)
+        cmds.parent(self._joints, self._blbxGrp)
 
     def _buildControls(self):
         ctrls = []
 
         for jnt in self._joints:
             ctrl = Controller('{}_ctrl'.format(jnt), color=Controller.COLOR.SKYBLUE)
-            pm.matchTransform(ctrl.zeroGrp(), jnt, position=True, rotation=True)
+            cmds.matchTransform(ctrl.zeroGrp, jnt, position=True, rotation=True)
             if self._negateScaleX and utils.getWorldPoint(ctrl).x < 0.0:
-                ctrl.zeroGrp().sx.set(-1)
-            pm.parentConstraint(ctrl, jnt, mo=True)
+                ctrl.zeroGrp.sx.set(-1)
+            cmds.parentConstraint(ctrl, jnt, mo=True)
             ctrl.scale >> jnt.scale
             ctrl.lockHideChannels(['visibility'])
             ctrls.append(ctrl)
-            self.addMembers(ctrl.controllerNode())
+            self.addMembers(ctrl.controllerNode)
 
-        pm.parent([ctrl.zeroGrp() for ctrl in ctrls], self._controllerGrp)
+        cmds.parent([ctrl.zeroGrp for ctrl in ctrls], self._controllerGrp)
 
         self._controllers = ctrls

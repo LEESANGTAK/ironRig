@@ -1,9 +1,67 @@
 import os
 import json
-import pymel.core as pm
+from maya.api import OpenMaya as om
+from maya import cmds
+from ... import utils
 
 
 CONTROLLER_DIR = os.path.join(__file__.split("scripts")[0], "controllers")
+SHAPE_FILES_TABLE = {
+    'triangle': os.path.join(CONTROLLER_DIR, 'triangle.json'),
+    'circle': os.path.join(CONTROLLER_DIR, 'circle.json'),
+    'square': os.path.join(CONTROLLER_DIR, 'square.json'),
+    'cube': os.path.join(CONTROLLER_DIR, 'cube.json'),
+    'sphere': os.path.join(CONTROLLER_DIR, 'sphere.json'),
+    'pentagon': os.path.join(CONTROLLER_DIR, 'pentagon.json'),
+    'locator': os.path.join(CONTROLLER_DIR, 'locator.json'),
+    'pin': os.path.join(CONTROLLER_DIR, 'pin.json'),
+    'foot': os.path.join(CONTROLLER_DIR, 'foot.json'),
+    'root': os.path.join(CONTROLLER_DIR, 'root.json'),
+    'arrowQuad': os.path.join(CONTROLLER_DIR, 'arrowQuad.json'),
+    'pyramid': os.path.join(CONTROLLER_DIR, 'pyramid.json'),
+}
+COLOR_VALUES_TABLE = {
+    'red': (1.0, 0.0, 0.0),
+    'lightRed': (1.0, 0.5, 0.5),
+    'green': (0.0, 1.0, 0.0),
+    'lightGreen': (0.5, 1.0, 0.5),
+    'blue': (0.0, 0.0, 1.0),
+    'skyBlue': (0.4, 0.8, 1.0),
+    'darkBlue': (0.0, 0.1, 0.2),
+    'yellow': (1.0, 1.0, 0.0),
+    'orange': (1.0, 0.15, 0.0),
+    'purple': (0.15, 0.0, 1.0),
+    'black': (0.0, 0.0, 0.0),
+}
+
+
+class Shape:
+    TRIANGLE = 'triangle'
+    CIRCLE = 'circle'
+    SQUARE = 'square'
+    CUBE = 'cube'
+    SPHERE = 'sphere'
+    PENTAGON = 'pentagon'
+    LOCATOR = 'locator'
+    PIN = 'pin'
+    FOOT = 'foot'
+    ROOT = 'root'
+    ARROW_QUAD = 'arrowQuad'
+    PYRAMID = 'pyramid'
+
+
+class Color:
+    RED = 'red'
+    LIGHTRED = 'lightRed'
+    GREEN = 'green'
+    LIGHTGREEN = 'lightGreen'
+    BLUE = 'blue'
+    SKYBLUE = 'skyBlue'
+    DARKBLUE = 'darkBlue'
+    YELLOW = 'yellow'
+    ORANGE = 'orange'
+    PURPLE = 'purple'
+    BLACK = 'black'
 
 
 class Side:
@@ -13,35 +71,6 @@ class Side:
     RIGHT = 3
     FRONT = 4
     BACK = 5
-
-
-class Shape:
-    TRIANGLE = os.path.join(CONTROLLER_DIR, 'triangle.json')
-    CIRCLE = os.path.join(CONTROLLER_DIR, 'circle.json')
-    SQUARE = os.path.join(CONTROLLER_DIR, 'square.json')
-    CUBE = os.path.join(CONTROLLER_DIR, 'cube.json')
-    SPHERE = os.path.join(CONTROLLER_DIR, 'sphere.json')
-    PENTAGON = os.path.join(CONTROLLER_DIR, 'pentagon.json')
-    LOCATOR = os.path.join(CONTROLLER_DIR, 'locator.json')
-    PIN = os.path.join(CONTROLLER_DIR, 'pin.json')
-    FOOT = os.path.join(CONTROLLER_DIR, 'foot.json')
-    ROOT = os.path.join(CONTROLLER_DIR, 'root.json')
-    ARROW_QUAD = os.path.join(CONTROLLER_DIR, 'arrowQuad.json')
-    PYRAMID = os.path.join(CONTROLLER_DIR, 'pyramid.json')
-
-
-class Color:
-    RED = (1.0, 0.0, 0.0)
-    LIGHTRED = (1.0, 0.5, 0.5)
-    GREEN = (0.0, 1.0, 0.0)
-    LIGHTGREEN = (0.5, 1.0, 0.5)
-    BLUE = (0.0, 0.0, 1.0)
-    SKYBLUE = (0.4, 0.8, 1.0)
-    DARKBLUE = (0.0, 0.1, 0.2)
-    YELLOW = (1.0, 1.0, 0.0)
-    ORANGE = (1.0, 0.15, 0.0)
-    PURPLE = (0.15, 0.0, 1.0)
-    BLACK = (0.0, 0.0, 0.0)
 
 
 class Direction:
@@ -58,58 +87,55 @@ class Controller(object):
     COLOR = Color
     DIRECTION = Direction
     ROTATE_MATRIX_INFO = {
-        Direction.X: pm.dt.Matrix(
-            [0, -1, 0, 0],
-            [1, 0, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1]
+        Direction.X: om.MMatrix(
+            [0, -1, 0, 0,
+            1, 0, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1]
         ),
-        Direction.Y: pm.dt.Matrix(
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1]
+        Direction.Y: om.MMatrix(
+            [1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1]
         ),
-        Direction.Z: pm.dt.Matrix(
-            [1, 0, 0, 0],
-            [0, 0, 1, 0],
-            [0, -1, 0, 0],
-            [0, 0, 0, 1]
+        Direction.Z: om.MMatrix(
+            [1, 0, 0, 0,
+            0, 0, 1, 0,
+            0, -1, 0, 0,
+            0, 0, 0, 1]
         )
     }
 
-    def __init__(self, name='new_ctrl', shape=SHAPE.CIRCLE, color=COLOR.YELLOW, size=1.0, direction=DIRECTION.X):
-        self.__name = name
-        self.__shape = shape
-        self.__color = color
-        self.__size = size
-        self.__direction = direction
-        self.__type = None
-        self.__side = None
+    def __init__(self, name='new', shape=SHAPE.CIRCLE, color=COLOR.YELLOW, size=1.0, direction=DIRECTION.X):
+        self._name = name
+        self._shape = shape
+        self._color = color
+        self._size = size
+        self._direction = direction
 
-        self.__curves = []
-        self.__transform = None
-        self.__zeroGrp = None
-        self.__extraGrp = None
-        self.__controllerNode = None
+        self._transform = None
+        self._zeroGrp = None
+        self._extraGrp = None
+        self._controllerNode = None
 
-        self.__initCVsPosInfo = {}
-        self.__shapeOffset = [0, 0, 0]
+        self._initCVsPosInfo = {}
+        self._shapeOffset = [0, 0, 0]
 
-        self.__initController()
+        self._initController()
 
     def __str__(self):
-        return self.__transform.name()
+        return self._transform
 
     def __repr__(self):
-        return "ironRig.api.irGlobal.Controller('{}')".format(self.__name)
+        return "ironRig.api.irGlobal.Controller('{}')".format(self._name)
 
     def __or__(self, other):
-        pm.parent(other.zeroGrp(), self.__transform)
+        cmds.parent(other.zeroGrp, self._transform)
         return other
 
     def __getattr__(self, name):
-        return getattr(self.__transform, name)
+        return getattr(self._transform, name)
 
     @property
     def name(self):
@@ -117,132 +143,130 @@ class Controller(object):
         :getter: Returns controller name.
         :setter: Set new name. Extra and zero group name will also change.
         """
-        return self.__name
+        return self._name
 
     @name.setter
     def name(self, name):
-        self.__transform.rename(name)
-        for crv in self.__curves:
-            crv.rename('{0}Shape'.format(self.__transform))
-        self.__extraGrp.rename('{0}{1}'.format(name, '_extra'))
-        self.__zeroGrp.rename('{0}{1}'.format(name, '_zero'))
-        self.__name = name
+        for crv in self.curves:
+            cmds.rename(crv, '{0}Shape'.format(self._transform))
+        self._transform = cmds.rename(self._transform, '{}_ctrl'.format(name))
+        self._extraGrp = cmds.rename(self._extraGrp, '{0}_{1}'.format(self._transform, 'extra'))
+        self._zeroGrp = cmds.rename(self._zeroGrp, '{0}_{1}'.format(self._transform, 'zero'))
+        self._controllerNode = cmds.rename(self._controllerNode, '{0}_{1}'.format(self._transform, 'controller'))
+        self._name = name
 
     @property
     def shape(self):
-        return os.path.basename(self.__shape).split('.')[0].capitalize()
+        return os.path.basename(self._shape).split('.')[0].capitalize()
 
     @shape.setter
     def shape(self, shape):
-        self.__shape = shape
-        self.__replaceShape()
-        self.__initCVsPosInfo = self.__getCvsPosInfo(self.__curves)
-        self.__update()
+        self._shape = shape
+        self._replaceShape()
+        self._initCVsPosInfo = self._getCvsPosInfo(self.curves)
+        self._transformCurve()
 
     @property
     def color(self):
-        return self.__color
+        return self._color
 
     @color.setter
     def color(self, color):
-        self.__color = color
-        for crv in self.__curves:
-            crv.overrideEnabled.set(True)
-            crv.overrideRGBColors.set(True)
-            crv.overrideColorRGB.set(self.__color)
+        self._color = color
+        self._updateColor()
 
     @property
     def size(self):
-        return self.__size
+        return self._size
 
     @size.setter
     def size(self, val):
-        self.__size = val
-        self.__transformCurve()
+        self._size = val
+        self._transformCurve()
 
     @property
     def direction(self):
-        return self.__direction
+        return self._direction
 
     @direction.setter
     def direction(self, direction):
-        self.__direction = direction
-        self.__transformCurve()
+        self._direction = direction
+        self._transformCurve()
 
     @property
     def shapeOffset(self):
-        return self.__shapeOffset
+        return self._shapeOffset
 
     @shapeOffset.setter
     def shapeOffset(self, offset):
-        self.__shapeOffset = offset
-        self.__transformCurve()
+        self._shapeOffset = offset
+        self._transformCurve()
 
+    @property
     def zeroGrp(self):
-        return self.__zeroGrp
+        return self._zeroGrp
 
+    @property
     def extraGrp(self):
-        return self.__extraGrp
+        return self._extraGrp
 
+    @property
     def curves(self):
-        return self.__curves
+        return cmds.listRelatives(self._transform, s=True)
 
+    @property
     def controllerNode(self):
-        return self.__controllerNode
+        return self._controllerNode
 
-    def __transformCurve(self):
-        for shape, cvsPos in self.__initCVsPosInfo.items():
-            for i, cvPos in enumerate(cvsPos):
-                shape.cv[i].setPosition(pm.dt.Vector(cvPos) * self.__size * Controller.ROTATE_MATRIX_INFO[self.__direction] + pm.dt.Vector(self.__shapeOffset))
-            shape.updateCurve()
+    def _transformCurve(self):
+        for shapeId, cvsPos in enumerate(self._initCVsPosInfo):
+            for cvId, cvPos in enumerate(cvsPos):
+                pos = om.MVector(cvPos) * self._size * Controller.ROTATE_MATRIX_INFO[self._direction] + om.MVector(self._shapeOffset)
+                cmds.xform('{}.cv[{}]'.format(self.curves[shapeId], cvId), t=pos, ws=True)
 
-    def __initController(self):
-        self.__transform = pm.createNode('transform', n=self.__name)
-        self.__controllerNode = pm.createNode('controller', n='{}_controller'.format(self.__name))
-        self.__transform.message >> self.__controllerNode.controllerObject
+    def _initController(self):
+        self._transform = cmds.createNode('transform', n=self._name)
+        self._controllerNode = cmds.createNode('controller', n='{}_controller'.format(self._name))
+        cmds.connectAttr('{}.message'.format(self._transform), '{}.controllerObject'.format(self._controllerNode))
 
-        self.__createShapes()
-        self.__initCVsPosInfo = self.__getCvsPosInfo(self.__curves)
+        self._createShapes()
+        self._initCVsPosInfo = self._getCvsPosInfo(self.curves)
 
-        self.__zeroGrp = pm.group(self.__transform, n='{0}{1}'.format(self.__name, '_zero'), empty=True)
-        self.__extraGrp = pm.group(self.__transform, n='{0}{1}'.format(self.__name, '_extra'), empty=True)
-        self.__zeroGrp | self.__extraGrp | self.__transform
+        self._zeroGrp = cmds.createNode('transform', n='{0}_{1}'.format(self._name, 'zero'))
+        self._extraGrp = cmds.createNode('transform', n='{0}_{1}'.format(self._name, 'extra'))
+        cmds.parent(self._transform, self._extraGrp)
+        cmds.parent(self._extraGrp, self._zeroGrp)
 
-        self.__update()
+        cmds.select(cl=True)
 
-    def __createShapes(self):
-        with open(self.__shape, 'r') as f:
+    def _createShapes(self):
+        with open(SHAPE_FILES_TABLE.get(self._shape), 'r') as f:
             curveInfo = json.load(f)
 
         for shapeInfo in curveInfo.values():
-            crvTrsf = pm.curve(n=self.__name, p=shapeInfo['cvPos'], degree=shapeInfo['degree'])
-            self.__curves.extend(crvTrsf.getShapes())
+            crvTrsf = cmds.curve(n='temp_crv', p=shapeInfo['cvPos'], degree=shapeInfo['degree'])
             if shapeInfo['form'] > 0:
-                pm.closeCurve(ch=False, preserveShape=False, replaceOriginal=True)
-            pm.parent(crvTrsf.getShape(), self.__transform, s=True, r=True)
-            pm.delete(crvTrsf)
+                cmds.closeCurve(ch=False, preserveShape=False, replaceOriginal=True)
+            cmds.parent(cmds.listRelatives(crvTrsf, s=True), self._transform, s=True, r=True)
+            cmds.delete(crvTrsf)
 
-    def __getCvsPosInfo(self, curves):
-        cvsPosInfo = {}
+        self._updateColor()
+        cmds.select(cl=True)
+
+    def _getCvsPosInfo(self, curves):
+        cvsPosInfo = []
         for curve in curves:
-            cvsPosInfo[curve] = [cv.getPosition() for cv in curve.cv]
+            cvsPosInfo.append([cmds.pointPosition(cv, world=True) for cv in cmds.ls('{}.cv[*]'.format(curve), flatten=True)])
         return cvsPosInfo
 
-    def __update(self):
-        self.name = self.__name
-        self.color = self.__color
-        self.size = self.__size
-        self.direction = self.__direction
-        pm.select(cl=True)
-
     def alignShapeTo(self, targetPoint, side):
-        bb = self.__transform.getBoundingBox(space='world')
-        topPoint = bb.center() + pm.dt.Vector([0, bb.height()*0.5, 0])
-        bottomPoint = bb.center() + pm.dt.Vector([0, bb.height()*-0.5, 0])
-        leftPoint = bb.center() + pm.dt.Vector([bb.width()*0.5, 0, 0])
-        rightPoint = bb.center() + pm.dt.Vector([bb.width()*-0.5, 0, 0])
-        frontPoint = bb.center() + pm.dt.Vector([0, 0, bb.width()*0.5])
-        backPoint = bb.center() + pm.dt.Vector([0, 0, bb.width()*-0.5])
+        bb = om.MFnDagNode(utils.getDagPath(self._transform)).boundingBox
+        topPoint = bb.center + om.MVector([0, bb.height()*0.5, 0])
+        bottomPoint = bb.center + om.MVector([0, bb.height()*-0.5, 0])
+        leftPoint = bb.center + om.MVector([bb.width()*0.5, 0, 0])
+        rightPoint = bb.center + om.MVector([bb.width()*-0.5, 0, 0])
+        frontPoint = bb.center + om.MVector([0, 0, bb.width()*0.5])
+        backPoint = bb.center + om.MVector([0, 0, bb.width()*-0.5])
         sideTable = {Side.TOP: topPoint,
                      Side.BOTTOM: bottomPoint,
                      Side.LEFT: leftPoint,
@@ -252,31 +276,32 @@ class Controller(object):
 
         sidePoint = sideTable[side]
         moveVector = targetPoint - sidePoint
-        for curve in self.__curves:
-            cvsPoses = [cv.getPosition(space='world') for cv in curve.cv]
+        for curve in self.curves:
+            cvsPoses = [cmds.pointPosition(cv, world=True) for cv in cmds.ls('{}.cv[*]'.format(curve), flatten=True)]
             for i, cvPos in enumerate(cvsPoses):
-                curve.cv[i].setPosition(pm.dt.Vector(cvPos) + moveVector, space='world')
-            curve.updateCurve()
+                cmds.xform('{}.cv[{}]'.format(curve, i), t=om.MVector(cvPos) + moveVector, ws=True)
 
     def lockHideChannels(self, channels=['visibility'], axes=['X', 'Y', 'Z']):
         attrNames = list(set([ch + axis if ch in ['translate', 'rotate', 'scale'] else ch for ch in channels for axis in axes]))
         for attrName in attrNames:
-            self.__transform.attr(attrName).lock()
-            self.__transform.attr(attrName).setKeyable(False)
+            cmds.setAttr('{}.{}'.format(self._transform, attrName), lock=True)
+            cmds.setAttr('{}.{}'.format(self._transform, attrName), keyable=False)
 
-    def hide(self):
-        for crv in self.__curves:
-            crv.hide()
+    def hide(self, value=True):
+        for crv in self.curves:
+            cmds.setAttr('{}.visibility'.format(crv), not value)
 
-    def __replaceShape(self):
-        if self.__curves:
-            self.__removeCurves()
+    def _replaceShape(self):
+        self._removeCurves()
+        self._createShapes()
 
-        self.__createShapes()
-        for crv in self.__curves:
-            pm.parent(crv, self.__transform, s=True, r=True)
+    def _removeCurves(self):
+        for crv in self.curves:
+            cmds.delete(crv)
 
-    def __removeCurves(self):
-        for crv in self.__curves:
-            pm.delete(crv)
-        self.__curves = []
+    def _updateColor(self):
+        rgb = COLOR_VALUES_TABLE.get(self._color)
+        for crv in self.curves:
+            cmds.setAttr('{}.overrideEnabled'.format(crv), True)
+            cmds.setAttr('{}.overrideRGBColors'.format(crv), True)
+            cmds.setAttr('{}.overrideColorRGB'.format(crv), *rgb)
