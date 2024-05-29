@@ -26,7 +26,7 @@ class Single(System):
             ctrl.scale >> jnt.scale
             ctrl.lockHideChannels(['visibility'])
             ctrls.append(ctrl)
-            self.addMembers(ctrl.controllerNode)
+            self.addMembers(ctrl.allNodes)
 
         cmds.parent([ctrl.zeroGrp for ctrl in ctrls], self._controllerGrp)
 

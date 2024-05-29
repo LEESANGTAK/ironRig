@@ -36,31 +36,35 @@ class Aim(System):
         super(Aim, self)._buildSystems()
         aimVec = utils.getWorldPoint(self._joints[1]) - utils.getWorldPoint(self._joints[0])
         self._aimLoc = cmds.spaceLocator(n='{}_aim_loc'.format(self.fullName))
-        cmds.xform(self._aimLoc, t=utils.getWorldPoint(self._joints[0]) + (aimVec * 3), ws=True)
+        cmds.xform(self._aimLoc, t=list(utils.getWorldPoint(self._joints[0]) + (aimVec * 3))[:-1], ws=True)
         cmds.parent(self._aimLoc, self._blbxGrp)
 
-        upLoc =  cmds.spaceLocator(n='{}_up_loc'.format(self.fullName))
+        upLoc =  cmds.spaceLocator(n='{}_up_loc'.format(self.fullName))[0]
         cmds.matchTransform(upLoc, self._joints[0])
         cmds.parent(upLoc, self._joints[0])
         cmds.setAttr('{}.translate'.format(upLoc), 0, 1, 0)
         cmds.parent(upLoc, self._blbxGrp)
 
-        cmds.aimConstraint(self._aimLoc,
-                         self._joints[0],
-                         aimVector=self._aimSign * utils.axisStrToVector(self._aimAxis),
-                         upVector=[0, 1, 0],
-                         worldUpType='object',
-                         worldUpObject=upLoc)
+        self.addMembers(cmds.aimConstraint(
+            self._aimLoc,
+            self._joints[0],
+            aimVector=self._aimSign * utils.axisStrToVector(self._aimAxis),
+            upVector=[0, 1, 0],
+            worldUpType='object',
+            worldUpObject=upLoc
+        ))
+
+        self.addMembers(self._aimLoc, upLoc)
 
     def _buildControls(self):
         aimCtrl = Controller('{}_aim_ctrl'.format(self.fullName), Controller.SHAPE.LOCATOR)
         cmds.matchTransform(aimCtrl.zeroGrp, self._aimLoc, position=True)
         if self._negateScaleX:
             cmds.setAttr('{}.sx'.format(aimCtrl.zeroGrp), -1)
-        cmds.pointConstraint(aimCtrl, self._aimLoc, mo=True)
+        self.addMembers(cmds.pointConstraint(aimCtrl, self._aimLoc, mo=True))
         aimCtrl.lockHideChannels(['rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
 
         self._controllers.append(aimCtrl)
         cmds.parent(aimCtrl.zeroGrp, self._controllerGrp)
 
-        self.addMembers(aimCtrl.controllerNode)
+        self.addMembers(aimCtrl.allNodes)

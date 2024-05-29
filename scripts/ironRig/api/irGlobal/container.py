@@ -86,3 +86,4 @@ class Container(object):
 
         newSetName = self._set.replace(oldStr, newStr)
         self._set = cmds.rename(self._set, newSetName)
+        self._topGrp = self._topGrp.replace(oldStr, newStr)

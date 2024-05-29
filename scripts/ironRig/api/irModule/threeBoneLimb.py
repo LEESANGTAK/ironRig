@@ -318,7 +318,7 @@ class ThreeBoneLimb(Module):
 
         cmds.parent(moduleCtrl.zeroGrp, self.__controllerGrp)
         self._controllers.append(moduleCtrl)
-        self.addMembers(moduleCtrl.controllerNode)
+        self.addMembers(moduleCtrl.allNodes)
 
         if self.__firstLimbTwistSystem or self.__secondLimbTwistSystem or self.__thirdLimbTwistSystem:
             cmds.addAttr(moduleCtrl, ln='bendCtrlVis', at='bool', dv=False, keyable=True)

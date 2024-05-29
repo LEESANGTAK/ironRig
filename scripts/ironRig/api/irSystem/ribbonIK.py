@@ -78,7 +78,7 @@ class RibbonIK(System):
                 ctrl.zeroGrp.sx.set(-1)
             cmds.parentConstraint(ctrl, srfcJnt, mo=True)
             ctrls.append(ctrl)
-            self.addMembers(ctrl.controllerNode)
+            self.addMembers(ctrl.allNodes)
         cmds.parent([ctrl.zeroGrp for ctrl in ctrls], self._controllerGrp)
         self._controllers = ctrls
 

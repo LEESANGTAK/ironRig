@@ -63,13 +63,13 @@ class GlobalMaster(Master):
         self._globalController | self._mainController
         cmds.parent(self._globalController.zeroGrp, self._topGrp)
 
-        self.addMembers(self._globalController.controllerNode, self._mainController.controllerNode)
+        self.addMembers(self._globalController.allNodes, self._mainController.allNodes)
 
         if self._buildRootController:
             rootCtrl = Controller(name='root_ctrl', color=Controller.COLOR.GREEN, shape=Controller.SHAPE.TRIANGLE, direction=Controller.DIRECTION.Y)
             cmds.parentConstraint(rootCtrl, self._rootJoint, mo=True)
             cmds.parent(rootCtrl.zeroGrp, self._globalController)
-            self.addMembers(rootCtrl.controllerNode)
+            self.addMembers(rootCtrl.allNodes)
 
         cmds.parentConstraint(self._globalController, self._rootJoint, mo=True)
         self._globalController.scale >> self._rootJoint.scale

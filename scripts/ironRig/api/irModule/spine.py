@@ -90,7 +90,7 @@ class Spine(Module):
         cmds.parent(pelvisCtrl.zeroGrp, self.__controllerGrp)
         pelvisCtrl.lockHideChannels(['scale', 'visibility'])
         self._controllers.append(pelvisCtrl)
-        self.addMembers(pelvisCtrl.controllerNode)
+        self.addMembers(pelvisCtrl.allNodes)
         pelvisCtrl.shapeOffset = -(self.__ikSystem.aimSign * utils.axisStrToVector(self.__ikSystem.aimAxis())) * utils.getDistance(self.__ikSystem.joints[int(len(self.__ikSystem.joints)*0.5)], self.__ikSystem.joints[0])
 
         upBodyCtrl = Controller('upBody_ctrl', Controller.SHAPE.ARROW_QUAD, direction=Controller.DIRECTION.Y)
@@ -98,4 +98,4 @@ class Spine(Module):
         cmds.parent(self._topGrp.getChildren(), upBodyCtrl)
         self._topGrp | upBodyCtrl.zeroGrp
         self._controllers.append(upBodyCtrl)
-        self.addMembers(upBodyCtrl.controllerNode)
+        self.addMembers(upBodyCtrl.allNodes)

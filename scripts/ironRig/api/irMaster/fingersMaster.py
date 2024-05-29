@@ -30,7 +30,7 @@ class FingersMaster(Master):
 
         cmds.xform(masterCtrl.zeroGrp, t=self._getModulesCenter(), ws=True)
         self._topGrp | masterCtrl.zeroGrp
-        self.addMembers(masterCtrl.controllerNode)
+        self.addMembers(masterCtrl.allNodes)
 
     def _getModulesCenter(self):
         modulesCenter = cmds.dt.Vector()

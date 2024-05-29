@@ -112,6 +112,7 @@ class System(Container):
     def _buildSystems(self):
         cmds.parent(self._joints[0], self._blbxGrp)
         cmds.matchTransform(self._topGrp, self._joints[0], pivots=True)
+        self.addMembers(self._joints)
 
     def _buildControls(self):
         raise NotImplementedError()
@@ -123,3 +124,12 @@ class System(Container):
                 utils.disconnectAttr('{}.{}'.format(jnt, attrStr))
         self._controllers = []
         super(System, self).delete()
+
+    def _updateMembersName(self, oldStr, newStr):
+        super()._updateMembersName(oldStr, newStr)
+        self._blbxGrp = self._blbxGrp.replace(oldStr, newStr)
+        self._noTrsfGrp = self._noTrsfGrp.replace(oldStr, newStr)
+        self._controllerGrp = self._controllerGrp.replace(oldStr, newStr)
+        self._joints = [jnt.replace(oldStr, newStr) for jnt in self._joints]
+        for ctrl in self._controllers:
+            ctrl.updateNames(oldStr, newStr)

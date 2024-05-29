@@ -145,7 +145,7 @@ class RevFootIK(System):
         cmds.parent(self.__footCtrl.zeroGrp, self._controllerGrp)
         self.__footCtrl.lockHideChannels(['visibility'])
         self._controllers.append(self.__footCtrl)
-        self.addMembers(self.__footCtrl.controllerNode)
+        self.addMembers(self.__footCtrl.allNodes)
 
         for attrInfo in RevFootIK.ATTRS_INFO:
             cmds.addAttr(self.__footCtrl, ln=attrInfo['name'], at='float', min=attrInfo['min'], max=attrInfo['max'], dv=attrInfo['default'], keyable=True)

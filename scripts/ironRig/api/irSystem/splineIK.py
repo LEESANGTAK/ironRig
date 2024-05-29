@@ -104,7 +104,7 @@ class SplineIK(System):
                 ctrl.zeroGrp.sx.set(-1)
             cmds.parentConstraint(ctrl, crvJnt, mo=True)
             ctrls.append(ctrl)
-            self.addMembers(ctrl.controllerNode)
+            self.addMembers(ctrl.allNodes)
         cmds.parent([ctrl.zeroGrp for ctrl in ctrls], self._controllerGrp)
         #cmds.orientConstraint(ctrls[-1], self._joints[-1], mo=True)
         ctrls[-1].rotate >> self._joints[-1].rotate  # Joint can't rotate when dynamic applied if drive using constraint

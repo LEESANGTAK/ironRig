@@ -22,4 +22,4 @@ class EyesMaster(Master):
             cmds.parentConstraint(self.__controller, aimCtrlZeroGrp, mo=True)
 
         self._topGrp | self.__controller.zeroGrp
-        self.addMembers(self.__controller.controllerNode)
+        self.addMembers(self.__controller.allNodes)

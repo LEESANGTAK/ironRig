@@ -80,8 +80,6 @@ class Direction:
 
 
 class Controller(object):
-    """Provides interface to the animator to control ring.
-    """
     SIDE = Side
     SHAPE = Shape
     COLOR = Color
@@ -218,11 +216,22 @@ class Controller(object):
     def controllerNode(self):
         return self._controllerNode
 
+    @property
+    def allNodes(self):
+        return [self._transform, self._extraGrp, self._zeroGrp, self._controllerNode]
+
+    def updateNames(self, searchStr, replaceStr):
+        self._name = self._name.replace(searchStr, replaceStr)
+        self._transform = self._transform.replace(searchStr, replaceStr)
+        self._zeroGrp = self._zeroGrp.replace(searchStr, replaceStr)
+        self._extraGrp = self._extraGrp.replace(searchStr, replaceStr)
+        self._controllerNode = self._controllerNode.replace(searchStr, replaceStr)
+
     def _transformCurve(self):
         for shapeId, cvsPos in enumerate(self._initCVsPosInfo):
             for cvId, cvPos in enumerate(cvsPos):
                 pos = om.MVector(cvPos) * self._size * Controller.ROTATE_MATRIX_INFO[self._direction] + om.MVector(self._shapeOffset)
-                cmds.xform('{}.cv[{}]'.format(self.curves[shapeId], cvId), t=pos, ws=True)
+                cmds.xform('{}.cv[{}]'.format(self.curves[shapeId], cvId), t=pos, os=True)
 
     def _initController(self):
         self._transform = cmds.createNode('transform', n=self._name)
@@ -256,7 +265,7 @@ class Controller(object):
     def _getCvsPosInfo(self, curves):
         cvsPosInfo = []
         for curve in curves:
-            cvsPosInfo.append([cmds.pointPosition(cv, world=True) for cv in cmds.ls('{}.cv[*]'.format(curve), flatten=True)])
+            cvsPosInfo.append([cmds.pointPosition(cv, local=True) for cv in cmds.ls('{}.cv[*]'.format(curve), flatten=True)])
         return cvsPosInfo
 
     def alignShapeTo(self, targetPoint, side):
@@ -277,9 +286,9 @@ class Controller(object):
         sidePoint = sideTable[side]
         moveVector = targetPoint - sidePoint
         for curve in self.curves:
-            cvsPoses = [cmds.pointPosition(cv, world=True) for cv in cmds.ls('{}.cv[*]'.format(curve), flatten=True)]
+            cvsPoses = [cmds.pointPosition(cv, local=True) for cv in cmds.ls('{}.cv[*]'.format(curve), flatten=True)]
             for i, cvPos in enumerate(cvsPoses):
-                cmds.xform('{}.cv[{}]'.format(curve, i), t=om.MVector(cvPos) + moveVector, ws=True)
+                cmds.xform('{}.cv[{}]'.format(curve, i), t=om.MVector(cvPos) + moveVector, os=True)
 
     def lockHideChannels(self, channels=['visibility'], axes=['X', 'Y', 'Z']):
         attrNames = list(set([ch + axis if ch in ['translate', 'rotate', 'scale'] else ch for ch in channels for axis in axes]))
@@ -305,3 +314,8 @@ class Controller(object):
             cmds.setAttr('{}.overrideEnabled'.format(crv), True)
             cmds.setAttr('{}.overrideRGBColors'.format(crv), True)
             cmds.setAttr('{}.overrideColorRGB'.format(crv), *rgb)
+
+    @staticmethod
+    def makeHierarchy(controllers):
+        for parent, child in zip(controllers[:-1], controllers[1:]):
+            cmds.parent(child.zeroGrp, parent)

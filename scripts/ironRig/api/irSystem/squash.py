@@ -59,7 +59,7 @@ class Squash(System):
 
         self._controllerGrp | ctrl.zeroGrp
         self._controllers.append(ctrl)
-        self.addMembers(squashScalerMult, ctrl.controllerNode)
+        self.addMembers(squashScalerMult, ctrl.allNodes)
 
     def delete(self):
         self._controllers = []

@@ -5,10 +5,9 @@ from maya import cmds, mel
 
 
 def makeHierarchy(objects):
-    for index, jnt in enumerate(objects):
-        if index == 0:
-            continue
-        cmds.parent(jnt, objects[index-1])
+    for parent, child in zip(objects[:-1], objects[1:]):
+        cmds.parent(child, parent)
+
 
 def parentKeepHierarchy(childObjects, parentObject):
     if not isinstance(childObjects, list):
@@ -160,9 +159,9 @@ def getAimAxisInfo(startObject, endObject, space='local'):
 
     if space == 'local':
         startObjectMtx = cmds.getAttr('{}.worldMatrix'.format(startObject))
-        mtxXVec = om.MVector(startObjectMtx[0][:3])
-        mtxYVec = om.MVector(startObjectMtx[1][:3])
-        mtxZVec = om.MVector(startObjectMtx[2][:3])
+        mtxXVec = om.MVector(startObjectMtx[0:3])
+        mtxYVec = om.MVector(startObjectMtx[4:7])
+        mtxZVec = om.MVector(startObjectMtx[8:11])
     elif space == 'world':
         mtxXVec = om.MVector.kXaxisVector
         mtxYVec = om.MVector.kYaxisVector
@@ -524,12 +523,11 @@ def getCleanName(name):
 
 def cloneUserDefinedAttrs(sourceNode, targetNode, keyable=True):
     for attr in cmds.listAttr(sourceNode, ud=True, keyable=keyable):
-        attrType = attr.type()
-        minVal = attr.getMin()
-        maxVal = attr.getMax()
-        dftVal = attr.get(default=True)
+        attrType = cmds.attributeQuery(attr, node=sourceNode, attributeType=True)
+        minVal, maxVal = cmds.attributeQuery(attr, node=sourceNode, range=True)
+        dftVal = cmds.attributeQuery(attr, node=sourceNode, listDefault=True)[0]
         cmds.addAttr(targetNode, ln=attr, at=attrType, min=minVal, max=maxVal, dv=dftVal, keyable=keyable)
-        targetNode.attr(attr) >> sourceNode.attr(attr)
+        cmds.connectAttr('{}.{}'.format(targetNode, attr), '{}.{}'.format(sourceNode, attr))
 
 
 def getWorldMatrixMirrorX(inMatrix):
@@ -557,17 +555,17 @@ def cleanupRig():
     masterSet = 'controlRig_set'
     if not cmds.objExists('controlRig.rigSet'):
         cmds.addAttr(rigGrp, ln='rigSet', at='message', keyable=False)
-    masterSet.message >> rigGrp.rigSet
+    cmds.connectAttr('{}.message'.format(masterSet), '{}.rigSet'.format(rigGrp))
 
     # Hide private groups
     privateGrps = cmds.ls(['*_init_grp', '*_blbx_grp', '*_out_grp'])
     for privateGrp in privateGrps:
-        privateGrp.hide()
+        cmds.hide(privateGrp)
 
     # Hide secondary and tertiary controllers
     try:
-        cmds.ls('*.extraCtrlVis')[0].set(False)
-        cmds.ls('*.facialCtrlVis')[0].set(False)
+        cmds.setAttr('{}.extraCtrlVis'.format(cmds.ls('*.extraCtrlVis')[0]), False)
+        cmds.setAttr('{}.facialCtrlVis'.format(cmds.ls('*.facialCtrlVis')[0]), False)
     except:
         pass
 
@@ -581,7 +579,8 @@ def cleanupRig():
 
 def cleanupControllers():
     rigSet = 'controlRig_set'
-    ctrlTrsfs = [ctrlNode.inputs()[0] for ctrlNode in cmds.ls(rigSet.members(flatten=True), type='controller')]
+    ctrlTrsfs = [cmds.listConnections(ctrlNode, destination=False)[0] for ctrlNode in cmds.ls(cmds.sets(rigSet, q=True), type='controller')]
+    ctrlTrsfs = [cmds.listConnections(ctrlNode, destination=False)[0] for ctrlNode in cmds.ls(cmds.sets(rigSet, q=True), type='controller')]
 
     # Remove keyframe
     for ctrlTrsf in ctrlTrsfs:
@@ -589,16 +588,16 @@ def cleanupControllers():
 
     # Set default value
     for ctrlTrsf in ctrlTrsfs:
-        for attr in ctrlTrsf.listAttr(keyable=True) + ctrlTrsf.listAttr(ud=True):
+        for attr in cmds.listAttr(ctrlTrsf, keyable=True) + cmds.listAttr(ctrlTrsf, ud=True):
             try:
-                attr.set(attr.getDefault())
+                cmds.setAttr(attr, cmds.attributeQuery(attr, node=ctrlTrsf, listDefault=True)[0])
             except:
                 pass
 
     # Set geometry display type to reference
-    displayCtrl = [ctrlTrsf for ctrlTrsf in ctrlTrsfs if ctrlTrsf.hasAttr('geometryVis')]
+    displayCtrl = [ctrlTrsf for ctrlTrsf in ctrlTrsfs if cmds.attributeQuery('geometryVis', node=ctrlTrsf, exists=True)]
     if displayCtrl:
-        displayCtrl[0].geometryVis.set(2)
+        cmds.setAttr('{}.geometryVis'.format(displayCtrl[0]), 2)
 
 
 def convertMultiRemapToMayaRemap(multiRemapNode):
@@ -610,87 +609,87 @@ def convertMultiRemapToMayaRemap(multiRemapNode):
     outConnectInfo = []
     set = None
 
-    valueArray = cmds.listAttr(multiRemapNode.value, multi=True, string='value')
+    valueArray = cmds.listAttr('{}.value'.format(multiRemapNode), multi=True, string='value')
     for element in valueArray:
-        attr = multiRemapNode.attr(element)
+        attr = '{}.{}'.format(multiRemapNode, element)
         elementInfo = {}
-        elementInfo['Position'] = attr.value_Position.get()
-        elementInfo['FloatValue'] = attr.value_FloatValue.get()
-        elementInfo['Interp'] = attr.value_Interp.get()
+        elementInfo['Position'] = cmds.getAttr('{}.value_Position'.format(attr))
+        elementInfo['FloatValue'] = cmds.getAttr('{}.value_FloatValue'.format(attr))
+        elementInfo['Interp'] = cmds.getAttr('{}.value_Interp'.format(attr))
         valueInfo[element] = elementInfo
 
     for attrName in ['inputMin', 'inputMax', 'outputMin', 'outputMax']:
-        minMaxInfo[attrName] = multiRemapNode.attr(attrName).get()
+        minMaxInfo[attrName] = cmds.getAttr('{}.{}'.format(multiRemapNode, attrName))
 
-    inputValues = multiRemapNode.inputValue.get()
+    inputValues = cmds.getAttr('{}.inputValue'.format(multiRemapNode))
 
-    driverPlugs = multiRemapNode.inputs(plugs=True)
+    driverPlugs = cmds.listConnections(multiRemapNode, destination=False, plugs=True)
     for driverPlug in driverPlugs:
-        drivenPlug = driverPlug.outputs(plugs=True, type='multiRemapValue')[0]
+        drivenPlug = cmds.listConnections(driverPlug, source=False, plugs=True, type='multiRemapValue')[0]
         inConnectInfo.append((driverPlug, drivenPlug))
 
-    drivenPlugs = multiRemapNode.outputs(plugs=True, type='addDoubleLinear')
+    drivenPlugs = cmds.listConnections(multiRemapNode, source=False, plugs=True, type='addDoubleLinear')
     for drivenPlug in drivenPlugs:
-        driverPlug = drivenPlug.inputs(plugs=True, type='multiRemapValue')[0]
+        driverPlug = cmds.listConnections(drivenPlug, destination=False, plugs=True, type='multiRemapValue')[0]
         outConnectInfo.append((driverPlug, drivenPlug))
 
-    set = multiRemapNode.message.outputs(type='objectSet')[0]
+    set = cmds.listConnections('{}.message'.format(multiRemapNode), source=False, type='objectSet')[0]
 
     # Setup parent remap value
     nodeName = multiRemapNode.rsplit('_', 1)[0]
     parentRemap = cmds.createNode('remapValue', n='{}_parent_remap'.format(nodeName))
     for valName, valInfo in valueInfo.items():
         for name, val in valInfo.items():
-            parentRemap.attr(valName).attr('value_{}'.format(name)).set(val)
+            cmds.setAttr('{}.{}.{}'.format(parentRemap, valName, 'value_{}'.format(name)), val)
     for name, val in minMaxInfo.items():
-        parentRemap.attr(name).set(val)
+        cmds.setAttr('{}.{}'.format(parentRemap, name), val)
     for inConnect in inConnectInfo:
         driverPlug = inConnect[0]
         drivenPlug = '{}.{}'.format(parentRemap, inConnect[1].split('.', 1)[-1])
-        driverPlug >> drivenPlug
+        cmds.connectAttr(driverPlug, drivenPlug)
 
-    set.forceElement(parentRemap)
+    cmds.sets(parentRemap, forceElement=set)
 
     # Setup child remap values
     childRemaps = []
     for i, inputVal in enumerate(inputValues):
         childRemap = cmds.duplicate(parentRemap, n='{}_child_{:02d}_remap'.format(nodeName, i))[0]
-        childRemap.inputValue.set(inputVal)
-        for attrName in cmds.listAttr(parentRemap.value, multi=True, string='value'):
+        cmds.setAttr('{}.inputValue'.format(childRemap), inputVal)
+        for attrName in cmds.listAttr('{}.value'.format(parentRemap), multi=True, string='value'):
             parentValAttr = '{}.{}'.format(parentRemap, attrName)
             childValAttr = '{}.{}'.format(childRemap, attrName)
-            parentValAttr >> childValAttr
+            cmds.connectAttr(parentValAttr, childValAttr)
 
         for attrName in minMaxInfo.keys():
-            parentRemap.attr(attrName) >> childRemap.attr(attrName)
+            cmds.connectAttr('{}.{}'.format(parentRemap, attrName), '{}.{}'.format(childRemap, attrName))
 
-        driverAttr = childRemap.outValue
+        driverAttr = '{}.outValue'.format(childRemap)
         drivenAttr = outConnectInfo[i][1]
-        driverAttr >> drivenAttr
+        cmds.connectAttr(driverAttr, drivenAttr)
 
         childRemaps.append(childRemap)
 
     cmds.delete(multiRemapNode)
-    set.forceElement(childRemaps)
+    cmds.sets(childRemaps, forceElement=set)
 
 
 def setupGlobalDynamicController(moduleGroups, name):
     cmds.undoInfo(openChunk=True)
 
-    hairSystems = [moduleGrp.getChildren(ad=True, type='hairSystem')[0] for moduleGrp in moduleGroups]
+    hairSystems = [cmds.listRelatives(moduleGrp, children=True, ad=True, type='hairSystem')[0] for moduleGrp in moduleGroups]
 
     solver = cmds.createNode('nucleus', n='{}_nucleus'.format(name))
-    solver.inheritsTransform.set(False)
-    solver.spaceScale.set(0.05)
+    cmds.setAttr('{}.inheritsTransform'.format(solver), False)
+    cmds.setAttr('{}.spaceScale'.format(solver), 0.05)
 
     # Create controller
     dynCtrlName = 'dyn_ctrl'
     if not cmds.objExists(dynCtrlName):
         dynCtrlName = cmds.curve(d=1, p=[[-1, 6, 0], [0, 5, 0], [1, 6, 0], [2, 6, 0], [4, 4, 0], [3, 3, 0], [2, 4, 0], [2, 1, 0], [-2, 1, 0], [-2, 4, 0], [-3, 3, 0], [-4, 4, 0], [-2, 6, 0], [-1, 6, 0]], n=dynCtrlName)
         cmds.group(dynCtrlName, n='{}_zero'.format(dynCtrlName))
-        for attr in dynCtrlName.listAttr(keyable=True):
-            attr.lock(True)
-            attr.setKeyable(False)
+        for attr in cmds.listAttr(dynCtrlName, keyable=True):
+            cmds.setAttr(attr, lock=True)
+            cmds.setAttr(attr, keyable=False)
 
     cmds.addAttr(dynCtrlName, ln=name, at='enum', en='---------------:')
     cmds.setAttr('{}.{}'.format(dynCtrlName, name), channelBox=True)
@@ -704,22 +703,22 @@ def setupGlobalDynamicController(moduleGroups, name):
     cmds.addAttr(dynCtrlName, ln='{}_startCurveAttract'.format(name), at='double', keyable=True, dv=1)
     cmds.addAttr(dynCtrlName, ln='{}_attractionDamp'.format(name), at='double', keyable=True, dv=0)
 
-    dynCtrlName.attr('{}_enable'.format(name)) >> solver.enable
-    dynCtrlName.attr('{}_startFrame'.format(name)) >> solver.startFrame
-    dynCtrlName.attr('{}_subSteps'.format(name)) >> solver.subSteps
+    cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_enable'.format(name)), '{}.enable'.format(solver))
+    cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_startFrame'.format(name)), '{}.startFrame'.format(solver))
+    cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_subSteps'.format(name)), '{}.subSteps'.format(solver))
 
     for hairSystem in hairSystems:
         changeSolver(hairSystem, solver)
-        localDynCtrl = list(set(hairSystem.inputs(type='transform', exactType=True)))[0]
-        dynCtrlName.attr('{}_enable'.format(name)) >> localDynCtrl.enable
-        dynCtrlName.attr('{}_startFrame'.format(name)) >> localDynCtrl.startFrame
-        dynCtrlName.attr('{}_subSteps'.format(name)) >> localDynCtrl.subSteps
-        dynCtrlName.attr('{}_bendResistance'.format(name)) >> localDynCtrl.bendResistance
-        dynCtrlName.attr('{}_stiffness'.format(name)) >> localDynCtrl.stiffness
-        dynCtrlName.attr('{}_damp'.format(name)) >> localDynCtrl.damp
-        dynCtrlName.attr('{}_drag'.format(name)) >> localDynCtrl.drag
-        dynCtrlName.attr('{}_startCurveAttract'.format(name)) >> localDynCtrl.startCurveAttract
-        dynCtrlName.attr('{}_attractionDamp'.format(name)) >> localDynCtrl.attractionDamp
+        localDynCtrl = list(set(cmds.listConnections(hairSystem, destination=False, type='transform', exactType=True)))[0]
+        cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_enable'.format(name)), '{}.enable'.format(localDynCtrl))
+        cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_startFrame'.format(name)), '{}.startFrame'.format(localDynCtrl))
+        cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_subSteps'.format(name)), '{}.subSteps'.format(localDynCtrl))
+        cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_bendResistance'.format(name)), '{}.bendResistance'.format(localDynCtrl))
+        cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_stiffness'.format(name)), '{}.stiffness'.format(localDynCtrl))
+        cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_damp'.format(name)), '{}.damp'.format(localDynCtrl))
+        cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_drag'.format(name)), '{}.drag'.format(localDynCtrl))
+        cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_startCurveAttract'.format(name)), '{}.startCurveAttract'.format(localDynCtrl))
+        cmds.connectAttr('{}.{}'.format(dynCtrlName, '{}_attractionDamp'.format(name)), '{}.attractionDamp'.format(localDynCtrl))
 
     cmds.undoInfo(closeChunk=True)
 
@@ -727,61 +726,61 @@ def changeSolver(dynamicNode, solver=None):
     if not solver:
         solver = cmds.createNode('nucleus')
 
-    if dynamicNode.nodeType() == 'transform':
-        dynamicNode = dynamicNode.getShape()
+    if cmds.nodeType(dynamicNode) == 'transform':
+        dynamicNode = cmds.listRelatives(dynamicNode, s=True)[0]
 
-    oldSolver = list(set(dynamicNode.inputs(type='nucleus')))
+    oldSolver = list(set(cmds.listConnections(dynamicNode, destination=False, type='nucleus')))
 
     time1 = 'time1'
-    time1.outTime.connect(solver.currentTime, f=True)
+    cmds.connectAttr('{}.outTime'.format(time1), '{}.currentTime'.format(solver), f=True)
 
-    solver.startFrame.connect(dynamicNode.startFrame, f=True)
+    cmds.connectAttr('{}.startFrame'.format(solver), '{}.startFrame'.format(dynamicNode), f=True)
 
     index = findMultiAttributeEmptyIndex(node=solver, attribute='outputObjects')
-    solver.outputObjects[index].connect(dynamicNode.nextState, f=True)
+    cmds.connectAttr('{}.outputObjects[{}]'.format(solver, index), '{}.nextState'.format(dynamicNode), f=True)
 
     index = findMultiAttributeEmptyIndex(node=solver, attribute='inputActive')
-    dynamicNode.currentState.disconnect()
-    dynamicNode.currentState.connect(solver.inputActive[index])
+    disconnectAttr('{}.currentState'.format(dynamicNode))
+    cmds.connectAttr('{}.currentState'.format(dynamicNode), '{}.inputActive[{}]'.format(solver, index))
 
     index = findMultiAttributeEmptyIndex(node=solver, attribute='inputActiveStart')
-    dynamicNode.startState.disconnect()
-    dynamicNode.startState.connect(solver.inputActiveStart[index])
+    disconnectAttr('{}.startState'.format(dynamicNode))
+    cmds.connectAttr('{}.startState'.format(dynamicNode), '{}.inputActiveStart[{}]'.format(solver, index))
 
     cmds.delete(oldSolver)
 
 def findMultiAttributeEmptyIndex(node, attribute):
     id = 0
-    while node.attr(attribute)[id].isConnected():
+    while isConnectable('{}.{}[{}]'.format(node, attribute, id)):
         id += 1
     return id
 
 def symmeterizeModule(sourceModuleGroup, targetModuleGroup):
-    srcTrans = sourceModuleGroup.translate.get()
-    srcRotate = sourceModuleGroup.rotate.get()
-    srcScale = sourceModuleGroup.scale.get()
-    targetModuleGroup.translate.set(-srcTrans.x, srcTrans.y, srcTrans.z)
-    targetModuleGroup.rotate.set(srcRotate)
-    targetModuleGroup.scale.set(srcScale)
+    srcTrans = cmds.getAttr('{}.translate'.format(sourceModuleGroup))
+    srcRotate = cmds.getAttr('{}.rotate'.format(sourceModuleGroup))
+    srcScale = cmds.getAttr('{}.scale'.format(sourceModuleGroup))
+    cmds.setAttr('{}.translate'.format(targetModuleGroup), -srcTrans.x, srcTrans.y, srcTrans.z)
+    cmds.setAttr('{}.rotate'.format(targetModuleGroup), *srcRotate)
+    cmds.setAttr('{}.scale'.format(targetModuleGroup), *srcScale)
 
     srcPrefix = sourceModuleGroup.split('_module')[0]
     trgPrefix = targetModuleGroup.split('_module')[0]
-    srcCtrlNodes = [item for item in cmds.sets('{}_set'.format(srcPrefix), q=True) if item.nodeType() == 'controller']
-    srcCtrls = [ctrlNode.inputs()[0] for ctrlNode in srcCtrlNodes]
-    trgCtrlNodes = [item for item in cmds.sets('{}_set'.format(trgPrefix), q=True) if item.nodeType() == 'controller']
-    trgCtrls = [ctrlNode.inputs()[0] for ctrlNode in trgCtrlNodes]
+    srcCtrlNodes = [item for item in cmds.sets('{}_set'.format(srcPrefix), q=True) if cmds.nodeType(item) == 'controller']
+    srcCtrls = [cmds.listConnections(ctrlNode, destination=False)[0] for ctrlNode in srcCtrlNodes]
+    trgCtrlNodes = [item for item in cmds.sets('{}_set'.format(trgPrefix), q=True) if cmds.nodeType(item) == 'controller']
+    trgCtrls = [cmds.listConnections(ctrlNode, destination=False)[0] for ctrlNode in trgCtrlNodes]
 
     for srcCtrl, trgCtrl in zip(sorted(srcCtrls), sorted(trgCtrls)):
-        srcCtrlZeroGrp = srcCtrl.getParent(generations=2)
-        trgCtrlZeroGrp = trgCtrl.getParent(generations=2)
-        srcMtx = srcCtrlZeroGrp.worldMatrix.get()
+        srcCtrlZeroGrp = getParent(srcCtrl, 2)
+        trgCtrlZeroGrp = getParent(trgCtrl, 2)
+        srcMtx = cmds.getAttr('{}.worldMatrix'.format(srcCtrlZeroGrp))
         trgMtx = symmetryMatrix(srcMtx)
         cmds.xform(trgCtrlZeroGrp, m=trgMtx, ws=True)
         cmds.xform(trgCtrlZeroGrp, t=(-srcMtx[3][0], srcMtx[3][1], srcMtx[3][2]), ws=True)
 
-        srcCtrlExtraGrp = srcCtrl.getParent()
-        trgCtrlExtraGrp = trgCtrl.getParent()
-        srcMtx = srcCtrlExtraGrp.worldMatrix.get()
+        srcCtrlExtraGrp = getParent(srcCtrl)
+        trgCtrlExtraGrp = getParent(trgCtrl)
+        srcMtx = cmds.getAttr('{}.worldMatrix'.format(srcCtrlExtraGrp))
         trgMtx = symmetryMatrix(srcMtx)
         cmds.xform(trgCtrlExtraGrp, m=trgMtx, ws=True)
         cmds.xform(trgCtrlExtraGrp, t=(-srcMtx[3][0], srcMtx[3][1], srcMtx[3][2]), ws=True)
@@ -799,12 +798,12 @@ def symmetryMatrix(matrix):
 
 
 def connectScaleWithConstraint(moduleGroup):
-    outJnts = [jnt for jnt in moduleGroup.getChildren(ad=True, type='joint') if 'out' in jnt.name()]
+    outJnts = [jnt for jnt in cmds.listRelatives(moduleGroup, children=True, ad=True, type='joint') if 'out' in jnt]
     for outJnt in outJnts:
-        skelJnt = outJnt.scaleX.outputs(type='joint')[0]
-        outJnt.scaleX // skelJnt.scaleX
-        outJnt.scaleY // skelJnt.scaleY
-        outJnt.scaleZ // skelJnt.scaleZ
+        skelJnt = cmds.listConnections('{}.scaleX'.format(outJnt), source=False, type='joint')[0]
+        cmds.disconnectAttr('{}.scaleX'.format(outJnt), '{}.scaleX'.format(skelJnt))
+        cmds.disconnectAttr('{}.scaleY'.format(outJnt), '{}.scaleY'.format(skelJnt))
+        cmds.disconnectAttr('{}.scaleZ'.format(outJnt), '{}.scaleZ'.format(skelJnt))
         cmds.scaleConstraint(outJnt, skelJnt, mo=True)
 
 
@@ -818,3 +817,12 @@ def disconnectAttr(attribute):
     inputPlug = cmds.listConnections(attribute, destination=False, plugs=True)
     if inputPlug:
         cmds.disconnectAttr(inputPlug[0], attribute)
+
+
+def isConnectable(attribute):
+    return not bool(cmds.listConnections(attribute, destination=False))
+
+
+def getParent(node, generations=1):
+    parents = cmds.listRelatives(node, parent=True, fullPath=True)[0].split('|')
+    return parents[-generations]

@@ -286,7 +286,7 @@ class TwoBoneLimb(Module):
 
         cmds.parent(moduleCtrl.zeroGrp, self.__controllerGrp)
         self._controllers.append(moduleCtrl)
-        self.addMembers(moduleCtrl.controllerNode)
+        self.addMembers(moduleCtrl.allNodes)
 
         if self.__upperTwistSystem or self.__lowerTwistSystem:
             cmds.addAttr(moduleCtrl, ln='bendCtrlVis', at='bool', dv=False, keyable=True)

@@ -83,7 +83,7 @@ class ThreeBoneIK(System):
         cmds.pointConstraint(self.__ikHandleController, self.__hindIkHandle.getParent(), mo=True)
         cmds.orientConstraint(self.__ikHandleController, self._joints[-1], mo=True)
         self.__ikHandleController.lockHideChannels(['scale', 'visibility'])
-        self.addMembers(self.__ikHandleController.controllerNode)
+        self.addMembers(self.__ikHandleController.allNodes)
         cmds.addAttr(self.__ikHandleController, ln='calfLift', at='double', dv=0.0, keyable=True)
         self.__ikHandleController.calfLift >> self.__calfRotGrp.ry
 
@@ -103,7 +103,7 @@ class ThreeBoneIK(System):
 
         cmds.poleVectorConstraint(self.__poleVectorController, self.__calfIkHandle)
         self.__poleVectorController.lockHideChannels(['rotate', 'scale', 'visibility'])
-        self.addMembers(self.__poleVectorController.controllerNode)
+        self.addMembers(self.__poleVectorController.allNodes)
 
         self._controllers = [self.__ikHandleController, self.__poleVectorController]
         cmds.parent([ctrl.zeroGrp for ctrl in self._controllers], self._controllerGrp)
