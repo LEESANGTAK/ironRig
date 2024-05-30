@@ -2,6 +2,7 @@ from maya import cmds
 
 
 class Side:
+    NONE = 'n'
     LEFT = 'l'
     RIGHT = 'r'
     CENTER = 'c'
@@ -13,6 +14,9 @@ class Type:
     AIM_SYSTEM = 'aimSys'
     SPLINE_SYSTEM = 'spSys'
     RIBBON_SYSTEM = 'rbSys'
+    FOOTIK_SYSTEM = 'fikSys'
+    SINGLE_SYSTEM = 'sgSys'
+    SQUASH_SYSTEM = 'sqSys'
     MODULE = 'mod'
     MASTER = 'mst'
 

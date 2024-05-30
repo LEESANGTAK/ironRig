@@ -3,7 +3,7 @@ from maya import cmds
 from ... import utils
 from ..irGlobal import Controller
 from ..irSystem import FK
-from ..irSystem import RevFootIK
+from ..irSystem import FootIK
 from .module import Module
 from .twoBoneLimb import TwoBoneLimb
 from .threeBoneLimb import ThreeBoneLimb
@@ -56,7 +56,7 @@ class Foot(Module):
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = RevFootIK(self._name+'ik_', ikJoints, self.__pivotLocators)
+        self.__ikSystem = FootIK(self._name+'ik_', ikJoints, self.__pivotLocators)
         if self._negateScaleX:
             self.__ikSystem.negateSclaeX = True
         self.__ikSystem.build()
@@ -87,7 +87,7 @@ class Foot(Module):
         cmds.parentConstraint(self.__blendJoints[1], moduleCtrl.zeroGrp, mo=False)
         moduleCtrl.shapeOffset = [0, self._aimSign*10, 0]
 
-        fkIkRev = cmds.createNode('reverse', n='{}fkIk_rev'.format(self._name))
+        fkIkRev = cmds.createNode('Foot', n='{}fkIk_rev'.format(self._name))
         moduleCtrl.ik >> self.__ikSystem.topGrp.visibility
         moduleCtrl.ik >> fkIkRev.inputX
         fkIkRev.outputX >> self.__fkSystem.topGrp.visibility
@@ -107,7 +107,7 @@ class Foot(Module):
             utils.removeConnections(module.skelJoints[-1])
             cmds.parentConstraint(self._outJoints[0], module.skelJoints[-1], mo=True)
             # Connect ik handle
-            moduleIkHandleLoc = module.ikSystem().ikHandleLocator()
+            moduleIkHandleLoc = module.ikSystem().ikHandleLocator
             utils.removeConnections(moduleIkHandleLoc)
             cmds.pointConstraint(self.__ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
             # Connect ik controllers

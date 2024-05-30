@@ -58,7 +58,7 @@ class Neck(Module):
         self.__ikSystem.controllers[-1].worldMatrix >> headCtrlLocalMtx.matrixIn[0]
         self.__nonrollJoints[0].worldInverseMatrix >> headCtrlLocalMtx.matrixIn[1]
         headCtrlLocalMtx.matrixSum >> headCtrlLocalDecMtx.inputMatrix
-        headCtrlLocalDecMtx.outputRotateX >> self.__ikSystem.ikHandle().twist
+        headCtrlLocalDecMtx.outputRotateX >> self.__ikSystem.ikHandle.twist
 
     def __setupNonroll(self):
         nonrollGrp = cmds.createNode('transform', n='{}nonroll_grp'.format(self._name))

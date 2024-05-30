@@ -5,8 +5,8 @@ from ..irGlobal import Controller
 
 
 class Single(System):
-    def __init__(self, prefix='', joints=[]):
-        super(Single, self).__init__(prefix, joints)
+    def __init__(self, name='new', side=System.SIDE.CENTER, type=System.TYPE.SINGLE_SYSTEM, joints=[]):
+        super(Single, self).__init__(name, side, type, joints)
 
     def _getAimAxisInfo(self):
         pass
@@ -21,13 +21,12 @@ class Single(System):
             ctrl = Controller('{}_ctrl'.format(jnt), color=Controller.COLOR.SKYBLUE)
             cmds.matchTransform(ctrl.zeroGrp, jnt, position=True, rotation=True)
             if self._negateScaleX and utils.getWorldPoint(ctrl).x < 0.0:
-                ctrl.zeroGrp.sx.set(-1)
+                cmds.setAttr('{}.zeroGrp'.format(ctrl), -1)
             cmds.parentConstraint(ctrl, jnt, mo=True)
-            ctrl.scale >> jnt.scale
+            cmds.connectAttr('{}.scale'.format(ctrl), '{}.scale'.format(jnt))
             ctrl.lockHideChannels(['visibility'])
             ctrls.append(ctrl)
             self.addMembers(ctrl.allNodes)
 
         cmds.parent([ctrl.zeroGrp for ctrl in ctrls], self._controllerGrp)
-
         self._controllers = ctrls

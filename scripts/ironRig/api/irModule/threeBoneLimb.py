@@ -422,16 +422,16 @@ class ThreeBoneLimb(Module):
             revNode.outputX >> cnst.target[1].targetWeight
 
             tempPoleVectorLoc = cmds.spaceLocator(n='tempPoleVector_loc')
-            tempPoleVectorLocPos = utils.getWorldPoint(limbBaseCtrl.zeroGrp) + (utils.getWorldPoint(self.__ikSystem.poleVectorController()) - utils.getWorldPoint(self.__ikSystem.joints[1]))
+            tempPoleVectorLocPos = utils.getWorldPoint(limbBaseCtrl.zeroGrp) + (utils.getWorldPoint(self.__ikSystem.poleVectorController) - utils.getWorldPoint(self.__ikSystem.joints[1]))
             cmds.xform(tempPoleVectorLoc, t=tempPoleVectorLocPos, ws=True)
             upAxisInfo = utils.getAimAxisInfo(limbBaseCtrl.zeroGrp, tempPoleVectorLoc)
             cmds.delete(tempPoleVectorLoc)
             cmds.aimConstraint(
-                self.__ikSystem.ikHandleController(), aimLoc,
+                self.__ikSystem.ikHandleController, aimLoc,
                 aimVector=self._aimSign*utils.axisStrToVector(self._aimAxis),
                 upVector=upAxisInfo[0]*utils.axisStrToVector(upAxisInfo[1]),
                 worldUpType='object',
-                worldUpObject=self.__ikSystem.poleVectorController(),
+                worldUpObject=self.__ikSystem.poleVectorController,
                 mo=True
             )
 

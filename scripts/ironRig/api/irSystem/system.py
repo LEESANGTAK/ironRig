@@ -103,7 +103,7 @@ class System(Container):
         self._buildControls()
 
     def _getAimAxisInfo(self):
-        if len(self.joints) == 1:
+        if len(self._joints) == 1:
             self._aimSign = 1
             self._aimAxis = 'Z'
         else:

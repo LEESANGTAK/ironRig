@@ -49,3 +49,54 @@ irFKSys.controllerColor = irg.Controller.COLOR.BLUE
 irFKSys.controllerSize = 1
 irFKSys.controllerShape = irg.Controller.SHAPE.CUBE
 irFKSys.delete()
+
+name = 'foot'
+side = irs.System.SIDE.LEFT
+jnts = ['foot_l_jnt', 'ball_l_jnt']
+locators = ['locator1', 'locator2', 'locator3', 'locator4']
+irFIKSys = irs.FootIK(name=name, side=side, joints=jnts, pivotLocators=locators)
+irFIKSys.build()
+irFIKSys.controllerSize = 10
+irFIKSys.delete()
+
+name = 'hair'
+side = irs.System.SIDE.CENTER
+jnts = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
+irRibIKSys = irs.RibbonIK(name=name, side=side, joints=jnts, numControllers=5)
+irRibIKSys.build()
+irRibIKSys.delete()
+
+name = 'hair'
+side = irs.System.SIDE.CENTER
+jnts = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
+irSpIKSys = irs.SplineIK(name=name, side=side, joints=jnts, numControllers=3)
+irSpIKSys.build()
+irSpIKSys.delete()
+
+name = 'buttons'
+side = irs.System.SIDE.NONE
+jnts = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
+irSGSys = irs.Single(name=name, side=side, joints=jnts)
+irSGSys.build()
+irSGSys.name = 'btns'
+irSGSys.side = irs.System.SIDE.LEFT
+irSGSys.controllerShape = irg.Controller.SHAPE.CUBE
+irSGSys.controllerColor = irg.Controller.COLOR.BLUE
+irSGSys.controllerSize = 1
+irSGSys.delete()
+
+name = 'leg'
+side = irs.System.SIDE.LEFT
+jnts = ['horse_sk_lf_back_hip_jnt', 'horse_sk_lf_back_upleg_twist1_jnt', 'horse_sk_lf_back_lowleg_twist1_jnt']
+irTwoIKSys = irs.TwoBoneIK(name=name, side=side, joints=jnts)
+irTwoIKSys.build()
+irTwoIKSys.controllerSize = 10
+irTwoIKSys.delete()
+
+name = 'hindLeg'
+side = irs.System.SIDE.LEFT
+jnts = ['horse_sk_lf_back_hip_jnt', 'horse_sk_lf_back_upleg_twist1_jnt', 'horse_sk_lf_back_lowleg_twist1_jnt', 'horse_sk_lf_back_toe_jnt']
+irThreeIKSys = irs.ThreeBoneIK(name=name, side=side, joints=jnts)
+irThreeIKSys.build()
+irThreeIKSys.controllerSize = 10
+irThreeIKSys.delete()

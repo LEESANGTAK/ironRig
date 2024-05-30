@@ -4,7 +4,14 @@ from maya.api import OpenMayaAnim as oma
 from maya import cmds, mel
 
 
-def makeHierarchy(objects):
+def makeHierarchy(*args):
+    """Make hierarchy in order.
+    args = [element1, element2, ...]
+    element1
+        └─ element2
+            └─ ...
+    """
+    objects = sum([obj if isinstance(obj, list) else [obj] for obj in args], [])
     for parent, child in zip(objects[:-1], objects[1:]):
         cmds.parent(child, parent)
 
@@ -30,6 +37,10 @@ def parentKeepHierarchy(childObjects, parentObject):
 
 def getWorldPoint(object):
     return om.MPoint(cmds.xform(object, q=True, rp=True, ws=True))
+
+
+def getWorldVector(object):
+    return om.MVector(cmds.xform(object, q=True, rp=True, ws=True))
 
 
 def findClosestObject(searchPoint, objects):
@@ -124,11 +135,10 @@ def createJointsOnCurve(curve, numJoints, prefix):
         parm = crvFn.findParamFromLength(increment * i)
         pointOnCrv = crvFn.getPointAtParam(parm, space=om.MSpace.kWorld)
         jnt = cmds.createNode('joint', n='{}{:02d}_crvJnt'.format(prefix, i))
-        cmds.xform(jnt, t=pointOnCrv, ws=True)
+        cmds.xform(jnt, t=list(pointOnCrv)[:3], ws=True)
         joints.append(jnt)
-    joints[-1].rename('_'.join(joints[-1].split('_')[:-2]) + '_end_crvJnt')
-
     cmds.makeIdentity(joints, apply=True)
+    joints[-1] = cmds.rename(joints[-1], '_'.join(joints[-1].split('_')[:-2]) + '_end_crvJnt')
 
     return joints
 
@@ -142,11 +152,10 @@ def createJointsOnSurface(surface, numJoints, prefix):
     for i in range(numJoints):
         pointOnSurface = srfcFn.getPointAtParam(increment * i, 0.5, space=om.MSpace.kWorld)
         jnt = cmds.createNode('joint', n='{}{:02d}_srfcJnt'.format(prefix, i))
-        cmds.xform(jnt, t=pointOnSurface, ws=True)
+        cmds.xform(jnt, t=list(pointOnSurface)[:3], ws=True)
         joints.append(jnt)
-    joints[-1].rename('_'.join(joints[-1].split('_')[:-2]) + '_end_srfcJnt')
-
     cmds.makeIdentity(joints, apply=True)
+    joints[-1] = cmds.rename(joints[-1], '_'.join(joints[-1].split('_')[:-2]) + '_end_srfcJnt')
 
     return joints
 
@@ -813,6 +822,15 @@ def getDagPath(name):
     return sels.getDagPath(0)
 
 
+def getParent(node, generations=1):
+    parents = cmds.listRelatives(node, parent=True, fullPath=True)[0].split('|')
+    return parents[-generations]
+
+
+def getTransform(shape):
+    return cmds.listRelatives(shape, p=True, type='transform')[0]
+
+
 def disconnectAttr(attribute):
     inputPlug = cmds.listConnections(attribute, destination=False, plugs=True)
     if inputPlug:
@@ -823,6 +841,5 @@ def isConnectable(attribute):
     return not bool(cmds.listConnections(attribute, destination=False))
 
 
-def getParent(node, generations=1):
-    parents = cmds.listRelatives(node, parent=True, fullPath=True)[0].split('|')
-    return parents[-generations]
+def setRange(attribute, minimum, maximum):
+    cmds.addAttr(attribute, e=True, min=minimum, max=maximum)

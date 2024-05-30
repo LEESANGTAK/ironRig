@@ -5,7 +5,7 @@ from .system import System
 
 
 class FK(System):
-    def __init__(self, name='', side=System.SIDE.CENTER, type=System.TYPE.FK_SYSTEM, joints=[]):
+    def __init__(self, name='new', side=System.SIDE.CENTER, type=System.TYPE.FK_SYSTEM, joints=[]):
         super(FK, self).__init__(name, side, type, joints)
         self._endController = False
 

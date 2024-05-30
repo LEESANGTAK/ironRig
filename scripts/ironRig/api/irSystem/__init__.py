@@ -7,7 +7,7 @@ from . import splineIK; reload(splineIK)
 from . import ribbonIK; reload(ribbonIK)
 from . import twoBoneIK; reload(twoBoneIK)
 from . import threeBoneIK; reload(threeBoneIK)
-from . import revFootIK; reload(revFootIK)
+from . import footIK; reload(footIK)
 from . import aim; reload(aim)
 from . import squash; reload(squash)
 
@@ -19,6 +19,6 @@ from .splineIK import SplineIK
 from .ribbonIK import RibbonIK
 from .twoBoneIK import TwoBoneIK
 from .threeBoneIK import ThreeBoneIK
-from .revFootIK import RevFootIK
+from .footIK import FootIK
 from .aim import Aim
 from .squash import Squash
