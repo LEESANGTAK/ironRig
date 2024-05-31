@@ -6,13 +6,17 @@ from .module import Module
 
 class Finger(Module):
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
-        super(Finger, self).__init__(name, side, skeletonJoints)
-
         self._fkSystem = None
+        super(Finger, self).__init__(name, side, skeletonJoints)
 
     @property
     def fkSystem(self):
         return self._fkSystem
+
+    def _addSystems(self):
+        self._fkSystem = FK(self._name, self._side)
+        self._systems.append(self._fkSystem)
+        super(Finger, self)._addSystems()
 
     def preBuild(self):
         super(Finger, self).preBuild()
@@ -22,12 +26,9 @@ class Finger(Module):
 
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self._fkSystem = FK(self._name, self._side, fkJoints)
-        if self._negateScaleX:
-            self._fkSystem.negateScaleX = True
-        self._fkSystem.build()
+        self._fkSystem.joints = fkJoints
+        super(Finger, self)._buildSystems()
 
-        self._addSystems(self._fkSystem)
         self._sysJoints = self._fkSystem.joints
 
     def _connectSystems(self):

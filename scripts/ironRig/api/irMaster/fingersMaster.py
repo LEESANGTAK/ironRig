@@ -19,7 +19,7 @@ class FingersMaster(Master):
         cmds.delete(tempLoc)
 
     def _buildControls(self):
-        masterCtrl = Controller('{}ctrl'.format(self.fullName), Controller.SHAPE.CUBE, Controller.COLOR.GREEN)
+        masterCtrl = Controller('{}ctrl'.format(self.longName), Controller.SHAPE.CUBE, Controller.COLOR.GREEN)
         masterCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
         masterCtrl.shapeOffset = [0, 5, 0]
         for module in self._modules:

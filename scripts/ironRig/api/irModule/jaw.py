@@ -11,7 +11,7 @@ class Jaw(Module):
 
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self.fullName+'fk_', fkJoints)
+        self.__fkSystem = FK(self.longName+'fk_', fkJoints)
         if self._negateScaleX:
             self.__fkSystem.negateScaleX = True
         self.__fkSystem.build()

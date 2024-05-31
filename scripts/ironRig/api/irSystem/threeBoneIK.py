@@ -54,21 +54,21 @@ class ThreeBoneIK(System):
         self._hindJoints = utils.duplicateJointChain([self._joints[0], self._joints[1], self._joints[3]], prefix='hind_')
         cmds.setAttr('{}.tx'.format(self._hindJoints[1]), cmds.getAttr('{}.tx'.format(self._joints[2])))
         cmds.setAttr('{}.tx'.format(self._hindJoints[2]), cmds.getAttr('{}.tx'.format(self._joints[1])) + cmds.getAttr('{}.tx'.format(self._joints[3])))
-        self._hindIkHandle = cmds.ikHandle(startJoint=self._hindJoints[0], endEffector=self._hindJoints[2], solver='ikRPsolver', n='{}_hind_ikh'.format(self.fullName))[0]
+        self._hindIkHandle = cmds.ikHandle(startJoint=self._hindJoints[0], endEffector=self._hindJoints[2], solver='ikRPsolver', n='{}_hind_ikh'.format(self.longName))[0]
         hindIkhZeroGrp = utils.makeGroup(self._hindIkHandle, '{}_zero'.format(self._hindIkHandle))
         cmds.matchTransform(hindIkhZeroGrp, self._joints[3])
         cmds.parent(hindIkhZeroGrp, self._blbxGrp)
 
-        self._calfIkHandle = cmds.ikHandle(startJoint=self._joints[0], endEffector=self._joints[2], solver='ikRPsolver', n='{}_calf_ikh'.format(self.fullName))[0]
+        self._calfIkHandle = cmds.ikHandle(startJoint=self._joints[0], endEffector=self._joints[2], solver='ikRPsolver', n='{}_calf_ikh'.format(self.longName))[0]
         calfIkhZeroGrp = utils.makeGroup(self._calfIkHandle, '{}_zero'.format(self._calfIkHandle))
         self._calfRotGrp = cmds.createNode('transform', n='{}_rot'.format(self._calfIkHandle))
         cmds.matchTransform(self._calfRotGrp, self._joints[3])
         self._calfAutoRotGrp = cmds.createNode('transform', n='{}_autoRot'.format(self._calfIkHandle))
         cmds.matchTransform(self._calfAutoRotGrp, self._joints[3])
         utils.makeHierarchy(self._calfAutoRotGrp, self._calfRotGrp, calfIkhZeroGrp)
-        self._ankleIkHandle = cmds.ikHandle(startJoint=self._joints[2], endEffector=self._joints[3], solver='ikSCsolver', n='{}_ankle_ikh'.format(self.fullName))[0]
+        self._ankleIkHandle = cmds.ikHandle(startJoint=self._joints[2], endEffector=self._joints[3], solver='ikSCsolver', n='{}_ankle_ikh'.format(self.longName))[0]
         ankleIkhZeroGrp = utils.makeGroup(self._ankleIkHandle, '{}_zero'.format(self._ankleIkHandle))
-        self._ikHandleLoc = cmds.spaceLocator(n='{}_ikh_loc'.format(self.fullName))
+        self._ikHandleLoc = cmds.spaceLocator(n='{}_ikh_loc'.format(self.longName))
         cmds.matchTransform(self._ikHandleLoc, self._joints[3])
         cmds.parent([self._calfAutoRotGrp, ankleIkhZeroGrp], self._ikHandleLoc)
         cmds.parent(self._ikHandleLoc, self._blbxGrp)
@@ -96,7 +96,7 @@ class ThreeBoneIK(System):
         polePos = utils.getWorldPoint(self._joints[1]) + (poleVector.normal() * startToEndVector.length())
         if self._poleVectorPosition:  # Override pole vector position if is given
             polePos = self._poleVectorPosition
-        self._poleVectorController = Controller('{}_pv_ctrl'.format(self.fullName), shape=Controller.SHAPE.LOCATOR)
+        self._poleVectorController = Controller('{}_pv_ctrl'.format(self.longName), shape=Controller.SHAPE.LOCATOR)
         cmds.xform(self._poleVectorController.zeroGrp, t=list(polePos)[:3], ws=True)
         if self._negateScaleX:
             cmds.setAttr('{}.sx'.format(self._poleVectorController.zeroGrp), -1)
@@ -130,13 +130,13 @@ class ThreeBoneIK(System):
 
     def setupStretch(self):
         # Setup DAG
-        stretchGrp = cmds.createNode('transform', n='{}_stretch_grp'.format(self.fullName))
+        stretchGrp = cmds.createNode('transform', n='{}_stretch_grp'.format(self.longName))
         cmds.addAttr(self._controllers[0], at='double', ln='length1', min=0.01, dv=1.0, keyable=True)
         cmds.addAttr(self._controllers[0], at='double', ln='length2', min=0.01, dv=1.0, keyable=True)
         cmds.addAttr(self._controllers[0], at='double', ln='length3', min=0.01, dv=1.0, keyable=True)
         cmds.addAttr(self._controllers[0], at='double', ln='stretch', min=0.0, max=1.0, dv=1.0, keyable=True)
 
-        stretchInputNode = cmds.createNode('transform', n='{}_stretch_input'.format(self.fullName))
+        stretchInputNode = cmds.createNode('transform', n='{}_stretch_input'.format(self.longName))
         cmds.addAttr(stretchInputNode, at='double', ln='inLength1')
         cmds.addAttr(stretchInputNode, at='double', ln='inLength2')
         cmds.addAttr(stretchInputNode, at='double', ln='inLength3')
@@ -148,7 +148,7 @@ class ThreeBoneIK(System):
         cmds.addAttr(stretchInputNode, at='double', ln='inHindLength1Orig')
         cmds.addAttr(stretchInputNode, at='double', ln='inHindLength2Orig')
 
-        stretchOutputNode = cmds.createNode('transform', n='{}_stretch_output'.format(self.fullName))
+        stretchOutputNode = cmds.createNode('transform', n='{}_stretch_output'.format(self.longName))
         cmds.addAttr(stretchOutputNode, at='double', ln='outLength1')
         cmds.addAttr(stretchOutputNode, at='double', ln='outLength2')
         cmds.addAttr(stretchOutputNode, at='double', ln='outLength3')
@@ -180,60 +180,60 @@ class ThreeBoneIK(System):
         ikhCtrlLocalMtx = cmds.createNode('multMatrix', n='{}_local_multMtx'.format(self._controllers[0]))
         ikhCtrlLocalDist = cmds.createNode('distanceBetween', n='{}_local_dist'.format(self._controllers[0]))
 
-        lenOrigAbsSquare = cmds.createNode('multiplyDivide', n='{}_lenOrigAbs_square'.format(self.fullName))
+        lenOrigAbsSquare = cmds.createNode('multiplyDivide', n='{}_lenOrigAbs_square'.format(self.longName))
         cmds.setAttr('{}.operation'.format(lenOrigAbsSquare), 3)
         cmds.setAttr('{}.input2X'.format(lenOrigAbsSquare), 2)
         cmds.setAttr('{}.input2Y'.format(lenOrigAbsSquare), 2)
         cmds.setAttr('{}.input2Z'.format(lenOrigAbsSquare), 2)
-        lenOrigAbsSqrt = cmds.createNode('multiplyDivide', n='{}_lenOrigAbs_sqrt'.format(self.fullName))
+        lenOrigAbsSqrt = cmds.createNode('multiplyDivide', n='{}_lenOrigAbs_sqrt'.format(self.longName))
         cmds.setAttr('{}.operation'.format(lenOrigAbsSqrt), 3)
         cmds.setAttr('{}.input2X'.format(lenOrigAbsSqrt), 0.5)
         cmds.setAttr('{}.input2Y'.format(lenOrigAbsSqrt), 0.5)
         cmds.setAttr('{}.input2Z'.format(lenOrigAbsSqrt), 0.5)
-        hindLenOrigAbsSquare = cmds.createNode('multiplyDivide', n='{}_hindLenOrigAbs_square'.format(self.fullName))
+        hindLenOrigAbsSquare = cmds.createNode('multiplyDivide', n='{}_hindLenOrigAbs_square'.format(self.longName))
         cmds.setAttr('{}.operation'.format(hindLenOrigAbsSquare), 3)
         cmds.setAttr('{}.input2X'.format(hindLenOrigAbsSquare), 2)
         cmds.setAttr('{}.input2Y'.format(hindLenOrigAbsSquare), 2)
-        hindLenOrigAbsSqrt = cmds.createNode('multiplyDivide', n='{}_hindLenOrigAbs_sqrt'.format(self.fullName))
+        hindLenOrigAbsSqrt = cmds.createNode('multiplyDivide', n='{}_hindLenOrigAbs_sqrt'.format(self.longName))
         cmds.setAttr('{}.operation'.format(hindLenOrigAbsSqrt), 3)
         cmds.setAttr('{}.input2X'.format(hindLenOrigAbsSqrt), 0.5)
         cmds.setAttr('{}.input2Y'.format(hindLenOrigAbsSqrt), 0.5)
 
-        len1OrigMul = cmds.createNode('multDoubleLinear', n='{}_length1Orig_mul'.format(self.fullName))
-        len2OrigMul = cmds.createNode('multDoubleLinear', n='{}_length2Orig_mul'.format(self.fullName))
-        len3OrigMul = cmds.createNode('multDoubleLinear', n='{}_length3Orig_mul'.format(self.fullName))
+        len1OrigMul = cmds.createNode('multDoubleLinear', n='{}_length1Orig_mul'.format(self.longName))
+        len2OrigMul = cmds.createNode('multDoubleLinear', n='{}_length2Orig_mul'.format(self.longName))
+        len3OrigMul = cmds.createNode('multDoubleLinear', n='{}_length3Orig_mul'.format(self.longName))
 
-        wholeLenOrigAdd = cmds.createNode('plusMinusAverage', n='{}_wholeLenOrig_add'.format(self.fullName))
+        wholeLenOrigAdd = cmds.createNode('plusMinusAverage', n='{}_wholeLenOrig_add'.format(self.longName))
 
-        stretchFactorDiv = cmds.createNode('multiplyDivide', n='{}_stretchFactor_div'.format(self.fullName))
+        stretchFactorDiv = cmds.createNode('multiplyDivide', n='{}_stretchFactor_div'.format(self.longName))
         cmds.setAttr('{}.operation'.format(stretchFactorDiv), 2)
 
-        stretchLen1OrigMul = cmds.createNode('multDoubleLinear', n='{}_stretchLen1Orig_mul'.format(self.fullName))
-        stretchLen2OrigMul = cmds.createNode('multDoubleLinear', n='{}_stretchLen2Orig_mul'.format(self.fullName))
-        stretchLen3OrigMul = cmds.createNode('multDoubleLinear', n='{}_stretchLen3Orig_mul'.format(self.fullName))
-        stretchHindLen1OrigMul = cmds.createNode('multDoubleLinear', n='{}_stretchHindLen1Orig_mul'.format(self.fullName))
-        stretchHindLen2OrigMul = cmds.createNode('multDoubleLinear', n='{}_stretchHindLen2Orig_mul'.format(self.fullName))
+        stretchLen1OrigMul = cmds.createNode('multDoubleLinear', n='{}_stretchLen1Orig_mul'.format(self.longName))
+        stretchLen2OrigMul = cmds.createNode('multDoubleLinear', n='{}_stretchLen2Orig_mul'.format(self.longName))
+        stretchLen3OrigMul = cmds.createNode('multDoubleLinear', n='{}_stretchLen3Orig_mul'.format(self.longName))
+        stretchHindLen1OrigMul = cmds.createNode('multDoubleLinear', n='{}_stretchHindLen1Orig_mul'.format(self.longName))
+        stretchHindLen2OrigMul = cmds.createNode('multDoubleLinear', n='{}_stretchHindLen2Orig_mul'.format(self.longName))
 
-        stretchCond = cmds.createNode('condition', n='{}_stretch_cond'.format(self.fullName))
+        stretchCond = cmds.createNode('condition', n='{}_stretch_cond'.format(self.longName))
         cmds.setAttr('{}.operation'.format(stretchCond), 2)
-        hindStretchCond = cmds.createNode('condition', n='{}_hindStretch_cond'.format(self.fullName))
+        hindStretchCond = cmds.createNode('condition', n='{}_hindStretch_cond'.format(self.longName))
         cmds.setAttr('{}.operation'.format(hindStretchCond), 2)
 
-        len1Blend = cmds.createNode('blendTwoAttr', n='{}_length1_blend'.format(self.fullName))
-        len2Blend = cmds.createNode('blendTwoAttr', n='{}_length2_blend'.format(self.fullName))
-        len3Blend = cmds.createNode('blendTwoAttr', n='{}_length3_blend'.format(self.fullName))
-        hindLen1Blend = cmds.createNode('blendTwoAttr', n='{}_hindLength1_blend'.format(self.fullName))
-        hindLen2Blend = cmds.createNode('blendTwoAttr', n='{}_hindLength2_blend'.format(self.fullName))
+        len1Blend = cmds.createNode('blendTwoAttr', n='{}_length1_blend'.format(self.longName))
+        len2Blend = cmds.createNode('blendTwoAttr', n='{}_length2_blend'.format(self.longName))
+        len3Blend = cmds.createNode('blendTwoAttr', n='{}_length3_blend'.format(self.longName))
+        hindLen1Blend = cmds.createNode('blendTwoAttr', n='{}_hindLength1_blend'.format(self.longName))
+        hindLen2Blend = cmds.createNode('blendTwoAttr', n='{}_hindLength2_blend'.format(self.longName))
 
-        len1SignMult = cmds.createNode('multDoubleLinear', n='{}_length1Sign_mult'.format(self.fullName))
+        len1SignMult = cmds.createNode('multDoubleLinear', n='{}_length1Sign_mult'.format(self.longName))
         cmds.setAttr('{}.input1'.format(len1SignMult), self._aimSign)
-        len2SignMult = cmds.createNode('multDoubleLinear', n='{}_length2Sign_mult'.format(self.fullName))
+        len2SignMult = cmds.createNode('multDoubleLinear', n='{}_length2Sign_mult'.format(self.longName))
         cmds.setAttr('{}.input1'.format(len2SignMult), self._aimSign)
-        len3SignMult = cmds.createNode('multDoubleLinear', n='{}_length3Sign_mult'.format(self.fullName))
+        len3SignMult = cmds.createNode('multDoubleLinear', n='{}_length3Sign_mult'.format(self.longName))
         cmds.setAttr('{}.input1'.format(len3SignMult), self._aimSign)
-        hindLen1SignMult = cmds.createNode('multDoubleLinear', n='{}_hindLength1Sign_mult'.format(self.fullName))
+        hindLen1SignMult = cmds.createNode('multDoubleLinear', n='{}_hindLength1Sign_mult'.format(self.longName))
         cmds.setAttr('{}.input1'.format(hindLen1SignMult), self._aimSign)
-        hindLen2SignMult = cmds.createNode('multDoubleLinear', n='{}_hindLength2Sign_mult'.format(self.fullName))
+        hindLen2SignMult = cmds.createNode('multDoubleLinear', n='{}_hindLength2Sign_mult'.format(self.longName))
         cmds.setAttr('{}.input1'.format(hindLen2SignMult), self._aimSign)
 
         # Connect nodes
@@ -374,16 +374,16 @@ class ThreeBoneIK(System):
     def setupPin(self):
         cmds.addAttr(self._controllers[-1], at='double', ln='pin', min=0.0, max=1.0, dv=0.0, keyable=True)
 
-        pinGrp = cmds.createNode('transform', n='{}_pin_grp'.format(self.fullName))
+        pinGrp = cmds.createNode('transform', n='{}_pin_grp'.format(self.longName))
 
-        pinInputNode = cmds.createNode('transform', n='{}_pin_input'.format(self.fullName))
+        pinInputNode = cmds.createNode('transform', n='{}_pin_input'.format(self.longName))
         cmds.addAttr(pinInputNode, at='double', ln='inPin')
         cmds.addAttr(pinInputNode, at='double', ln='inLength1')
         cmds.addAttr(pinInputNode, at='double', ln='inLength2')
         cmds.addAttr(pinInputNode, at='double', ln='inLength1Pin')
         cmds.addAttr(pinInputNode, at='double', ln='inLength2Pin')
 
-        pinOutputNode = cmds.createNode('transform', n='{}_pin_output'.format(self.fullName))
+        pinOutputNode = cmds.createNode('transform', n='{}_pin_output'.format(self.longName))
         cmds.addAttr(pinOutputNode, at='double', ln='outLength1')
         cmds.addAttr(pinOutputNode, at='double', ln='outLength2')
 
@@ -400,16 +400,16 @@ class ThreeBoneIK(System):
         utils.makeHierarchy(pinGrp, jnt0PinLoc, jnt1PinLoc, jnt2PinLoc)
         cmds.parent(pinGrp, self._blbxGrp)
 
-        len1PinLocalDist = cmds.createNode('distanceBetween', n='{}_len1Pin_local_dist'.format(self.fullName))
-        len2PinLocalDist = cmds.createNode('distanceBetween', n='{}_len2Pin_local_dist'.format(self.fullName))
+        len1PinLocalDist = cmds.createNode('distanceBetween', n='{}_len1Pin_local_dist'.format(self.longName))
+        len2PinLocalDist = cmds.createNode('distanceBetween', n='{}_len2Pin_local_dist'.format(self.longName))
 
-        len1PinSignMult = cmds.createNode('multDoubleLinear', n='{}_len1PinSign_mult'.format(self.fullName))
+        len1PinSignMult = cmds.createNode('multDoubleLinear', n='{}_len1PinSign_mult'.format(self.longName))
         cmds.setAttr('{}.input1'.format(len1PinSignMult), self._aimSign)
-        len2PinSignMult = cmds.createNode('multDoubleLinear', n='{}_len2PinSign_mult'.format(self.fullName))
+        len2PinSignMult = cmds.createNode('multDoubleLinear', n='{}_len2PinSign_mult'.format(self.longName))
         cmds.setAttr('{}.input1'.format(len2PinSignMult), self._aimSign)
 
-        len1StretchPinBlend = cmds.createNode('blendTwoAttr', n='{}_len1StretchPin_blend'.format(self.fullName))
-        len2StretchPinBlend = cmds.createNode('blendTwoAttr', n='{}_len2StretchPin_blend'.format(self.fullName))
+        len1StretchPinBlend = cmds.createNode('blendTwoAttr', n='{}_len1StretchPin_blend'.format(self.longName))
+        len2StretchPinBlend = cmds.createNode('blendTwoAttr', n='{}_len2StretchPin_blend'.format(self.longName))
 
         self.addMembers(
             len1PinLocalDist,

@@ -62,7 +62,7 @@ class SplineIK(System):
         # Store rotation of the end joint
         endJntRo = cmds.xform(self._joints[-1], q=True, ro=True, ws=True)
 
-        self._ikHandle = cmds.ikHandle(name='{}_ikh'.format(self.fullName), solver='ikSplineSolver', sj=self._joints[0], ee=self._joints[-1], curve=self._curve, createCurve=False, parentCurve=False)[0]
+        self._ikHandle = cmds.ikHandle(name='{}_ikh'.format(self.longName), solver='ikSplineSolver', sj=self._joints[0], ee=self._joints[-1], curve=self._curve, createCurve=False, parentCurve=False)[0]
 
         # Restore end joint rotation after appling spline ik handle
         cmds.xform(self._joints[-1], ro=endJntRo, ws=True)
@@ -73,7 +73,7 @@ class SplineIK(System):
 
     def _createCurveWithJoints(self):
         editPoints = [cmds.xform(jnt, q=True, rp=True, ws=True) for jnt in self._joints]
-        crv = cmds.curve(d=1, editPoint=editPoints, n='{}_crv'.format(self.fullName))
+        crv = cmds.curve(d=1, editPoint=editPoints, n='{}_crv'.format(self.longName))
         spans = self._numControllers-1
         if self._curveSpans:
             spans = self._curveSpans
@@ -81,10 +81,10 @@ class SplineIK(System):
         cmds.parent(self._curve, self._noTrsfGrp)
 
     def _buildCurveBindJoints(self):
-        self._curveJoints = utils.createJointsOnCurve(self._curve, self._numControllers, self.fullName)
+        self._curveJoints = utils.createJointsOnCurve(self._curve, self._numControllers, self.longName)
         self._orientCurveJoints()
         skinClst = cmds.skinCluster(self._curveJoints, self._curve, mi=1, dr=4.0, tsb=True, omi=False, nw=True)
-        crvJntsGrp = cmds.group(self._curveJoints, n='{}_crvJnt_grp'.format(self.fullName))
+        crvJntsGrp = cmds.group(self._curveJoints, n='{}_crvJnt_grp'.format(self.longName))
 
         self.addMembers(skinClst)
         cmds.parent(crvJntsGrp, self._blbxGrp)
@@ -115,17 +115,17 @@ class SplineIK(System):
         scaleCrv = cmds.duplicate(self._curve, n='{}_scale'.format(self._curve))[0]
         crvInfo = cmds.createNode('curveInfo', n='{}_curveInfo'.format(self._curve))
         scaleCrvInfo = cmds.createNode('curveInfo', n='{}_curveInfo'.format(scaleCrv))
-        stretchRatioDiv = cmds.createNode('multiplyDivide', n='{}_stretchRatio_div'.format(self.fullName))
+        stretchRatioDiv = cmds.createNode('multiplyDivide', n='{}_stretchRatio_div'.format(self.longName))
         cmds.setAttr('{}.operation'.format(stretchRatioDiv), 2)
-        stertchOnOffBlend = cmds.createNode('blendColors', n='{}_stertchOnOff_blend'.format(self.fullName))
+        stertchOnOffBlend = cmds.createNode('blendColors', n='{}_stertchOnOff_blend'.format(self.longName))
         cmds.setAttr('{}.color2R'.format(stertchOnOffBlend), 1)
 
         maxShrinkVal = 10.0
-        shrinkValNormalize = cmds.createNode('multDoubleLinear', n='{}_shrinkValNormalize'.format(self.fullName))
+        shrinkValNormalize = cmds.createNode('multDoubleLinear', n='{}_shrinkValNormalize'.format(self.longName))
         cmds.setAttr('{}.input2'.format(shrinkValNormalize), 1.0/maxShrinkVal)
-        shrinkReverse = cmds.createNode('reverse', n='{}_shrinkRev'.format(self.fullName))
-        shrinkValMult = cmds.createNode('multDoubleLinear', n='{}_shrinkValMult'.format(self.fullName))
-        zeroScalePreventCond = cmds.createNode('condition', n='{}_zeroScalePrevent_cond'.format(self.fullName))
+        shrinkReverse = cmds.createNode('reverse', n='{}_shrinkRev'.format(self.longName))
+        shrinkValMult = cmds.createNode('multDoubleLinear', n='{}_shrinkValMult'.format(self.longName))
+        zeroScalePreventCond = cmds.createNode('condition', n='{}_zeroScalePrevent_cond'.format(self.longName))
         cmds.setAttr('{}.colorIfTrueR'.format(zeroScalePreventCond), 0.001)
 
         cmds.addAttr(self._controllers[-1], longName='stretchOnOff', attributeType='double', min=0.0, max=1.0, dv=1.0, keyable=True)
@@ -192,7 +192,7 @@ class SplineIK(System):
             cmds.orientConstraint(parentCtrl, curCtrl.zeroGrp, mo=True)
 
     def setupWave(self):
-        crv = cmds.duplicate(self._curve, n='{0}_wave_crv'.format(self.fullName))[0]
+        crv = cmds.duplicate(self._curve, n='{0}_wave_crv'.format(self.longName))[0]
 
         blendshape = cmds.blendShape(crv, self._curve, n='{}_bs'.format(self._curve), origin='local', frontOfChain=True)[0]
         cmds.setAttr('{}.{}'.format(blendshape, crv), 1)
@@ -200,7 +200,7 @@ class SplineIK(System):
         sine, sineHandle = cmds.nonLinear(crv, type='sine')  # If instanciate non-linear deformer as "PyNode", "Could not create desired MFn" warning is caused
         cmds.setAttr('{}.dropoff'.format(sine), -1)
         cmds.setAttr('{}.highBound'.format(sine), 0)
-        cmds.rename(sineHandle, '{0}_sineHandle'.format(self.fullName))
+        cmds.rename(sineHandle, '{0}_sineHandle'.format(self.longName))
 
         numCVs = cmds.getAttr("{}.spans".format(crv)) + cmds.getAttr("{}.degree".format(crv))
         startPosition = cmds.xform('{}.cv[{}]'.format(crv, 0), q=True, t=True, ws=True)
@@ -284,18 +284,18 @@ class SplineIK(System):
         cmds.setAttr('{}.stretchResistance'.format(hairSystem), 200)
         cmds.setAttr('{}.compressionResistance'.format(hairSystem), 200)
         cmds.setAttr('{}.stiffnessScale[1].stiffnessScale_FloatValue'.format(hairSystem), 1)
-        cmds.rename(utils.getParent(hairSystem), '{0}_hairSystem'.format(self.fullName))
+        cmds.rename(utils.getParent(hairSystem), '{0}_hairSystem'.format(self.longName))
 
         self._follicle = cmds.createNode('follicle')
         cmds.setAttr('{}.restPose'.format(self._follicle), 1)
         cmds.setAttr('{}.startDirection'.format(self._follicle), 1)
         cmds.setAttr('{}.degree'.format(self._follicle), 3)
         cmds.getAttr('{}.pointLock'.format(self._follicle))
-        cmds.rename(utils.getParent(self._follicle), '{0}_follicle'.format(self.fullName))
+        cmds.rename(utils.getParent(self._follicle), '{0}_follicle'.format(self.longName))
 
-        dynCrv =  cmds.duplicate(self._curve, n='{0}_dyn_crv'.format(self.fullName))[0]
+        dynCrv =  cmds.duplicate(self._curve, n='{0}_dyn_crv'.format(self.longName))[0]
 
-        enableCond = cmds.createNode('condition', n='{0}_dynEnable_cond'.format(self.fullName))
+        enableCond = cmds.createNode('condition', n='{0}_dynEnable_cond'.format(self.longName))
         cmds.setAttr('{}.secondTerm'.format(enableCond), 1)
         cmds.setAttr('{}.colorIfTrueR'.format(enableCond), 3)
 
@@ -356,12 +356,12 @@ class SplineIK(System):
 
         nucleusNodes = cmds.ls(type='nucleus')
         for node in nucleusNodes:
-            if node == self.fullName:
+            if node == self.longName:
                 nucleusNode = node
                 break
 
         if not nucleusNode:
-            nucleusNode = cmds.createNode('nucleus', n='{}_nucleus'.format(self.fullName))
+            nucleusNode = cmds.createNode('nucleus', n='{}_nucleus'.format(self.longName))
 
         return nucleusNode
 

@@ -29,8 +29,8 @@ class Container(object):
         self._name = name
         self._side = side
         self._type = type
-        self._set = cmds.createNode('objectSet', n='{}_set'.format(self.fullName))
-        self._topGrp = cmds.createNode('transform', n='{}_grp'.format(self.fullName))
+        self._set = cmds.createNode('objectSet', n='{}_set'.format(self.longName))
+        self._topGrp = cmds.createNode('transform', n='{}_grp'.format(self.longName))
         self.addMembers(self._topGrp)
 
     @property
@@ -43,7 +43,11 @@ class Container(object):
         self._name = name
 
     @property
-    def fullName(self):
+    def shortName(self):
+        return '{}_{}'.format(self._name, self._side)
+
+    @property
+    def longName(self):
         return '{}_{}_{}'.format(self._name, self._side, self._type)
 
     @property

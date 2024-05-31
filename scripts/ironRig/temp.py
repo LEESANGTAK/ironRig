@@ -100,3 +100,32 @@ irThreeIKSys = irs.ThreeBoneIK(name=name, side=side, joints=jnts)
 irThreeIKSys.build()
 irThreeIKSys.controllerSize = 10
 irThreeIKSys.delete()
+
+
+
+from imp import reload
+import ironRig; reload(ironRig)
+import ironRig.api.irGlobal as irg
+import ironRig.api.irSystem as irs
+import ironRig.api.irModule as irm
+
+# Modules
+name = 'eye'
+side = irm.Module.SIDE.LEFT
+jnts = ['FACIAL_L_Eye', 'FACIAL_L_Pupil']
+eyeMod = irm.Eye(name, side, jnts)
+eyeMod.preBuild()
+eyeMod.build()
+eyeMod.controllerColor = irg.Controller.COLOR.BLUE
+eyeMod.delete()
+
+name = 'thumb'
+side = irm.Module.SIDE.LEFT
+jnts = ['thumb_01_l', 'thumb_02_l', 'thumb_03_l']
+fingerMod = irm.Finger(name, side, jnts)
+fingerMod.fkSystem.endController = True
+fingerMod.preBuild()
+fingerMod.build()
+fingerMod.controllerSize = 2
+fingerMod.controllerColor = irg.Controller.COLOR.BLUE
+fingerMod.delete()

@@ -46,6 +46,9 @@ class Module(Container):
 
         self._master = None
 
+        self._buildGroups()
+        self._addSystems()
+
     @property
     def skelJoints(self):
         return self._skelJoints
@@ -61,6 +64,8 @@ class Module(Container):
     @negateScaleX.setter
     def negateScaleX(self, val):
         self._negateScaleX = val
+        for sys in self._systems:
+            sys.negateScaleX = self._negateScaleX
 
     @property
     def globalController(self):
@@ -106,11 +111,19 @@ class Module(Container):
     def master(self, master):
         self._master = master
 
+    def _addSystems(self):
+        """Add systems to a module.
+        """
+        logger.debug('{}._addSystems()'.format(self.longName))
+
+        for system in self._systems:
+            cmds.sets(system.set, forceElement=self.set)
+            cmds.parent(system.topGrp, self._systemGrp)
+
     def preBuild(self):
         """Build initialize objects.
         """
         self._skelJoints.sort(key=lambda jnt: len(utils.getAllParents(jnt)))
-        self._buildGroups()
         self._buildInitSkelLocators()
         self._buildOrientPlane()
         self._buildInitJoints()
@@ -121,16 +134,16 @@ class Module(Container):
     def _buildGroups(self):
         """Build groups that module's child groups.
         """
-        self._geoGrp = cmds.group(n='{}_geo_grp'.format(self.fullName), empty=True)
-        self._initGrp = cmds.group(n='{}_init_grp'.format(self.fullName), empty=True)
-        self._outGrp = cmds.group(n='{}_out_grp'.format(self.fullName), empty=True)
-        self._systemGrp = cmds.group(n='{}_sys_grp'.format(self.fullName), empty=True)
+        self._geoGrp = cmds.group(n='{}_geo_grp'.format(self.shortName), empty=True)
+        self._initGrp = cmds.group(n='{}_init_grp'.format(self.shortName), empty=True)
+        self._outGrp = cmds.group(n='{}_out_grp'.format(self.shortName), empty=True)
+        self._systemGrp = cmds.group(n='{}_sys_grp'.format(self.shortName), empty=True)
         cmds.parent([self._geoGrp, self._initGrp, self._outGrp, self._systemGrp], self._topGrp)
 
     def _buildInitSkelLocators(self):
         initSkelLocs = []
         for skelJnt in self._skelJoints:
-            initSkelLoc = cmds.spaceLocator(n='{}_init_{}_loc'.format(self.fullName, skelJnt))[0]
+            initSkelLoc = cmds.spaceLocator(n='{}_init_{}_loc'.format(self.shortName, skelJnt))[0]
             cmds.matchTransform(initSkelLoc, skelJnt, position=True, rotation=True)
             cmds.hide(initSkelLoc)
             initSkelLocs.append(initSkelLoc)
@@ -138,13 +151,13 @@ class Module(Container):
         cmds.parent(self._initSkelLocators, self._initGrp)
 
     def _buildOrientPlane(self):
-        self._orientPlane = cmds.createNode('orientPlane', n='{}_orientPlane'.format(self.fullName))
+        self._orientPlane = cmds.createNode('orientPlane', n='{}_orientPlane'.format(self.shortName))
         self.addMembers(self._orientPlane)
 
-        startLoc = cmds.spaceLocator(n='{}_start_oriPlane_loc'.format(self.fullName))[0]
+        startLoc = cmds.spaceLocator(n='{}_start_oriPlane_loc'.format(self.shortName))[0]
         cmds.matchTransform(startLoc, self._initSkelLocators[0], position=True)
         midLoc = self._createMidLocator()
-        endLoc = cmds.spaceLocator(n='{}_end_oriPlane_loc'.format(self.fullName))[0]
+        endLoc = cmds.spaceLocator(n='{}_end_oriPlane_loc'.format(self.shortName))[0]
         cmds.matchTransform(endLoc, self._initSkelLocators[-1], position=True)
         self._oriPlaneLocators = [startLoc, midLoc, endLoc]
         cmds.parent(self._oriPlaneLocators, self._initGrp)
@@ -155,9 +168,9 @@ class Module(Container):
         cmds.connectAttr('{}.worldPosition'.format(midLoc), '{}.planePoint02'.format(self._orientPlane))
         cmds.connectAttr('{}.worldPosition'.format(endLoc), '{}.planePoint03'.format(self._orientPlane))
 
-        startToMidLine = Module._buildOriPlaneLine('{}_startToMid_oriPlane_line'.format(self.fullName), startLoc, midLoc)
-        midToEndLine = Module._buildOriPlaneLine('{}_midToEnd_oriPlane_line'.format(self.fullName), midLoc, endLoc)
-        endToStartLine = Module._buildOriPlaneLine('{}_endToStart_oriPlane_line'.format(self.fullName), endLoc, startLoc)
+        startToMidLine = Module._buildOriPlaneLine('{}_startToMid_oriPlane_line'.format(self.shortName), startLoc, midLoc)
+        midToEndLine = Module._buildOriPlaneLine('{}_midToEnd_oriPlane_line'.format(self.shortName), midLoc, endLoc)
+        endToStartLine = Module._buildOriPlaneLine('{}_endToStart_oriPlane_line'.format(self.shortName), endLoc, startLoc)
         cmds.parent([startToMidLine, midToEndLine, endToStartLine], self._initGrp)
 
         for index, initSkelLoc in enumerate(self._initSkelLocators):
@@ -181,7 +194,7 @@ class Module(Container):
                     midOriPlaneLocVector = om.MVector.kYaxisVector
             midLocPos = utils.getWorldPoint(midInitSkelLoc) + (midOriPlaneLocVector.normal() * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
 
-        midLoc = cmds.spaceLocator(n='{}_mid_oriPlane_loc'.format(self.fullName))[0]
+        midLoc = cmds.spaceLocator(n='{}_mid_oriPlane_loc'.format(self.shortName))[0]
         cmds.setAttr('{}.overrideEnabled'.format(midLoc), True)
         cmds.setAttr('{}.overrideColor'.format(midLoc), 14)
         cmds.xform(midLoc, t=list(midLocPos)[:3], ws=True)
@@ -243,7 +256,7 @@ class Module(Container):
     def symmeterizeGuide(self):
         searchStr = '_r_'
         replaceStr = '_l_'
-        if '_l_' in self.fullName:
+        if '_l_' in self.longName:
             searchStr = '_l_'
             replaceStr = '_r_'
 
@@ -285,11 +298,11 @@ class Module(Container):
             )
 
     def _buildInitJointsWithSkelJoints(self):
-        logger.debug('{}._buildInitJointsWithSkelJoints()'.format(self.fullName))
+        logger.debug('{}._buildInitJointsWithSkelJoints()'.format(self.longName))
 
         initJoints = []
         for skelJnt in self._skelJoints:
-            initJnt = cmds.createNode('joint', n='{}_init_{}'.format(self.fullName, skelJnt))
+            initJnt = cmds.createNode('joint', n='{}_init_{}'.format(self.shortName, skelJnt))
             cmds.matchTransform(initJnt, skelJnt, position=True, rotation=True)
             initJoints.append(initJnt)
 
@@ -310,30 +323,22 @@ class Module(Container):
     def _buildSystems(self):
         """Create systems and set systems state.
         """
-        logger.debug('{}._buildSystems()'.format(self.fullName))
+        logger.debug('{}._buildSystems()'.format(self.longName))
 
-        raise NotImplementedError()
-
-    def _addSystems(self, *args):
-        """Add systems to a module.
-        """
-        systems = sum([system if isinstance(system, list) else [system] for system in args], [])
-        for system in systems:
-            cmds.sets(system.set, forceElement=self.set)
-            cmds.parent(system.topGrp, self._systemGrp)
-        self._systems.extend(systems)
+        for system in self._systems:
+            system.build()
 
     def _connectSystems(self):
         """Connects systems of a module.
         """
-        logger.debug('{}._connectSystems()'.format(self.fullName))
+        logger.debug('{}._connectSystems()'.format(self.longName))
 
         raise NotImplementedError()
 
     def _buildOutputs(self):
         """Build output joints and attributes.
         """
-        logger.debug('{}._buildOutputs()'.format(self.fullName))
+        logger.debug('{}._buildOutputs()'.format(self.longName))
 
         # Output joints
         self._outJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='out')
@@ -344,7 +349,7 @@ class Module(Container):
     def _connectOutputs(self):
         """Connects system joints and attributes to the output joints and attributes of a module.
         """
-        logger.debug('{}._connectOutputs()'.format(self.fullName))
+        logger.debug('{}._connectOutputs()'.format(self.longName))
 
         for sysJnt, outJnt in zip(self._sysJoints, self._outJoints):
             cmds.pointConstraint(sysJnt, outJnt, mo=True)
@@ -360,7 +365,7 @@ class Module(Container):
     def _connectSkeleton(self):
         """Connects to the skeleton joints and attributes.
         """
-        logger.debug('{}._connectSkeleton()'.format(self.fullName))
+        logger.debug('{}._connectSkeleton()'.format(self.longName))
 
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             utils.removeConnections(skelJnt)
@@ -370,9 +375,9 @@ class Module(Container):
             #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def _buildGlobalController(self):
-        logger.debug('{}._buildGlobalController()'.format(self.fullName))
+        logger.debug('{}._buildGlobalController()'.format(self.longName))
 
-        modGlobalCtrl = Controller('{}_global_ctrl'.format(self.fullName),
+        modGlobalCtrl = Controller('{}_global_ctrl'.format(self.shortName),
                                    Controller.SHAPE.CUBE,
                                    Controller.COLOR.LIGHTGREEN,
                                    utils.getDistance(self._initJoints[0], self._initJoints[-1]))
@@ -384,7 +389,7 @@ class Module(Container):
     def postBuild(self):
         """Run custom procedures.
         """
-        logger.debug('{}.postBuild()'.format(self.fullName))
+        logger.debug('{}.postBuild()'.format(self.longName))
         raise NotImplementedError()
 
     def attachTo(self, module):
@@ -393,7 +398,7 @@ class Module(Container):
         :param module: Other module.
         :type module: Module
         """
-        logger.debug('{}.attachTo()'.format(self.fullName))
+        logger.debug('{}.attachTo()'.format(self.longName))
 
         parentSpace = utils.findClosestObject(cmds.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints)
         cmds.matchTransform(self._topGrp, parentSpace, pivots=True)
@@ -405,7 +410,7 @@ class Module(Container):
     def delete(self):
         """Remove all nodes realted with a module.
         """
-        logger.debug('{}.delete()'.format(self.fullName))
+        logger.debug('{}.delete()'.format(self.longName))
 
         if self._outJoints:
             for outJnt in self._outJoints:

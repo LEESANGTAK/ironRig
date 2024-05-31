@@ -35,7 +35,7 @@ class FootIK(System):
 
     def _addBallJoint(self):
         ballJntPos = utils.getWorldPoint(self._joints[0]) + (utils.getWorldPoint(self._joints[1]) - utils.getWorldPoint(self._joints[0])) * 0.75
-        ballJnt = cmds.createNode('joint', n='{}_ball'.format(self.fullName))
+        ballJnt = cmds.createNode('joint', n='{}_ball'.format(self.longName))
         cmds.xform(ballJnt, t=list(ballJntPos)[:3], ws=True)
         cmds.matchTransform(ballJnt, self._joints[0], rotation=True)
         utils.makeHierarchy(self._joints[0], ballJnt, self._joints[1])
@@ -94,25 +94,25 @@ class FootIK(System):
                                    oriMtx[3][0], oriMtx[3][1], oriMtx[3][2], oriMtx[3][3]])
 
         # Build reverse foot joints
-        inBankRevJnt = cmds.createNode('joint', n='{}_inBank_revJnt'.format(self.fullName))
+        inBankRevJnt = cmds.createNode('joint', n='{}_inBank_revJnt'.format(self.longName))
         cmds.xform(inBankRevJnt, matrix=oriMtx, ws=True)
         cmds.xform(inBankRevJnt, t=list(bankInLocPnt)[:3], ws=True)
-        outBankRevJnt = cmds.createNode('joint', n='{}_outBank_revJnt'.format(self.fullName))
+        outBankRevJnt = cmds.createNode('joint', n='{}_outBank_revJnt'.format(self.longName))
         cmds.xform(outBankRevJnt, matrix=oriMtx, ws=True)
         cmds.xform(outBankRevJnt, t=list(bankOutLocPnt)[:3], ws=True)
-        heelRevJnt = cmds.createNode('joint', n='{}_heel_revJnt'.format(self.fullName))
+        heelRevJnt = cmds.createNode('joint', n='{}_heel_revJnt'.format(self.longName))
         cmds.xform(heelRevJnt, matrix=oriMtx, ws=True)
         cmds.xform(heelRevJnt, t=list(heelLocPnt)[:3], ws=True)
-        toeRevJnt = cmds.createNode('joint', n='{}_toe_revJnt'.format(self.fullName))
+        toeRevJnt = cmds.createNode('joint', n='{}_toe_revJnt'.format(self.longName))
         cmds.xform(toeRevJnt, matrix=oriMtx, ws=True)
         cmds.xform(toeRevJnt, t=(toePnt.x, toePnt.y, toePnt.z), ws=True)
-        toeTipRevJnt = cmds.createNode('joint', n='{}_toeTip_revJnt'.format(self.fullName))
+        toeTipRevJnt = cmds.createNode('joint', n='{}_toeTip_revJnt'.format(self.longName))
         cmds.xform(toeTipRevJnt, matrix=oriMtx, ws=True)
         cmds.xform(toeTipRevJnt, t=list(toeTipLocPnt)[:3], ws=True)
-        ballRevJnt = cmds.createNode('joint', n='{}_ball_revJnt'.format(self.fullName))
+        ballRevJnt = cmds.createNode('joint', n='{}_ball_revJnt'.format(self.longName))
         cmds.xform(ballRevJnt, matrix=oriMtx, ws=True)
         cmds.xform(ballRevJnt, t=list(ballPnt)[:3], ws=True)
-        ankleRevJnt = cmds.createNode('joint', n='{}_ankle_revJnt'.format(self.fullName))
+        ankleRevJnt = cmds.createNode('joint', n='{}_ankle_revJnt'.format(self.longName))
         cmds.xform(ankleRevJnt, matrix=oriMtx, ws=True)
         cmds.xform(ankleRevJnt, t=list(anklePnt)[:3], ws=True)
 
@@ -125,8 +125,8 @@ class FootIK(System):
         return revFootJoints
 
     def _createIKs(self):
-        ballIK = cmds.ikHandle(solver='ikSCsolver', n='{0}_ball_ikh'.format(self.fullName), startJoint=self._joints[0], ee=self._joints[1])[0]
-        toeIK = cmds.ikHandle(solver='ikSCsolver', n='{0}_toe_ikh'.format(self.fullName), startJoint=self._joints[1], ee=self._joints[2])[0]
+        ballIK = cmds.ikHandle(solver='ikSCsolver', n='{0}_ball_ikh'.format(self.longName), startJoint=self._joints[0], ee=self._joints[1])[0]
+        toeIK = cmds.ikHandle(solver='ikSCsolver', n='{0}_toe_ikh'.format(self.longName), startJoint=self._joints[1], ee=self._joints[2])[0]
 
         self._toeIKPivotTrsf = cmds.createNode('transform', n='{0}_pivot'.format(toeIK))
         cmds.matchTransform(self._toeIKPivotTrsf, self._joints[1])
@@ -136,7 +136,7 @@ class FootIK(System):
         cmds.parent(ballIK, self._revFootJoints[-2])
 
     def _buildControls(self):
-        self._footCtrl = Controller('{0}_ctrl'.format(self.fullName), Controller.SHAPE.FOOT, size=5, direction=Controller.DIRECTION.Y)
+        self._footCtrl = Controller('{0}_ctrl'.format(self.longName), Controller.SHAPE.FOOT, size=5, direction=Controller.DIRECTION.Y)
         jointsMidVec = (utils.getWorldVector(self._joints[0]) + utils.getWorldVector(self._joints[-1])) * 0.5
         cmds.xform(self._footCtrl.zeroGrp, t=[jointsMidVec.x, 0, jointsMidVec.z], ws=True)
         if self._negateScaleX:
@@ -165,7 +165,7 @@ class FootIK(System):
         toeTipJnt = self._revFootJoints[4]
         ballJnt = self._revFootJoints[5]
 
-        rollRemap = cmds.createNode('remapValue', n='{0}_roll_remap'.format(self.fullName))
+        rollRemap = cmds.createNode('remapValue', n='{0}_roll_remap'.format(self.longName))
         if self._isSingleBone:
             cmds.setAttr('{}.inputMax'.format(rollRemap), 0.1)
         else:
@@ -173,33 +173,33 @@ class FootIK(System):
         cmds.setAttr('{}.outputMin'.format(rollRemap), 1)
         cmds.setAttr('{}.outputMax'.format(rollRemap), 0)
 
-        rollBallClamp = cmds.createNode('clamp', n='{0}_roll_ball_clamp'.format(self.fullName))
+        rollBallClamp = cmds.createNode('clamp', n='{0}_roll_ball_clamp'.format(self.longName))
         cmds.setAttr('{}.maxR'.format(rollBallClamp), 90)
-        ballMult = cmds.createNode('multDoubleLinear', n='{0}_ball_mult'.format(self.fullName))
-        ballAdd = cmds.createNode('addDoubleLinear', n='{0}_ball_add'.format(self.fullName))
-        ballClamp = cmds.createNode('clamp', n='{0}_ball_clamp'.format(self.fullName))
+        ballMult = cmds.createNode('multDoubleLinear', n='{0}_ball_mult'.format(self.longName))
+        ballAdd = cmds.createNode('addDoubleLinear', n='{0}_ball_add'.format(self.longName))
+        ballClamp = cmds.createNode('clamp', n='{0}_ball_clamp'.format(self.longName))
         cmds.setAttr('{}.minR'.format(ballClamp), -90)
         cmds.setAttr('{}.maxR'.format(ballClamp), 90)
 
-        rollRev = cmds.createNode('reverse', n='{0}_roll_rev'.format(self.fullName))
-        toeTipMult = cmds.createNode('multDoubleLinear', n='{0}_toeTip_mult'.format(self.fullName))
-        toeTipAdd = cmds.createNode('addDoubleLinear', n='{0}_toeTip_add'.format(self.fullName))
-        toeTipClamp = cmds.createNode('clamp', n='{0}_toeTip_clamp'.format(self.fullName))
+        rollRev = cmds.createNode('reverse', n='{0}_roll_rev'.format(self.longName))
+        toeTipMult = cmds.createNode('multDoubleLinear', n='{0}_toeTip_mult'.format(self.longName))
+        toeTipAdd = cmds.createNode('addDoubleLinear', n='{0}_toeTip_add'.format(self.longName))
+        toeTipClamp = cmds.createNode('clamp', n='{0}_toeTip_clamp'.format(self.longName))
         cmds.setAttr('{}.minR'.format(toeTipClamp), -90)
         cmds.setAttr('{}.maxR'.format(toeTipClamp), 90)
 
-        rollHeelClamp = cmds.createNode('clamp', n='{0}_roll_heel_clamp'.format(self.fullName))
+        rollHeelClamp = cmds.createNode('clamp', n='{0}_roll_heel_clamp'.format(self.longName))
         cmds.setAttr('{}.minR'.format(rollHeelClamp), -90)
-        heelAdd = cmds.createNode('addDoubleLinear', n='{0}_heel_add'.format(self.fullName))
-        heelClamp = cmds.createNode('clamp', n='{0}_heel_clamp'.format(self.fullName))
+        heelAdd = cmds.createNode('addDoubleLinear', n='{0}_heel_add'.format(self.longName))
+        heelClamp = cmds.createNode('clamp', n='{0}_heel_clamp'.format(self.longName))
         cmds.setAttr('{}.minR'.format(heelClamp), -90)
         cmds.setAttr('{}.maxR'.format(heelClamp), 90)
 
-        bankInv = cmds.createNode('multDoubleLinear', n='{0}_bank_inv'.format(self.fullName))
+        bankInv = cmds.createNode('multDoubleLinear', n='{0}_bank_inv'.format(self.longName))
         cmds.setAttr('{}.input2'.format(bankInv), -1)
-        inBankClamp = cmds.createNode('clamp', n='{0}_inBank_clamp'.format(self.fullName))
+        inBankClamp = cmds.createNode('clamp', n='{0}_inBank_clamp'.format(self.longName))
         cmds.setAttr('{}.maxR'.format(inBankClamp), 90)
-        outBankClamp = cmds.createNode('clamp', n='{0}_outBank_clamp'.format(self.fullName))
+        outBankClamp = cmds.createNode('clamp', n='{0}_outBank_clamp'.format(self.longName))
         cmds.setAttr('{}.minR'.format(outBankClamp), -90)
 
         # Add dependency nodes to set

@@ -20,7 +20,7 @@ class Spine(Module):
 
     def _buildGroups(self):
         super(Spine, self)._buildGroups()
-        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self.fullName), empty=True)
+        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self.longName), empty=True)
         cmds.parent(self.__controllerGrp, self._topGrp)
 
     def build(self):
@@ -29,7 +29,7 @@ class Spine(Module):
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = SplineIK(self.fullName+'ik_', ikJoints, numControllers=4)
+        self.__ikSystem = SplineIK(self.longName+'ik_', ikJoints, numControllers=4)
         if self._negateScaleX:
             self.__ikSystem.negateScaleX = True
         self.__ikSystem.build()
@@ -37,7 +37,7 @@ class Spine(Module):
         self.__ikSystem.setupStretch()
         self.__ikSystem.setupHybridIK()
         self.__ikSystem.controllers[0].hide()
-        self.__ikSystem.controllers[-1].name = 'chest_ctrl'.format(self.fullName)
+        self.__ikSystem.controllers[-1].name = 'chest_ctrl'.format(self.longName)
         utils.removeConnections(self.__ikSystem.controllers[1].zeroGrp)
         for ctrl in self.__ikSystem.controllers[1:-1]:
             ctrl.shape = Controller.SHAPE.CIRCLE

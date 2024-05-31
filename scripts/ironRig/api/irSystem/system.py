@@ -29,11 +29,11 @@ class System(Container):
         self._createGroups()
 
     def _createGroups(self):
-        self._blbxGrp = cmds.createNode('transform', n='{}_blbx_grp'.format(self.fullName))
+        self._blbxGrp = cmds.createNode('transform', n='{}_blbx_grp'.format(self.longName))
         cmds.setAttr('{}.visibility'.format(self._blbxGrp), False)
-        self._noTrsfGrp = cmds.createNode('transform', n='{}_noTrsf_grp'.format(self.fullName))
+        self._noTrsfGrp = cmds.createNode('transform', n='{}_noTrsf_grp'.format(self.longName))
         cmds.setAttr('{}.inheritsTransform'.format(self._noTrsfGrp), False)
-        self._controllerGrp = cmds.createNode('transform', n='{}_ctrl_grp'.format(self.fullName))
+        self._controllerGrp = cmds.createNode('transform', n='{}_ctrl_grp'.format(self.longName))
 
         cmds.parent(self._noTrsfGrp, self._blbxGrp)
         cmds.parent(self._blbxGrp, self._controllerGrp, self._topGrp)
@@ -55,6 +55,10 @@ class System(Container):
     @property
     def joints(self):
         return self._joints
+
+    @joints.setter
+    def joints(self, joints):
+        self._joints = joints
 
     @property
     def controllers(self):
@@ -104,6 +108,8 @@ class System(Container):
         self._buildControls()
 
     def _getAimAxisInfo(self):
+        logger.debug('{}._getAimAxisInfo()'.format(self.longName))
+
         if len(self._joints) == 1:
             self._aimSign = 1
             self._aimAxis = 'Z'
@@ -111,7 +117,7 @@ class System(Container):
             self._aimSign, self._aimAxis = utils.getAimAxisInfo(self._joints[0], self._joints[1])
 
     def _buildSystems(self):
-        logger.debug('{}._buildSystems()'.format(self.fullName))
+        logger.debug('{}._buildSystems()'.format(self.longName))
 
         cmds.parent(self._joints[0], self._blbxGrp)
         cmds.matchTransform(self._topGrp, self._joints[0], pivots=True)

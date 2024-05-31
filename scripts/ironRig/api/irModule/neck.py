@@ -28,7 +28,7 @@ class Neck(Module):
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = SplineIK(self.fullName+'ik_', ikJoints, self.__numControllers)
+        self.__ikSystem = SplineIK(self.longName+'ik_', ikJoints, self.__numControllers)
         if self.__numControllers == 2:
             self.__ikSystem.curveDegree = SplineIK.CURVE_DEGREE.LINEAR
             self.__ikSystem.curveSpans = 1
@@ -46,7 +46,7 @@ class Neck(Module):
 
         self.__ikSystem.controllerShape = Controller.SHAPE.CIRCLE
         self.__ikSystem.controllers[-1].shape = Controller.SHAPE.CUBE
-        self.__ikSystem.controllers[-1].name = 'head_ctrl'.format(self.fullName)
+        self.__ikSystem.controllers[-1].name = 'head_ctrl'.format(self.longName)
 
         self._addSystems(self.__ikSystem)
         self._sysJoints = self.__ikSystem.joints
@@ -61,15 +61,15 @@ class Neck(Module):
         headCtrlLocalDecMtx.outputRotateX >> self.__ikSystem.ikHandle.twist
 
     def __setupNonroll(self):
-        nonrollGrp = cmds.createNode('transform', n='{}nonroll_grp'.format(self.fullName))
+        nonrollGrp = cmds.createNode('transform', n='{}nonroll_grp'.format(self.longName))
         nonrollGrp.hide()
         cmds.matchTransform(nonrollGrp, self.__ikSystem.joints[0], pivots=True)
 
-        nonrollJntStart = cmds.duplicate(self.__ikSystem.joints[0], n='{}nonroll_start'.format(self.fullName), po=True)[0]
-        nonrollJntEnd = cmds.duplicate(self.__ikSystem.joints[-1], n='{}nonroll_end'.format(self.fullName), po=True)[0]
+        nonrollJntStart = cmds.duplicate(self.__ikSystem.joints[0], n='{}nonroll_start'.format(self.longName), po=True)[0]
+        nonrollJntEnd = cmds.duplicate(self.__ikSystem.joints[-1], n='{}nonroll_end'.format(self.longName), po=True)[0]
         nonrollJntStart | nonrollJntEnd
 
-        nonrollIkh = cmds.ikHandle(startJoint=nonrollJntStart, endEffector=nonrollJntEnd, solver='ikRPsolver', n='{}nonroll_ikh'.format(self.fullName))[0]
+        nonrollIkh = cmds.ikHandle(startJoint=nonrollJntStart, endEffector=nonrollJntEnd, solver='ikRPsolver', n='{}nonroll_ikh'.format(self.longName))[0]
         for attrStr in ['poleVector' + axis for axis in 'XYZ']:
             nonrollIkh.attr(attrStr).set(0)
 

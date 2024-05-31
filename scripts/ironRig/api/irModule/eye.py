@@ -8,14 +8,22 @@ from .module import Module
 
 class Eye(Module):
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
-        super(Eye, self).__init__(name, side, skeletonJoints)
-
         self._aimSystem = None
         self._fkSystem = None
+        super(Eye, self).__init__(name, side, skeletonJoints)
 
     @property
     def aimSystem(self):
         return self._aimSystem
+
+    def _addSystems(self):
+        self._aimSystem = Aim(self._name, self._side)
+        self._systems.append(self._aimSystem)
+        self._fkSystem = FK(self._name, self._side)
+        if len(self._skelJoints) == 1:
+            self._fkSystem.endController = True
+        self._systems.append(self._fkSystem)
+        super(Eye, self)._addSystems()
 
     def preBuild(self):
         if len(self._skelJoints) == 1:
@@ -47,24 +55,15 @@ class Eye(Module):
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self._aimSystem = Aim(self._name, self._side, ikJoints)
-        if self._negateScaleX:
-            self._aimSystem.negateScaleX = True
-        self._aimSystem.build()
-        self._addSystems(self._aimSystem)
-
+        self._aimSystem.joints = ikJoints
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self._fkSystem = FK(self._name, self._side, fkJoints)
-        if self._negateScaleX:
-            self._fkSystem.negateScaleX = True
-        if len(self._skelJoints) == 1:
-            self._fkSystem.endController = True
-        self._fkSystem.build()
+        self._fkSystem.joints = fkJoints
+
+        super(Eye, self)._buildSystems()
+        self._sysJoints = self._fkSystem.joints
+
         shapeOffset = utils.getDistance(self._fkSystem.joints[0], self._fkSystem.joints[-1])*1.2 * (self._aimSystem.aimSign * utils.axisStrToVector(self._aimSystem.aimAxis))
         self._fkSystem.controllers[0].shapeOffset = shapeOffset
-        self._addSystems(self._fkSystem)
-
-        self._sysJoints = self._fkSystem.joints
 
     def _connectSystems(self):
         cmds.parentConstraint(self._aimSystem.joints[0], self._fkSystem.controllers[0].zeroGrp)

@@ -13,7 +13,7 @@ class Foot(Module):
     def __init__(self, prefix='', joints=[]):
         super(Foot, self).__init__(prefix, joints)
 
-        self.__pivotLocators = ['{}in_loc'.format(self.fullName), '{}out_loc'.format(self.fullName), '{}heel_loc'.format(self.fullName), '{}tip_loc'.format(self.fullName)]
+        self.__pivotLocators = ['{}in_loc'.format(self.longName), '{}out_loc'.format(self.longName), '{}heel_loc'.format(self.longName), '{}tip_loc'.format(self.longName)]
 
         self.__ikSystem = None
         self.__fkSystem = None
@@ -27,7 +27,7 @@ class Foot(Module):
         midInitSkelLoc = self._initSkelLocators[int(len(self._initSkelLocators)*0.5)]
         midLocPos = utils.getWorldPoint(midInitSkelLoc) + (om.MVector.kYaxisVector * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
 
-        midLoc = cmds.spaceLocator(n='{}mid_oriPlane_loc'.format(self.fullName))
+        midLoc = cmds.spaceLocator(n='{}mid_oriPlane_loc'.format(self.longName))
         midLoc.overrideEnabled.set(True)
         midLoc.overrideColor.set(6)
         cmds.xform(midLoc, t=midLocPos, ws=True)
@@ -51,19 +51,19 @@ class Foot(Module):
 
     def _buildGroups(self):
         super(Foot, self)._buildGroups()
-        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self.fullName), empty=True)
+        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self.longName), empty=True)
         cmds.parent(self.__controllerGrp, self._topGrp)
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = FootIK(self.fullName+'ik_', ikJoints, self.__pivotLocators)
+        self.__ikSystem = FootIK(self.longName+'ik_', ikJoints, self.__pivotLocators)
         if self._negateScaleX:
             self.__ikSystem.negateScaleX = True
         self.__ikSystem.build()
         self._addSystems(self.__ikSystem)
 
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self.fullName+'fk_', fkJoints)
+        self.__fkSystem = FK(self.longName+'fk_', fkJoints)
         if self._negateScaleX:
             self.__fkSystem.negateScaleX = True
         self.__fkSystem.build()
@@ -81,13 +81,13 @@ class Foot(Module):
         self._sysJoints = self.__blendJoints
 
     def __buildControls(self):
-        moduleCtrl = Controller('{}module_ctrl'.format(self.fullName), Controller.SHAPE.SPHERE)
+        moduleCtrl = Controller('{}module_ctrl'.format(self.longName), Controller.SHAPE.SPHERE)
         moduleCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'])
         cmds.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         cmds.parentConstraint(self.__blendJoints[1], moduleCtrl.zeroGrp, mo=False)
         moduleCtrl.shapeOffset = [0, self._aimSign*10, 0]
 
-        fkIkRev = cmds.createNode('Foot', n='{}fkIk_rev'.format(self.fullName))
+        fkIkRev = cmds.createNode('Foot', n='{}fkIk_rev'.format(self.longName))
         moduleCtrl.ik >> self.__ikSystem.topGrp.visibility
         moduleCtrl.ik >> fkIkRev.inputX
         fkIkRev.outputX >> self.__fkSystem.topGrp.visibility
