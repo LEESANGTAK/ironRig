@@ -19,8 +19,8 @@ class FootIK(System):
         {'name': 'bank', 'default': 0, 'min': -90, 'max': 90}
     ]
 
-    def __init__(self, name='new', side=System.SIDE.CENTER, type=System.TYPE.FOOTIK_SYSTEM, joints=[], pivotLocators=[]):
-        super(FootIK, self).__init__(name, side, type, joints)
+    def __init__(self, name='new', side=System.SIDE.CENTER, joints=[], pivotLocators=[]):
+        super(FootIK, self).__init__(name, side, System.TYPE.FOOTIK_SYSTEM, joints)
 
         self._isSingleBone = False  # In case of horse, elephant
         self._origJoints = None

@@ -4,6 +4,13 @@ from ... import utils
 from ..irGlobal import Container
 from ..irGlobal import Controller
 from ..irSystem import TwoBoneIK
+from ...common import logger
+
+
+PLUGIN_NAME = 'orientPlane'
+if not cmds.pluginInfo(PLUGIN_NAME, q=True, loaded=True):
+    cmds.loadPlugin(PLUGIN_NAME)
+
 
 
 class Module(Container):
@@ -11,15 +18,14 @@ class Module(Container):
     Module contains geometry, initial joints, systems(IK|FK|Spline etc...), controllers, outputs.
     Module controller controls systems relationship.
     """
-    def __init__(self, prefix='', skeletonJoints=None):
-        super(Module, self).__init__(prefix)
+    def __init__(self, name='new', side=Container.SIDE.CENTER, skeletonJoints=[]):
+        super(Module, self).__init__(name, side, Container.TYPE.MODULE)
 
         self._geoGrp = None
         self._outGrp = None
         self._systemGrp = None
 
         self._skelJoints = skeletonJoints
-        self._skelJoints.sort(key=lambda jnt: len(jnt.getAllParents()))
         self._initSkelLocators = None
         self._oriPlaneLocators = None
         self._orientPlane = None
@@ -33,12 +39,12 @@ class Module(Container):
         self._systems = []
         self._controllers = []
 
-        self.__globalController = False
+        self._globalController = False
 
         self._controllerSize = 1
         self._controllerColor = Controller.COLOR.YELLOW
 
-        self.__master = None
+        self._master = None
 
     @property
     def skelJoints(self):
@@ -58,11 +64,11 @@ class Module(Container):
 
     @property
     def globalController(self):
-        return self.__globalController
+        return self._globalController
 
     @globalController.setter
     def globalController(self, val):
-        self.__globalController = val
+        self._globalController = val
 
     @property
     def outJoints(self):
@@ -79,6 +85,8 @@ class Module(Container):
     @controllerSize.setter
     def controllerSize(self, size):
         self._controllerSize = size
+        for ctrl in self._allControllers():
+            ctrl.size = self._controllerSize
 
     @property
     def controllerColor(self):
@@ -87,18 +95,21 @@ class Module(Container):
     @controllerColor.setter
     def controllerColor(self, color):
         self._controllerColor = color
+        for ctrl in self._allControllers():
+            ctrl.color = self._controllerColor
 
     @property
     def master(self):
-        return self.__master
+        return self._master
 
     @master.setter
     def master(self, master):
-        self.__master = master
+        self._master = master
 
     def preBuild(self):
-        """Build initial joints and objects(locator, mesh, ...) from skeleton joints.
+        """Build initialize objects.
         """
+        self._skelJoints.sort(key=lambda jnt: len(utils.getAllParents(jnt)))
         self._buildGroups()
         self._buildInitSkelLocators()
         self._buildOrientPlane()
@@ -110,52 +121,47 @@ class Module(Container):
     def _buildGroups(self):
         """Build groups that module's child groups.
         """
-        self._topGrp.rename('{}module'.format(self._name))
-        self._geoGrp = cmds.group(n='{}geo_grp'.format(self._name), empty=True)
-        self._initGrp = cmds.group(n='{}init_grp'.format(self._name), empty=True)
-        self._outGrp = cmds.group(n='{}out_grp'.format(self._name), empty=True)
-        self._systemGrp = cmds.group(n='{}sys_grp'.format(self._name), empty=True)
+        self._geoGrp = cmds.group(n='{}_geo_grp'.format(self.fullName), empty=True)
+        self._initGrp = cmds.group(n='{}_init_grp'.format(self.fullName), empty=True)
+        self._outGrp = cmds.group(n='{}_out_grp'.format(self.fullName), empty=True)
+        self._systemGrp = cmds.group(n='{}_sys_grp'.format(self.fullName), empty=True)
         cmds.parent([self._geoGrp, self._initGrp, self._outGrp, self._systemGrp], self._topGrp)
 
     def _buildInitSkelLocators(self):
         initSkelLocs = []
         for skelJnt in self._skelJoints:
-            initSkelLoc = cmds.spaceLocator(n='{}init_{}_loc'.format(self._name, skelJnt))
+            initSkelLoc = cmds.spaceLocator(n='{}_init_{}_loc'.format(self.fullName, skelJnt))[0]
             cmds.matchTransform(initSkelLoc, skelJnt, position=True, rotation=True)
-            initSkelLoc.hide()
+            cmds.hide(initSkelLoc)
             initSkelLocs.append(initSkelLoc)
         self._initSkelLocators = initSkelLocs
         cmds.parent(self._initSkelLocators, self._initGrp)
 
     def _buildOrientPlane(self):
-        pluginName = 'orientPlane'
-        if not cmds.pluginInfo(pluginName, q=True, loaded=True):
-            cmds.loadPlugin(pluginName)
-
-        self._orientPlane = cmds.createNode(pluginName, n='{}orientPlane'.format(self._name))
+        self._orientPlane = cmds.createNode('orientPlane', n='{}_orientPlane'.format(self.fullName))
         self.addMembers(self._orientPlane)
 
-        startLoc = cmds.spaceLocator(n='{}start_oriPlane_loc'.format(self._name))
+        startLoc = cmds.spaceLocator(n='{}_start_oriPlane_loc'.format(self.fullName))[0]
         cmds.matchTransform(startLoc, self._initSkelLocators[0], position=True)
         midLoc = self._createMidLocator()
-        endLoc = cmds.spaceLocator(n='{}end_oriPlane_loc'.format(self._name))
+        endLoc = cmds.spaceLocator(n='{}_end_oriPlane_loc'.format(self.fullName))[0]
         cmds.matchTransform(endLoc, self._initSkelLocators[-1], position=True)
         self._oriPlaneLocators = [startLoc, midLoc, endLoc]
         cmds.parent(self._oriPlaneLocators, self._initGrp)
         for oriPlaneLoc in self._oriPlaneLocators:
             utils.makeGroup(oriPlaneLoc, '{}_zero'.format(oriPlaneLoc))
 
-        startLoc.worldPosition >> self._orientPlane.planePoint01
-        midLoc.worldPosition >> self._orientPlane.planePoint02
-        endLoc.worldPosition >> self._orientPlane.planePoint03
+        cmds.connectAttr('{}.worldPosition'.format(startLoc), '{}.planePoint01'.format(self._orientPlane))
+        cmds.connectAttr('{}.worldPosition'.format(midLoc), '{}.planePoint02'.format(self._orientPlane))
+        cmds.connectAttr('{}.worldPosition'.format(endLoc), '{}.planePoint03'.format(self._orientPlane))
 
-        startToMidLine = Module.__buildOriPlaneLine('{}startToMid_oriPlane_line'.format(self._name), startLoc, midLoc)
-        midToEndLine = Module.__buildOriPlaneLine('{}midToEnd_oriPlane_line'.format(self._name), midLoc, endLoc)
-        endToStartLine = Module.__buildOriPlaneLine('{}endToStart_oriPlane_line'.format(self._name), endLoc, startLoc)
+        startToMidLine = Module._buildOriPlaneLine('{}_startToMid_oriPlane_line'.format(self.fullName), startLoc, midLoc)
+        midToEndLine = Module._buildOriPlaneLine('{}_midToEnd_oriPlane_line'.format(self.fullName), midLoc, endLoc)
+        endToStartLine = Module._buildOriPlaneLine('{}_endToStart_oriPlane_line'.format(self.fullName), endLoc, startLoc)
         cmds.parent([startToMidLine, midToEndLine, endToStartLine], self._initGrp)
 
         for index, initSkelLoc in enumerate(self._initSkelLocators):
-            initSkelLoc.worldPosition >> self._orientPlane.initPoints[index]
+            cmds.connectAttr('{}.worldPosition'.format(initSkelLoc), '{}.initPoints[{}]'.format(self._orientPlane, index))
 
     def _createMidLocator(self):
         midLoc = None
@@ -164,7 +170,7 @@ class Module(Container):
         if len(self._initSkelLocators) <= 2:
             midOriPlaneLocVector = om.MVector.kZaxisVector
             if utils.isParallel(aimVector, midOriPlaneLocVector):
-                midOriPlaneLocVector = om.MVector.kXnegAxisVector
+                midOriPlaneLocVector = om.MVector.kYaxisVector
             midLocPos = utils.getWorldPoint(self._initSkelLocators[0]) + (midOriPlaneLocVector * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
         else:
             midInitSkelLoc = self._initSkelLocators[int(len(self._initSkelLocators)*0.5)]
@@ -172,32 +178,32 @@ class Module(Container):
             if utils.isParallel(aimVector, midOriPlaneLocVector) or round(midOriPlaneLocVector.length()) == 0.0:
                 midOriPlaneLocVector = om.MVector.kZaxisVector
                 if self.__class__.__name__ == 'String':
-                    midOriPlaneLocVector = om.MVector.kXaxisVector
+                    midOriPlaneLocVector = om.MVector.kYaxisVector
             midLocPos = utils.getWorldPoint(midInitSkelLoc) + (midOriPlaneLocVector.normal() * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
 
-        midLoc = cmds.spaceLocator(n='{}mid_oriPlane_loc'.format(self._name))
-        midLoc.overrideEnabled.set(True)
-        midLoc.overrideColor.set(6)
-        cmds.xform(midLoc, t=midLocPos, ws=True)
+        midLoc = cmds.spaceLocator(n='{}_mid_oriPlane_loc'.format(self.fullName))[0]
+        cmds.setAttr('{}.overrideEnabled'.format(midLoc), True)
+        cmds.setAttr('{}.overrideColor'.format(midLoc), 14)
+        cmds.xform(midLoc, t=list(midLocPos)[:3], ws=True)
 
         negAxisAttrNames = ['negateXAxis', 'negateZAxis', 'swapYZAxis']
         for attrName in negAxisAttrNames:
             cmds.addAttr(midLoc, ln=attrName, at='bool', dv=False, keyable=True)
-            midLoc.attr(attrName) >> self._orientPlane.attr(attrName)
+            cmds.connectAttr('{}.{}'.format(midLoc, attrName), '{}.{}'.format(self._orientPlane, attrName))
 
         return midLoc
 
     @staticmethod
-    def __buildOriPlaneLine(name, oriPlaneLoc1, oriPlaneLoc2):
+    def _buildOriPlaneLine(name, oriPlaneLoc1, oriPlaneLoc2):
         line = None
 
         line = cmds.curve(n=name, d=1, p=[(0, 0, 0), (0, 1, 0)])
-        line.inheritsTransform.set(False)
-        line.overrideEnabled.set(True)
-        line.overrideDisplayType.set(2)
+        cmds.setAttr('{}.inheritsTransform'.format(line), False)
+        cmds.setAttr('{}.overrideEnabled'.format(line), True)
+        cmds.setAttr('{}.overrideDisplayType'.format(line), 2)
 
-        oriPlaneLoc1.worldPosition >> line.controlPoints[0]
-        oriPlaneLoc2.worldPosition >> line.controlPoints[1]
+        cmds.connectAttr('{}.worldPosition'.format(oriPlaneLoc1), '{}.controlPoints[0]'.format(line))
+        cmds.connectAttr('{}.worldPosition'.format(oriPlaneLoc2), '{}.controlPoints[1]'.format(line))
 
         return line
 
@@ -205,51 +211,51 @@ class Module(Container):
         initJoints = []
         for index, initSkelLoc in enumerate(self._initSkelLocators):
             initJnt = cmds.createNode('joint', n=initSkelLoc.replace('_loc', ''))
-            initJnt.segmentScaleCompensate.set(False)
-            initJnt.displayLocalAxis.set(True)
-            self._initGrp | initJnt
+            cmds.setAttr('{}.segmentScaleCompensate'.format(initJnt), False)
+            cmds.setAttr('{}.displayLocalAxis'.format(initJnt), True)
+            cmds.parent(initJnt, self._initGrp)
             initJoints.append(initJnt)
 
         utils.makeHierarchy(initJoints)
 
         for index, initJnt in enumerate(initJoints):
             if index == 0:
-                parentMatrixAttr = self._initGrp.worldMatrix
+                parentMatrixAttr = '{}.worldMatrix'.format(self._initGrp)
             else:
-                parentMatrixAttr = self._orientPlane.outMatrices[index-1]
-            curOutMtxAttr = self._orientPlane.outMatrices[index]
-            parentInvMtx = cmds.createNode('inverseMatrix', n='{}invMtx'.format(utils.getCleanName(parentMatrixAttr.name())))
-            multMtx = cmds.createNode('multMatrix', n='{}local_multMtx'.format(utils.getCleanName(curOutMtxAttr.name())))
-            decMtx = cmds.createNode('decomposeMatrix', n='{}decMtx'.format(utils.getCleanName(curOutMtxAttr.name())))
+                parentMatrixAttr = '{}.outMatrices[{}]'.format(self._orientPlane, index-1)
+            curOutMtxAttr = '{}.outMatrices[{}]'.format(self._orientPlane, index)
+            parentInvMtx = cmds.createNode('inverseMatrix', n='{}invMtx'.format(utils.getCleanName(parentMatrixAttr)))
+            multMtx = cmds.createNode('multMatrix', n='{}local_multMtx'.format(utils.getCleanName(curOutMtxAttr)))
+            decMtx = cmds.createNode('decomposeMatrix', n='{}decMtx'.format(utils.getCleanName(curOutMtxAttr)))
             self.addMembers(parentInvMtx, multMtx, decMtx)
 
-            parentMatrixAttr >> parentInvMtx.inputMatrix
-            curOutMtxAttr >> multMtx.matrixIn[0]
-            parentInvMtx.outputMatrix >> multMtx.matrixIn[1]
-            multMtx.matrixSum >> decMtx.inputMatrix
+            cmds.connectAttr(parentMatrixAttr, '{}.inputMatrix'.format(parentInvMtx))
+            cmds.connectAttr(curOutMtxAttr, '{}.matrixIn[0]'.format(multMtx))
+            cmds.connectAttr('{}.outputMatrix'.format(parentInvMtx), '{}.matrixIn[1]'.format(multMtx))
+            cmds.connectAttr('{}.matrixSum'.format(multMtx), '{}.inputMatrix'.format(decMtx))
 
-            decMtx.outputTranslate >> initJnt.translate
-            decMtx.outputRotate >> initJnt.jointOrient
-            decMtx.outputScale >> initJnt.scale
+            cmds.connectAttr('{}.outputTranslate'.format(decMtx), '{}.translate'.format(initJnt))
+            cmds.connectAttr('{}.outputRotate'.format(decMtx), '{}.jointOrient'.format(initJnt))
+            cmds.connectAttr('{}.outputScale'.format(decMtx), '{}.scale'.format(initJnt))
 
         self._initJoints = initJoints
 
     def symmeterizeGuide(self):
-        searchStr = '_R'
-        replaceStr = '_L'
-        if '_L' in self._name:
-            searchStr = '_L'
-            replaceStr = '_R'
+        searchStr = '_r_'
+        replaceStr = '_l_'
+        if '_l_' in self.fullName:
+            searchStr = '_l_'
+            replaceStr = '_r_'
 
         for loc in self._oriPlaneLocators:
             symLoc = loc.replace(searchStr, replaceStr)
-            symLocPos = symLoc.getTranslation(space='world')
-            loc.setTranslation((-symLocPos[0], symLocPos[1], symLocPos[2]), space='world')
+            symLocPos = cmds.xform(symLoc, t=True, ws=True)
+            cmds.xform(loc, t=(-symLocPos[0], symLocPos[1], symLocPos[2]), ws=True)
 
     def build(self):
         """Build module with joints and objects from the initialize step.
         """
-        self.__cleanupSkelJoints()
+        self._cleanupSkelJoints()
         if not self._initJoints:
             self._buildGroups()
             self._buildInitJointsWithSkelJoints()
@@ -261,26 +267,29 @@ class Module(Container):
         self._connectSkeleton()
         cmds.matchTransform(self._topGrp, self._skelJoints[0], pivots=True)
 
-        if self.__globalController:
-            self.__buildGlobalController()
+        if self._globalController:
+            self._buildGlobalController()
 
-        self._initGrp.hide()
-        self._geoGrp.hide()
-        self._outGrp.hide()
+        cmds.hide(self._initGrp)
+        cmds.hide(self._geoGrp)
+        cmds.hide(self._outGrp)
 
-    def __cleanupSkelJoints(self):
-        limitAttrs = ['scaleMinX', 'scaleMaxX', 'scaleMinY', 'scaleMaxY', 'scaleMinZ', 'scaleMaxZ',
-                      'shearMinXY', 'shearMaxXY', 'shearMinXZ', 'shearMaxXZ', 'shearMinYZ', 'shearMaxYZ',
-                      'rotateMinX', 'rotateMaxX', 'rotateMinY', 'rotateMaxY', 'rotateMinZ', 'rotateMaxZ',
-                      'translateMinX', 'translateMaxX', 'translateMinY', 'translateMaxY', 'translateMinZ', 'translateMaxZ']
+    def _cleanupSkelJoints(self):
+        # Disalbe transform limits
         for skelJnt in self._skelJoints:
-            for attr in limitAttrs:
-                skelJnt.setLimited(attr, False)
+            cmds.transformLimits(
+                skelJnt,
+                etx=(False, False), ety=(False, False), etz=(False, False),
+                erx=(False, False), ery=(False, False), erz=(False, False),
+                esx=(False, False), esy=(False, False), esz=(False, False),
+            )
 
     def _buildInitJointsWithSkelJoints(self):
+        logger.debug('{}._buildInitJointsWithSkelJoints()'.format(self.fullName))
+
         initJoints = []
         for skelJnt in self._skelJoints:
-            initJnt = cmds.createNode('joint', n='{}init_{}'.format(self._name, skelJnt))
+            initJnt = cmds.createNode('joint', n='{}_init_{}'.format(self.fullName, skelJnt))
             cmds.matchTransform(initJnt, skelJnt, position=True, rotation=True)
             initJoints.append(initJnt)
 
@@ -301,25 +310,31 @@ class Module(Container):
     def _buildSystems(self):
         """Create systems and set systems state.
         """
+        logger.debug('{}._buildSystems()'.format(self.fullName))
+
         raise NotImplementedError()
 
-    def addSystems(self, *args):
+    def _addSystems(self, *args):
         """Add systems to a module.
         """
         systems = sum([system if isinstance(system, list) else [system] for system in args], [])
         for system in systems:
-            self.set.forceElement(system.set)
+            cmds.sets(system.set, forceElement=self.set)
             cmds.parent(system.topGrp, self._systemGrp)
         self._systems.extend(systems)
 
     def _connectSystems(self):
         """Connects systems of a module.
         """
+        logger.debug('{}._connectSystems()'.format(self.fullName))
+
         raise NotImplementedError()
 
     def _buildOutputs(self):
         """Build output joints and attributes.
         """
+        logger.debug('{}._buildOutputs()'.format(self.fullName))
+
         # Output joints
         self._outJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='out')
         utils.parentKeepHierarchy(self._outJoints, self._outGrp)
@@ -329,20 +344,24 @@ class Module(Container):
     def _connectOutputs(self):
         """Connects system joints and attributes to the output joints and attributes of a module.
         """
+        logger.debug('{}._connectOutputs()'.format(self.fullName))
+
         for sysJnt, outJnt in zip(self._sysJoints, self._outJoints):
             cmds.pointConstraint(sysJnt, outJnt, mo=True)
             cmds.orientConstraint(sysJnt, outJnt, mo=True)
 
             scaleMult = cmds.createNode('multiplyDivide', n='{}_scale_mult'.format(outJnt))
-            sysJnt.scale >> scaleMult.input1
-            self._topGrp.scale >> scaleMult.input2
+            cmds.connectAttr('{}.scale'.format(sysJnt), '{}.input1'.format(scaleMult))
+            cmds.connectAttr('{}.scale'.format(self._topGrp), '{}.input2'.format(scaleMult))
             for axis in 'XYZ':
-                scaleMult.attr('output'+axis) >> outJnt.attr('scale'+axis)
+                cmds.connectAttr('{}.{}'.format(scaleMult, 'output'+axis), '{}.{}'.format(outJnt, 'scale'+axis))
             self.addMembers(scaleMult)
 
     def _connectSkeleton(self):
         """Connects to the skeleton joints and attributes.
         """
+        logger.debug('{}._connectSkeleton()'.format(self.fullName))
+
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             utils.removeConnections(skelJnt)
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
@@ -350,28 +369,23 @@ class Module(Container):
             # for axis in 'XYZ':
             #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
-    def __buildGlobalController(self):
-        modGlobalCtrl = Controller('{}global_ctrl'.format(self._name),
+    def _buildGlobalController(self):
+        logger.debug('{}._buildGlobalController()'.format(self.fullName))
+
+        modGlobalCtrl = Controller('{}_global_ctrl'.format(self.fullName),
                                    Controller.SHAPE.CUBE,
                                    Controller.COLOR.LIGHTGREEN,
                                    utils.getDistance(self._initJoints[0], self._initJoints[-1]))
         cmds.matchTransform(modGlobalCtrl.zeroGrp, self._initJoints[0], position=True, rotation=True)
         modGlobalCtrl.lockHideChannels(['scale', 'visibility'], 'XYZ')
-        self._topGrp | modGlobalCtrl.zeroGrp
+        cmds.parent(modGlobalCtrl.zeroGrp, self._topGrp)
         cmds.parent([self._geoGrp, self._initGrp, self._outGrp, self._systemGrp], modGlobalCtrl)
 
     def postBuild(self):
-        """Edit controllers states of color and shape.
+        """Run custom procedures.
         """
-        allCtrls = []
-        for system in self._systems:
-            allCtrls.extend(system.controllers)
-        for ctrl in self._controllers:
-            allCtrls.append(ctrl)
-
-        for ctrl in allCtrls:
-            ctrl.color = self._controllerColor
-            ctrl.size = self._controllerSize
+        logger.debug('{}.postBuild()'.format(self.fullName))
+        raise NotImplementedError()
 
     def attachTo(self, module):
         """Attach a module to the other module.
@@ -379,36 +393,48 @@ class Module(Container):
         :param module: Other module.
         :type module: Module
         """
+        logger.debug('{}.attachTo()'.format(self.fullName))
+
         parentSpace = utils.findClosestObject(cmds.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints)
         cmds.matchTransform(self._topGrp, parentSpace, pivots=True)
         utils.removeConnections(self._topGrp)
         cmds.parentConstraint(parentSpace, self._topGrp, mo=True)
         if module.__class__.__name__ != 'Spine':
-            parentSpace.scale >> self._topGrp.scale
+            cmds.connectAttr('{}.scale'.format(parentSpace), '{}.scale'.format(self._topGrp))
 
     def delete(self):
         """Remove all nodes realted with a module.
         """
+        logger.debug('{}.delete()'.format(self.fullName))
+
         if self._outJoints:
             for outJnt in self._outJoints:
                 for attrStr in 'trs':
-                    outJnt.attr(attrStr).disconnect()
+                    utils.disconnectAttr('{}.{}'.format(outJnt, attrStr))
 
             attrs = [ch + axis for ch in 'trs' for axis in 'xyz']
             for outJnt in self._outJoints:
                 for attrStr in attrs:
-                    outJnt.attr(attrStr).disconnect()
+                    utils.disconnectAttr('{}.{}'.format(outJnt, attrStr))
 
             for skelJnt in self._skelJoints:
-                skelJnt.scale.set(1.0, 1.0, 1.0)
+                cmds.setAttr('{}.scale'.format(skelJnt), 1.0, 1.0, 1.0)
 
         if self._systems:
             for system in self._systems:
-                system.remove()
+                system.delete()
 
         self._systems = []
         self._controllers = []
         super(Module, self).delete()
 
-        if self.__master:
-            self.__master.removeModules(self)
+        if self._master:
+            self._master.removeModules(self)
+
+    def _allControllers(self):
+        allCtrls = []
+        for system in self._systems:
+            allCtrls.extend(system.controllers)
+        for ctrl in self._controllers:
+            allCtrls.append(ctrl)
+        return allCtrls

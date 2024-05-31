@@ -101,9 +101,9 @@ class String(Module):
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
         if self.__ikType == String.IK_TYPE.SPLINE:
-            self.__ikSystem = SplineIK(self._name+'ik_', ikJoints, self.__numberOfControllers)
+            self.__ikSystem = SplineIK(self.fullName+'ik_', ikJoints, self.__numberOfControllers)
             if self._negateScaleX:
-                self.__ikSystem.negateSclaeX = True
+                self.__ikSystem.negateScaleX = True
             self.__ikSystem.build()
             self.__ikSystem.setupAdvancedTwist()
             self.__ikSystem.setupStretch()
@@ -114,23 +114,23 @@ class String(Module):
             if self.__dynamic:
                 self.__ikSystem.setupDynamic()
         elif self.__ikType == String.IK_TYPE.RIBBON:
-            self.__ikSystem = RibbonIK(self._name+'ik_', ikJoints, self.__numberOfControllers)
+            self.__ikSystem = RibbonIK(self.fullName+'ik_', ikJoints, self.__numberOfControllers)
             if self._negateScaleX:
-                self.__ikSystem.negateSclaeX = True
+                self.__ikSystem.negateScaleX = True
             self.__ikSystem.build()
             if self.__hybridIK:
                 self.__ikSystem.setupHybridIK()
             if self.__wave:
                 self.__ikSystem.setupWave()
-        self.addSystems(self.__ikSystem)
+        self._addSystems(self.__ikSystem)
 
         if self.__fk:
             fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-            self.__fkSystem = FK(self._name+'fk_', fkJoints)
+            self.__fkSystem = FK(self.fullName+'fk_', fkJoints)
             if self._negateScaleX:
-                self.__fkSystem.negateSclaeX = True
+                self.__fkSystem.negateScaleX = True
             self.__fkSystem.build()
-            self.addSystems(self.__fkSystem)
+            self._addSystems(self.__fkSystem)
 
     def _connectSystems(self):
         if self.__fk:
@@ -143,7 +143,7 @@ class String(Module):
                 blendCnst = cmds.parentConstraint(ikJnt, fkJnt, blendJnt, mo=True)
                 blendCnst.interpType.set(2)
                 blendCnsts.append(blendCnst)
-                scaleChoice = cmds.createNode('choice', n='{0}scale_choice'.format(self._name))
+                scaleChoice = cmds.createNode('choice', n='{0}scale_choice'.format(self.fullName))
                 scaleChoices.append(scaleChoice)
                 fkJnt.scale >> scaleChoice.input[0]
                 ikJnt.scale >> scaleChoice.input[1]
@@ -164,7 +164,7 @@ class String(Module):
                 cmds.loadPlugin('multiRemapValue')
             numCoilJnts = len(self.__coilJoints) - 1  # Subtract 1 from the number of coil joints to skip end joint
             endIndex = numCoilJnts - 1
-            multRemapVal = cmds.createNode('multiRemapValue', n='{}coil_multRemap'.format(self._name))
+            multRemapVal = cmds.createNode('multiRemapValue', n='{}coil_multRemap'.format(self.fullName))
             multRemapVal.inputMin.set(endIndex)
             multRemapVal.inputMax.set(endIndex)
             multRemapVal.outputMax.set(-100)
@@ -194,7 +194,7 @@ class String(Module):
             cmds.addAttr(baseCtrl, ln=coilAttrName, at='float', min=0.0, max=1.0, dv=0.0, keyable=True)
             for ctrl in otherCtrls:
                 cmds.addAttr(ctrl, ln=coilAttrName, proxy='{0}.{1}'.format(baseCtrl, coilAttrName))
-            coilAttrRemap = cmds.createNode('remapValue', n='{}coil_remap'.format(self._name))
+            coilAttrRemap = cmds.createNode('remapValue', n='{}coil_remap'.format(self.fullName))
             coilAttrRemap.outputMin.set(endIndex)
             coilAttrRemap.outputMax.set(0.0)
             baseCtrl.coil >> coilAttrRemap.inputValue
@@ -219,7 +219,7 @@ class String(Module):
             for ctrl in otherCtrls:
                 cmds.addAttr(ctrl, ln=ikAttrName, proxy='{0}.{1}'.format(baseCtrl, ikAttrName))
 
-            fkIkRev = cmds.createNode('reverse', n='{}fkIk_rev'.format(self._name))
+            fkIkRev = cmds.createNode('reverse', n='{}fkIk_rev'.format(self.fullName))
             baseCtrl.ik >> self.__ikSystem.topGrp.visibility
             baseCtrl.ik >> fkIkRev.inputX
             fkIkRev.outputX >> self.__fkSystem.topGrp.visibility

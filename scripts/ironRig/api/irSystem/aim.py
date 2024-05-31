@@ -6,8 +6,8 @@ from ... import utils
 
 
 class Aim(System):
-    def __init__(self, name='new', side=System.SIDE.CENTER, type=System.TYPE.AIM_SYSTEM, joints=[]):
-        super(Aim, self).__init__(name, side, type, joints)
+    def __init__(self, name='new', side=System.SIDE.CENTER, joints=[]):
+        super(Aim, self).__init__(name, side, System.TYPE.AIM_SYSTEM, joints)
 
         self._isSingleJoint = False
         self._origJoints = None

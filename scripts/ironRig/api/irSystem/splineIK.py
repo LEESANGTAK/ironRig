@@ -18,8 +18,8 @@ class SplineIK(System):
     CURVE_DEGREE = CurveDegree
     DYNAMIC_LOCK = DynLock
 
-    def __init__(self, name='new', side=System.SIDE.CENTER, type=System.TYPE.SPLINE_SYSTEM, joints=[], numControllers=2):
-        super(SplineIK, self).__init__(name, side, type, joints)
+    def __init__(self, name='new', side=System.SIDE.CENTER, joints=[], numControllers=2):
+        super(SplineIK, self).__init__(name, side, System.TYPE.SPLINE_SYSTEM, joints)
         self._numControllers = numControllers
         self._curve = None
         self._curveDegree = SplineIK.CURVE_DEGREE.CUBIC

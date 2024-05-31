@@ -73,16 +73,16 @@ class Simple(Module):
     def _buildSystems(self):
         if self.__type == Simple.TYPE.FK:
             fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-            self.__system = FK(self._name+'fk_', fkJoints)
+            self.__system = FK(self.fullName+'fk_', fkJoints)
         elif self.__type == Simple.TYPE.SINGLE:
             singleJoints = utils.buildNewJoints(self._initJoints, searchStr='init', replaceStr='sg')
-            self.__system = Single(self._name+'sg_', singleJoints)
+            self.__system = Single(self.fullName+'sg_', singleJoints)
 
         if self._negateScaleX:
-            self.__system.negateSclaeX = True
+            self.__system.negateScaleX = True
 
         self.__system.build()
-        self.addSystems(self.__system)
+        self._addSystems(self.__system)
         self._sysJoints = self.__system.joints
 
     def _connectSystems(self):

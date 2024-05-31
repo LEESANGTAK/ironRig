@@ -19,13 +19,13 @@ class FingersMaster(Master):
         cmds.delete(tempLoc)
 
     def _buildControls(self):
-        masterCtrl = Controller('{}ctrl'.format(self._name), Controller.SHAPE.CUBE, Controller.COLOR.GREEN)
+        masterCtrl = Controller('{}ctrl'.format(self.fullName), Controller.SHAPE.CUBE, Controller.COLOR.GREEN)
         masterCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
         masterCtrl.shapeOffset = [0, 5, 0]
         for module in self._modules:
             attrStr = module.prefix.split('_')[0]
             cmds.addAttr(masterCtrl, ln='{}_curl'.format(attrStr), at='double', dv=0.0, keyable=True)
-            for fkCtrl in module.fkSystem().controllers:
+            for fkCtrl in module.fkSystem.controllers:
                 masterCtrl.attr('{}_curl'.format(attrStr)) >> fkCtrl.extraGrp.rotateZ
 
         cmds.xform(masterCtrl.zeroGrp, t=self._getModulesCenter(), ws=True)

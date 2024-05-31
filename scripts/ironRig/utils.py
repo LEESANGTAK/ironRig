@@ -19,11 +19,14 @@ def makeHierarchy(*args):
 def parentKeepHierarchy(childObjects, parentObject):
     if not isinstance(childObjects, list):
         childObjects = [childObjects]
-    childObjects = childObjects
 
     parentInfo = {}
     for childObj in childObjects:
-        parentInfo[childObj] = cmds.listRelatives(childObj, p=True)[0]
+        parent = cmds.listRelatives(childObj, p=True)
+        if parent:
+            parentInfo[childObj] = parent[0]
+        else:
+            parentInfo[childObj] = ''
 
     if parentObject == 'world':
         cmds.parent(childObjects, w=True)
@@ -497,11 +500,15 @@ def removeConnections(node):
     if cnsts:
         cmds.delete(cnsts)
 
-    for attr in cmds.listAttr(node, keyable=True):
-        disconnectAttr(attr)
+    keyAttrs = cmds.listAttr(node, keyable=True)
+    if keyAttrs:
+        for keyAttr in keyAttrs:
+            disconnectAttr('{}.{}'.format(node, keyAttr))
 
-    for dynAttr in cmds.listAttr(node, userDefined=True):
-        disconnectAttr(dynAttr)
+    udAttrs = cmds.listAttr(node, userDefined=True)
+    if udAttrs:
+        for udAttr in udAttrs:
+            disconnectAttr('{}.{}'.format(node, udAttr))
 
 
 def makeGroup(object, groupName):
@@ -825,6 +832,10 @@ def getDagPath(name):
 def getParent(node, generations=1):
     parents = cmds.listRelatives(node, parent=True, fullPath=True)[0].split('|')
     return parents[-generations]
+
+
+def getAllParents(node):
+    return cmds.listRelatives(node, parent=True, fullPath=True)[0].split('|')
 
 
 def getTransform(shape):

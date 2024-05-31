@@ -15,6 +15,7 @@ from . import jaw; reload(jaw)
 from . import string; reload(string)
 from . import rope; reload(rope)
 
+from .module import Module
 from .simple import Simple
 from .spine import Spine
 from .neck import Neck

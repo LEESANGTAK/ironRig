@@ -6,8 +6,8 @@ from .system import System
 
 
 class TwoBoneIK(System):
-    def __init__(self, name='new', side=System.SIDE.CENTER, type=System.TYPE.IK_SYSTEM, joints=[], poleVectorPosition=None):
-        super(TwoBoneIK, self).__init__(name, side, type, joints)
+    def __init__(self, name='new', side=System.SIDE.CENTER, joints=[], poleVectorPosition=None):
+        super(TwoBoneIK, self).__init__(name, side, System.TYPE.IK_SYSTEM, joints)
 
         self._poleVectorPosition = poleVectorPosition
 

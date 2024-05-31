@@ -2,6 +2,7 @@ from maya import cmds
 from ... import utils
 from ..irGlobal import Container
 from ..irGlobal import Controller
+from ...common import logger
 
 
 class System(Container):
@@ -60,11 +61,11 @@ class System(Container):
         return self._controllers
 
     @property
-    def negateSclaeX(self):
+    def negateScaleX(self):
         return self._negateScaleX
 
-    @negateSclaeX.setter
-    def negateSclaeX(self, val):
+    @negateScaleX.setter
+    def negateScaleX(self, val):
         self._negateScaleX = val
 
     @property
@@ -110,6 +111,8 @@ class System(Container):
             self._aimSign, self._aimAxis = utils.getAimAxisInfo(self._joints[0], self._joints[1])
 
     def _buildSystems(self):
+        logger.debug('{}._buildSystems()'.format(self.fullName))
+
         cmds.parent(self._joints[0], self._blbxGrp)
         cmds.matchTransform(self._topGrp, self._joints[0], pivots=True)
         self.addMembers(self._joints)

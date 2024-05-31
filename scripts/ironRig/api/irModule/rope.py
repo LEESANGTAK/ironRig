@@ -42,15 +42,15 @@ class Rope(Module):
 
     def _buildSystems(self):
         sgJoints = utils.buildNewJoints(self._initJoints, searchStr='init', replaceStr='sg')
-        self.__sgSystem = Single(self._name+'sg_', sgJoints)
+        self.__sgSystem = Single(self.fullName+'sg_', sgJoints)
         self.__sgSystem.build()
         self.__sgSystem.controllerShape = Controller.SHAPE.CUBE
-        self.addSystems(self.__sgSystem)
+        self._addSystems(self.__sgSystem)
 
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = SplineIK(self._name+'ik_', ikJoints, self.__numberOfControllers)
+        self.__ikSystem = SplineIK(self.fullName+'ik_', ikJoints, self.__numberOfControllers)
         if self._negateScaleX:
-            self.__ikSystem.negateSclaeX = True
+            self.__ikSystem.negateScaleX = True
         self.__ikSystem.build()
         self.__ikSystem.setupAdvancedTwist()
         self.__ikSystem.setupStretch()
@@ -59,7 +59,7 @@ class Rope(Module):
             self.__ikSystem.setupDynamic()
             self.__ikSystem.dynLock = SplineIK.DYNAMIC_LOCK.BOTH
         utils.removeConnections(self.__ikSystem.joints[-1])  # Remove orient constraint for the end joint
-        self.addSystems(self.__ikSystem)
+        self._addSystems(self.__ikSystem)
 
         if self.__autoOddnumController:
             ikCtrls = self.__ikSystem.controllers
@@ -76,7 +76,7 @@ class Rope(Module):
             cmds.parentConstraint(closestIkJnt, sgCtrl.zeroGrp, mo=True)
 
             sgJnt = sgCtrl.outputs(type='joint')[0]
-            ikScaleMult = cmds.createNode('multiplyDivide', n='{}{}_scale_mult'.format(self._name, closestIkJnt))
+            ikScaleMult = cmds.createNode('multiplyDivide', n='{}{}_scale_mult'.format(self.fullName, closestIkJnt))
             closestIkJnt.scale >> ikScaleMult.input1
             sgCtrl.scale >> ikScaleMult.input2
             ikScaleMult.output >> sgJnt.scale

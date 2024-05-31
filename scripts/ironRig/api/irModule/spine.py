@@ -20,7 +20,7 @@ class Spine(Module):
 
     def _buildGroups(self):
         super(Spine, self)._buildGroups()
-        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self._name), empty=True)
+        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self.fullName), empty=True)
         cmds.parent(self.__controllerGrp, self._topGrp)
 
     def build(self):
@@ -29,21 +29,21 @@ class Spine(Module):
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = SplineIK(self._name+'ik_', ikJoints, numControllers=4)
+        self.__ikSystem = SplineIK(self.fullName+'ik_', ikJoints, numControllers=4)
         if self._negateScaleX:
-            self.__ikSystem.negateSclaeX = True
+            self.__ikSystem.negateScaleX = True
         self.__ikSystem.build()
         self.__ikSystem.setupAdvancedTwist()
         self.__ikSystem.setupStretch()
         self.__ikSystem.setupHybridIK()
         self.__ikSystem.controllers[0].hide()
-        self.__ikSystem.controllers[-1].name = 'chest_ctrl'.format(self._name)
+        self.__ikSystem.controllers[-1].name = 'chest_ctrl'.format(self.fullName)
         utils.removeConnections(self.__ikSystem.controllers[1].zeroGrp)
         for ctrl in self.__ikSystem.controllers[1:-1]:
             ctrl.shape = Controller.SHAPE.CIRCLE
         shapeOffset = (self.__ikSystem.aimSign * utils.axisStrToVector(self.__ikSystem.aimAxis())) * utils.getDistance(self.__ikSystem.joints[int(len(self.__ikSystem.joints)*0.5)], self.__ikSystem.joints[-1])
         self.__ikSystem.controllers[-1].shapeOffset = shapeOffset
-        self.addSystems(self.__ikSystem)
+        self._addSystems(self.__ikSystem)
 
         # fkJoints = Spine.buildFKJoints(self._prefix, self._initJoints, 4)
         # self.__fkSystem = FK(self._prefix+'fk_', fkJoints)

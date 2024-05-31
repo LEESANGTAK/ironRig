@@ -7,14 +7,15 @@ from .module import Module
 
 
 class Eye(Module):
-    def __init__(self, prefix='', joints=[]):
-        super(Eye, self).__init__(prefix, joints)
+    def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
+        super(Eye, self).__init__(name, side, skeletonJoints)
 
-        self.__aimSystem = None
-        self.__fkSystem = None
+        self._aimSystem = None
+        self._fkSystem = None
 
+    @property
     def aimSystem(self):
-        return self.__aimSystem
+        return self._aimSystem
 
     def preBuild(self):
         if len(self._skelJoints) == 1:
@@ -30,9 +31,9 @@ class Eye(Module):
             for initSkelLoc in self._initSkelLocators:
                 initJnt = cmds.createNode('joint', n=initSkelLoc.replace('_loc', ''))
                 cmds.matchTransform(initJnt, initSkelLoc)
-                initJnt.segmentScaleCompensate.set(False)
-                initJnt.displayLocalAxis.set(True)
-                self._initGrp | initJnt
+                cmds.setAttr('{}.segmentScaleCompensate'.format(initJnt), False)
+                cmds.setAttr('{}.displayLocalAxis'.format(initJnt), True)
+                cmds.parent(initJnt, self._initGrp)
                 initJoints.append(initJnt)
 
             self._initJoints = initJoints
@@ -46,24 +47,24 @@ class Eye(Module):
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__aimSystem = Aim(self._name+'ik_', ikJoints)
+        self._aimSystem = Aim(self._name, self._side, ikJoints)
         if self._negateScaleX:
-            self.__aimSystem.negateSclaeX = True
-        self.__aimSystem.build()
-        self.addSystems(self.__aimSystem)
+            self._aimSystem.negateScaleX = True
+        self._aimSystem.build()
+        self._addSystems(self._aimSystem)
 
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self._name+'fk_', fkJoints)
+        self._fkSystem = FK(self._name, self._side, fkJoints)
         if self._negateScaleX:
-            self.__fkSystem.negateSclaeX = True
+            self._fkSystem.negateScaleX = True
         if len(self._skelJoints) == 1:
-            self.__fkSystem.endController = True
-        self.__fkSystem.build()
-        shapeOffset = utils.getDistance(self.__fkSystem.joints[0], self.__fkSystem.joints[-1])*1.2 * (self.__aimSystem.aimSign * utils.axisStrToVector(self.__aimSystem.aimAxis()))
-        self.__fkSystem.controllers[0].shapeOffset = shapeOffset
-        self.addSystems(self.__fkSystem)
+            self._fkSystem.endController = True
+        self._fkSystem.build()
+        shapeOffset = utils.getDistance(self._fkSystem.joints[0], self._fkSystem.joints[-1])*1.2 * (self._aimSystem.aimSign * utils.axisStrToVector(self._aimSystem.aimAxis))
+        self._fkSystem.controllers[0].shapeOffset = shapeOffset
+        self._addSystems(self._fkSystem)
 
-        self._sysJoints = self.__fkSystem.joints
+        self._sysJoints = self._fkSystem.joints
 
     def _connectSystems(self):
-        cmds.parentConstraint(self.__aimSystem.joints[0], self.__fkSystem.controllers[0].zeroGrp)
+        cmds.parentConstraint(self._aimSystem.joints[0], self._fkSystem.controllers[0].zeroGrp)

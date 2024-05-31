@@ -5,29 +5,30 @@ from .module import Module
 
 
 class Finger(Module):
-    def __init__(self, prefix='', joints=[]):
-        super(Finger, self).__init__(prefix, joints)
+    def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
+        super(Finger, self).__init__(name, side, skeletonJoints)
 
-        self.__fkSystem = None
+        self._fkSystem = None
 
+    @property
     def fkSystem(self):
-        return self.__fkSystem
+        return self._fkSystem
 
     def preBuild(self):
         super(Finger, self).preBuild()
         cmds.addAttr(self._oriPlaneLocators[1], ln='curl', at='float', dv=0.0, keyable=True)
         for initJnt in self._initJoints:
-            self._oriPlaneLocators[1].curl >> initJnt.rz
+            cmds.connectAttr('{}.curl'.format(self._oriPlaneLocators[1]), '{}.rz'.format(initJnt))
 
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self._name, fkJoints)
+        self._fkSystem = FK(self._name, self._side, fkJoints)
         if self._negateScaleX:
-            self.__fkSystem.negateSclaeX = True
-        self.__fkSystem.build()
+            self._fkSystem.negateScaleX = True
+        self._fkSystem.build()
 
-        self.addSystems(self.__fkSystem)
-        self._sysJoints = self.__fkSystem.joints
+        self._addSystems(self._fkSystem)
+        self._sysJoints = self._fkSystem.joints
 
     def _connectSystems(self):
         pass

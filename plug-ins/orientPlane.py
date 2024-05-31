@@ -134,7 +134,7 @@ class OrientPlane(OpenMayaMPx.MPxNode):
 
     def compute(self, plug, dataBlock):
         if plug == self.aNormal:
-            normal = self.__buildNormal(dataBlock)
+            normal = self._buildNormal(dataBlock)
             normalAttrHandle = dataBlock.outputValue(self.aNormal)
             normalAttrHandle.set3Double(normal.x, normal.y, normal.z)
         elif plug == self.aOutMatrices:
@@ -153,7 +153,7 @@ class OrientPlane(OpenMayaMPx.MPxNode):
                 initPointsHandle.jumpToElement(index)
                 curPoint = initPointsHandle.inputValue().asDouble3()
                 curPoint = OpenMaya.MPoint(*curPoint)
-                projCurPoint = OrientPlane.getProjPointOnPlane(curPoint, planePnt01, self.__buildNormal(dataBlock))
+                projCurPoint = OrientPlane.getProjPointOnPlane(curPoint, planePnt01, self._buildNormal(dataBlock))
 
                 # If current init point is the end point, the previous point is the next point since there is no next point.
                 if OrientPlane.isEndElement(index, numElements):
@@ -162,34 +162,34 @@ class OrientPlane(OpenMayaMPx.MPxNode):
                     initPointsHandle.jumpToElement(index+1)
                 nextPoint = initPointsHandle.inputValue().asDouble3()
                 nextPoint = OpenMaya.MPoint(*nextPoint)
-                projNextPoint = OrientPlane.getProjPointOnPlane(nextPoint, planePnt01, self.__buildNormal(dataBlock))
+                projNextPoint = OrientPlane.getProjPointOnPlane(nextPoint, planePnt01, self._buildNormal(dataBlock))
 
                 aimVector = projNextPoint - projCurPoint
                 # If current init point is the end point, negate vector since vector aim to previous point
                 if OrientPlane.isEndElement(index, numElements):
                     aimVector *= -1
-                upVector = self.__buildNormal(dataBlock)  # Up vector is the normal vector of a plane
-                perpVector = aimVector ^ upVector
+                normalVector = self._buildNormal(dataBlock)  # Up vector is the normal vector of a plane
+                upVector = normalVector ^ aimVector
 
                 # Normalize vectors for prevent scale and shear issues.
                 aimVector.normalize()
+                normalVector.normalize()
                 upVector.normalize()
-                perpVector.normalize()
 
                 if negXAxis:
                     aimVector *= -1
-                    upVector *= -1
+                    normalVector *= -1
                 if negYAxis:
+                    normalVector *= -1
                     upVector *= -1
-                    perpVector *= -1
                 if negZAxis:
-                    perpVector *= -1
                     upVector *= -1
+                    normalVector *= -1
                 if swapYZAxis:
-                    upVector, perpVector = perpVector, upVector
-                    upVector *= -1
+                    normalVector, upVector = upVector, normalVector
+                    normalVector *= -1
 
-                matrix = OrientPlane.buildMatrix(aimVector, upVector, perpVector, projCurPoint, swapYZAxis)
+                matrix = OrientPlane.buildMatrix(aimVector, upVector, normalVector, projCurPoint, swapYZAxis)
 
                 # Output element in array could be not exists. Add array element using array data builder.
                 OrientPlane.jumpToElement(outMatricesHandle, index)
@@ -201,7 +201,7 @@ class OrientPlane(OpenMayaMPx.MPxNode):
         # Clean up output output plug for prevent recalculating.
         dataBlock.setClean(plug)
 
-    def __buildNormal(self, dataBlock):
+    def _buildNormal(self, dataBlock):
         normal = None
 
         planePnt01 = dataBlock.inputValue(self.aPlanePoint01).asDouble3()
@@ -211,7 +211,7 @@ class OrientPlane(OpenMayaMPx.MPxNode):
         planePnt03 = dataBlock.inputValue(self.aPlanePoint03).asDouble3()
         planePnt03 = OpenMaya.MPoint(*planePnt03)
 
-        normal = (planePnt03 - planePnt02) ^ (planePnt01 - planePnt02)
+        normal = (planePnt01 - planePnt02) ^ (planePnt03 - planePnt02)
         normal.normalize()
 
         return normal

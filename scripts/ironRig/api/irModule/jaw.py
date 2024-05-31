@@ -11,14 +11,14 @@ class Jaw(Module):
 
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self._name+'fk_', fkJoints)
+        self.__fkSystem = FK(self.fullName+'fk_', fkJoints)
         if self._negateScaleX:
-            self.__fkSystem.negateSclaeX = True
+            self.__fkSystem.negateScaleX = True
         self.__fkSystem.build()
         shapeOffset = utils.getDistance(self.__fkSystem.joints[0], self.__fkSystem.joints[-1])*1.2 * (self.__fkSystem.aimSign * utils.axisStrToVector(self.__fkSystem.aimAxis()))
         self.__fkSystem.controllers[0].shapeOffset = shapeOffset
 
-        self.addSystems(self.__fkSystem)
+        self._addSystems(self.__fkSystem)
         self._sysJoints = self.__fkSystem.joints
 
     def _connectSystems(self):
