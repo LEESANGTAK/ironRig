@@ -10,16 +10,24 @@ from .threeBoneLimb import ThreeBoneLimb
 
 
 class Foot(Module):
-    def __init__(self, prefix='', joints=[]):
-        super(Foot, self).__init__(prefix, joints)
+    def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
+        self._ikSystem = None
+        self._fkSystem = None
 
-        self.__pivotLocators = ['{}in_loc'.format(self.longName), '{}out_loc'.format(self.longName), '{}heel_loc'.format(self.longName), '{}tip_loc'.format(self.longName)]
+        self._blendJoints = []
+        self._blendConstraints = []
 
-        self.__ikSystem = None
-        self.__fkSystem = None
+        super(Foot, self).__init__(name, side, skeletonJoints)
 
-        self.__blendJoints = []
-        self.__blendConstraints = []
+    def _addSystems(self):
+        self._pivotLocators = ['{}_in_loc'.format(self.shortName), '{}_out_loc'.format(self.shortName), '{}_heel_loc'.format(self.shortName), '{}_tip_loc'.format(self.shortName)]
+        self._ikSystem = FootIK(self._name, self._side, pivotLocators=self._pivotLocators)
+        self._systems.append(self._ikSystem)
+
+        self._fkSystem = FK(self._name, self._side)
+        self._systems.append(self._fkSystem)
+
+        super(Foot, self)._addSystems()
 
     def _createMidLocator(self):
         midLoc = None
@@ -27,104 +35,96 @@ class Foot(Module):
         midInitSkelLoc = self._initSkelLocators[int(len(self._initSkelLocators)*0.5)]
         midLocPos = utils.getWorldPoint(midInitSkelLoc) + (om.MVector.kYaxisVector * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
 
-        midLoc = cmds.spaceLocator(n='{}mid_oriPlane_loc'.format(self.longName))
-        midLoc.overrideEnabled.set(True)
-        midLoc.overrideColor.set(6)
-        cmds.xform(midLoc, t=midLocPos, ws=True)
+        midLoc = cmds.spaceLocator(n='{}_mid_oriPlane_loc'.format(self.shortName))[0]
+        cmds.setAttr('{}.overrideEnabled'.format(midLoc), True)
+        cmds.setAttr('{}.overrideColor'.format(midLoc), 14)
+        cmds.xform(midLoc, t=list(midLocPos)[:3], ws=True)
 
         negAxisAttrNames = ['negateXAxis', 'negateZAxis', 'swapYZAxis']
         for attrName in negAxisAttrNames:
             cmds.addAttr(midLoc, ln=attrName, at='bool', dv=False, keyable=True)
-            midLoc.attr(attrName) >> self._orientPlane.attr(attrName)
+            cmds.connectAttr('{}.{}'.format(midLoc, attrName), '{}.{}'.format(self._orientPlane, attrName))
 
         return midLoc
 
     def preBuild(self):
         super(Foot, self).preBuild()
-        for pivotLoc in self.__pivotLocators:
+        for pivotLoc in self._pivotLocators:
             cmds.spaceLocator(n=pivotLoc)
-        cmds.parent(self.__pivotLocators, self._initGrp)
+        cmds.parent(self._pivotLocators, self._initGrp)
 
     def build(self):
         super(Foot, self).build()
-        self.__buildControls()
+        self._buildControls()
 
     def _buildGroups(self):
         super(Foot, self)._buildGroups()
-        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self.longName), empty=True)
-        cmds.parent(self.__controllerGrp, self._topGrp)
+        print(self.shortName, self.longName)
+        self._controllerGrp = cmds.group(n='{}_ctrl_grp'.format(self.longName), empty=True)
+        cmds.parent(self._controllerGrp, self._topGrp)
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = FootIK(self.longName+'ik_', ikJoints, self.__pivotLocators)
-        if self._negateScaleX:
-            self.__ikSystem.negateScaleX = True
-        self.__ikSystem.build()
-        self._addSystems(self.__ikSystem)
-
+        self._ikSystem.joints = ikJoints
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self.longName+'fk_', fkJoints)
-        if self._negateScaleX:
-            self.__fkSystem.negateScaleX = True
-        self.__fkSystem.build()
-        self._addSystems(self.__fkSystem)
+        self._fkSystem.joints = fkJoints
+        super(Foot, self)._buildSystems()
 
     def _connectSystems(self):
-        self.__blendJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='blend')
-        utils.parentKeepHierarchy(self.__blendJoints, self._systemGrp)
-        for ikJnt, fkJnt, blendJnt in zip(self.__ikSystem.joints, self.__fkSystem.joints, self.__blendJoints):
-            blendCnst = cmds.parentConstraint(ikJnt, fkJnt, blendJnt, mo=True)
-            blendCnst.interpType.set(2)
-            self.__blendConstraints.append(blendCnst)
-        self.__blendJoints[0].hide()
+        self._blendJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='blend')
+        utils.parentKeepHierarchy(self._blendJoints, self._systemGrp)
+        for ikJnt, fkJnt, blendJnt in zip(self._ikSystem.joints, self._fkSystem.joints, self._blendJoints):
+            blendCnst = cmds.parentConstraint(ikJnt, fkJnt, blendJnt, mo=True)[0]
+            cmds.setAttr('{}.interpType'.format(blendCnst), 2)
+            self._blendConstraints.append(blendCnst)
+        cmds.hide(self._blendJoints[0])
 
-        self._sysJoints = self.__blendJoints
+        self._sysJoints = self._blendJoints
 
-    def __buildControls(self):
-        moduleCtrl = Controller('{}module_ctrl'.format(self.longName), Controller.SHAPE.SPHERE)
+    def _buildControls(self):
+        moduleCtrl = Controller('{}_module_ctrl'.format(self.shortName), Controller.SHAPE.SPHERE)
         moduleCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'])
         cmds.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
-        cmds.parentConstraint(self.__blendJoints[1], moduleCtrl.zeroGrp, mo=False)
+        cmds.parentConstraint(self._blendJoints[1], moduleCtrl.zeroGrp, mo=False)
         moduleCtrl.shapeOffset = [0, self._aimSign*10, 0]
 
-        fkIkRev = cmds.createNode('Foot', n='{}fkIk_rev'.format(self.longName))
-        moduleCtrl.ik >> self.__ikSystem.topGrp.visibility
-        moduleCtrl.ik >> fkIkRev.inputX
-        fkIkRev.outputX >> self.__fkSystem.topGrp.visibility
-        for cnst in self.__blendConstraints:
-            moduleCtrl.ik >> cnst.target[0].targetWeight
-            fkIkRev.outputX >> cnst.target[1].targetWeight
+        fkIkRev = cmds.createNode('reverse', n='{}_fkIk_rev'.format(self.shortName))
+        cmds.connectAttr('{}.ik'.format(moduleCtrl), '{}.visibility'.format(self._ikSystem.topGrp))
+        cmds.connectAttr('{}.ik'.format(moduleCtrl), '{}.inputX'.format(fkIkRev))
+        cmds.connectAttr('{}.outputX'.format(fkIkRev), '{}.visibility'.format(self._fkSystem.topGrp))
+        for cnst in self._blendConstraints:
+            ikWeightAttr = cmds.listConnections('{}.target[0].targetParentMatrix'.format(cnst))[0] + 'W0'
+            cmds.connectAttr('{}.ik'.format(moduleCtrl), '{}.{}'.format(cnst, ikWeightAttr))
+            fkWeightAttr = cmds.listConnections('{}.target[1].targetParentMatrix'.format(cnst))[0] + 'W1'
+            cmds.connectAttr('{}.outputX'.format(fkIkRev), '{}.{}'.format(cnst, fkWeightAttr))
 
-        cmds.parent(moduleCtrl.zeroGrp, self.__controllerGrp)
+        cmds.parent(moduleCtrl.zeroGrp, self._controllerGrp)
         self._controllers.append(moduleCtrl)
+
+        self._ikSystem.controllers[0].size = self._controllerSize * 2
+        self._controllers[0].size = self._controllerSize * 0.2
 
     def attachTo(self, module):
         if isinstance(module, TwoBoneLimb) or isinstance(module, ThreeBoneLimb):
             # Connect ik joints
-            utils.removeConnections(self.__ikSystem.joints[0])
-            cmds.parentConstraint(module.ikSystem().joints[-1], self.__ikSystem.joints[0], mo=True)
+            utils.removeConnections(self._ikSystem.joints[0])
+            cmds.parentConstraint(module.ikSystem().joints[-1], self._ikSystem.joints[0], mo=True)
             # Connect skel joints
             utils.removeConnections(module.skelJoints[-1])
             cmds.parentConstraint(self._outJoints[0], module.skelJoints[-1], mo=True)
             # Connect ik handle
             moduleIkHandleLoc = module.ikSystem().ikHandleLocator
             utils.removeConnections(moduleIkHandleLoc)
-            cmds.pointConstraint(self.__ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
+            cmds.pointConstraint(self._ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
             # Connect ik controllers
-            cmds.parentConstraint(module.ikSystem().controllers[0], self.__ikSystem.controllers[0], mo=True)
-            utils.cloneUserDefinedAttrs(self.__ikSystem.controllers[0], module.ikSystem().controllers[0])
-            self.__ikSystem.controllers[0].hide()
+            cmds.parentConstraint(module.ikSystem().controllers[0], self._ikSystem.controllers[0], mo=True)
+            utils.cloneUserDefinedAttrs(self._ikSystem.controllers[0], module.ikSystem().controllers[0])
+            cmds.hide(self._ikSystem.controllers[0])
             # Connect fk controllers
-            cmds.parentConstraint(module.fkSystem.controllers[-1], self.__fkSystem.controllers[0], mo=True)
-            self.__fkSystem.controllers[0].hide()
+            cmds.parentConstraint(module.fkSystem.controllers[-1], self._fkSystem.controllers[0], mo=True)
+            cmds.hide(self._fkSystem.controllers[0])
             # Connect module controllers
-            module.controllers[0].ik >> self._controllers[0].ik
-            self._controllers[0].hide()
+            cmds.connectAttr('{}.ik'.format(module.controllers[0]), '{}.ik'.format(self._controllers[0]))
+            cmds.hide(self._controllers[0])
         else:
             super(Foot, self).attachTo(module)
-
-    def postBuild(self):
-        super(Foot, self).postBuild()
-
-        self.__ikSystem.controllers[0].size = self._controllerSize * 2
-        self._controllers[0].size = self._controllerSize * 0.2

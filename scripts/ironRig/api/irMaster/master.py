@@ -40,8 +40,8 @@ class Master(Container):
         self._controllerSize = size
 
     def _createGroups(self):
-        self._topGrp.rename('{}master'.format(self.longName))
-        self._modulesGrp = cmds.createNode('transform', n='{}modules'.format(self.longName))
+        self._topGrp.rename('{}master'.format(self.shortName))
+        self._modulesGrp = cmds.createNode('transform', n='{}modules'.format(self.shortName))
         self._topGrp | self._modulesGrp
 
     def addModules(self, *args):

@@ -34,7 +34,7 @@ class RibbonIK(System):
         cmds.parent(self._surface, self._noTrsfGrp)
 
     def _attachJointsToSurface(self):
-        folScaleDecMtx = cmds.createNode('decomposeMatrix', n='{}folScale_decMtx'.format(self.longName))
+        folScaleDecMtx = cmds.createNode('decomposeMatrix', n='{}folScale_decMtx'.format(self.shortName))
         cmds.connectAttr('{}.worldMatrix'.format(self._topGrp), '{}.inputMatrix'.format(folScaleDecMtx))
 
         for joint in self._joints:
@@ -55,10 +55,10 @@ class RibbonIK(System):
             cmds.parent(folTransform, self._noTrsfGrp)
 
     def _buildSurfaceBindJoints(self):
-        self._surfaceJoints = utils.createJointsOnSurface(self._surface, self._numControllers, self.longName)
+        self._surfaceJoints = utils.createJointsOnSurface(self._surface, self._numControllers, self.shortName)
         self._orientSurfaceJoints()
         skinClst = cmds.skinCluster(self._surfaceJoints, self._surface, mi=1, dr=4.0, tsb=True, omi=False, nw=True)
-        srfcJntsGrp = cmds.group(self._surfaceJoints, n='{}srfcJnt_grp'.format(self.longName))
+        srfcJntsGrp = cmds.group(self._surfaceJoints, n='{}srfcJnt_grp'.format(self.shortName))
 
         self.addMembers(skinClst)
         cmds.parent(srfcJntsGrp, self._blbxGrp)
@@ -92,13 +92,13 @@ class RibbonIK(System):
             cmds.orientConstraint(parentCtrl, curCtrl.zeroGrp, mo=True)
 
     def setupWave(self):
-        srfc = cmds.duplicate(self._surface, n='{0}wave_srfc'.format(self.longName))[0]
+        srfc = cmds.duplicate(self._surface, n='{0}wave_srfc'.format(self.shortName))[0]
 
         blendshape = cmds.blendShape(srfc, self._surface, origin='local', frontOfChain=True)[0]
         cmds.setAttr('{}.{}'.format(blendshape, srfc), 1)
 
         sine, sineHandle = cmds.nonLinear(srfc, type='sine')
-        cmds.rename(sineHandle, '{0}sineHandle'.format(self.longName))
+        cmds.rename(sineHandle, '{0}sineHandle'.format(self.shortName))
         cmds.setAttr('{}.dropoff'.format(sineHandle), -1)
         cmds.setAttr('{}.highBound'.format(sineHandle), 0)
 

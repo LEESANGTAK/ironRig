@@ -42,13 +42,13 @@ class Rope(Module):
 
     def _buildSystems(self):
         sgJoints = utils.buildNewJoints(self._initJoints, searchStr='init', replaceStr='sg')
-        self.__sgSystem = Single(self.longName+'sg_', sgJoints)
+        self.__sgSystem = Single(self.shortName+'sg_', sgJoints)
         self.__sgSystem.build()
         self.__sgSystem.controllerShape = Controller.SHAPE.CUBE
         self._addSystems(self.__sgSystem)
 
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = SplineIK(self.longName+'ik_', ikJoints, self.__numberOfControllers)
+        self.__ikSystem = SplineIK(self.shortName+'ik_', ikJoints, self.__numberOfControllers)
         if self._negateScaleX:
             self.__ikSystem.negateScaleX = True
         self.__ikSystem.build()
@@ -76,7 +76,7 @@ class Rope(Module):
             cmds.parentConstraint(closestIkJnt, sgCtrl.zeroGrp, mo=True)
 
             sgJnt = sgCtrl.outputs(type='joint')[0]
-            ikScaleMult = cmds.createNode('multiplyDivide', n='{}{}_scale_mult'.format(self.longName, closestIkJnt))
+            ikScaleMult = cmds.createNode('multiplyDivide', n='{}{}_scale_mult'.format(self.shortName, closestIkJnt))
             closestIkJnt.scale >> ikScaleMult.input1
             sgCtrl.scale >> ikScaleMult.input2
             ikScaleMult.output >> sgJnt.scale

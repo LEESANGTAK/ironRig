@@ -42,9 +42,9 @@ class GlobalMaster(Master):
 
     def _createGroups(self):
         super(GlobalMaster, self)._createGroups()
-        self._spaceSwtichGrp = cmds.createNode('transform', n='spaceSwitches_grp'.format(self.longName))
+        self._spaceSwtichGrp = cmds.createNode('transform', n='spaceSwitches_grp'.format(self.shortName))
         self._spaceSwtichGrp.hide()
-        self._mastersGrp = cmds.createNode('transform', n='{}masters'.format(self.longName))
+        self._mastersGrp = cmds.createNode('transform', n='{}masters'.format(self.shortName))
         self._topGrp | self._spaceSwtichGrp
         self._topGrp.rename('controlRig')
 

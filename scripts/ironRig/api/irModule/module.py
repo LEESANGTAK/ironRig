@@ -256,7 +256,7 @@ class Module(Container):
     def symmeterizeGuide(self):
         searchStr = '_r_'
         replaceStr = '_l_'
-        if '_l_' in self.longName:
+        if '_l_' in self.shortName:
             searchStr = '_l_'
             replaceStr = '_r_'
 

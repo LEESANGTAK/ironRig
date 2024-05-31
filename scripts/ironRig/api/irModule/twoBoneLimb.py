@@ -62,7 +62,7 @@ class TwoBoneLimb(Module):
         self.__limbJnt2Index = skelJoints.index(self._skelJoints[2])
 
         for skelJnt in skelJoints:
-            initSkelLoc = cmds.spaceLocator(n='{}init_{}_loc'.format(self.longName, skelJnt))
+            initSkelLoc = cmds.spaceLocator(n='{}init_{}_loc'.format(self.shortName, skelJnt))
             cmds.matchTransform(initSkelLoc, skelJnt, position=True)
             initSkelLoc.hide()
             initSkelLocs.append(initSkelLoc)
@@ -88,7 +88,7 @@ class TwoBoneLimb(Module):
         # Create init joints with skeleton joints
         initJoints = []
         for skelJnt in skelJoints:
-            initJnt = cmds.createNode('joint', n='{}init_{}'.format(self.longName, skelJnt))
+            initJnt = cmds.createNode('joint', n='{}init_{}'.format(self.shortName, skelJnt))
             cmds.matchTransform(initJnt, skelJnt, position=True, rotation=True)
             initJoints.append(initJnt)
 
@@ -110,7 +110,7 @@ class TwoBoneLimb(Module):
 
     def _buildGroups(self):
         super(TwoBoneLimb, self)._buildGroups()
-        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self.longName), empty=True)
+        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self.shortName), empty=True)
         cmds.parent(self.__controllerGrp, self._topGrp)
 
     def _buildSystems(self):
@@ -122,7 +122,7 @@ class TwoBoneLimb(Module):
         else:
             poleVector = TwoBoneIK.getPoleVector(self.__initLimbJoints[0], self.__initLimbJoints[1], self.__initLimbJoints[2])
             poleVecCtrlPos = utils.getWorldPoint(self.__initLimbJoints[1]) + (poleVector * utils.getDistance(self.__initLimbJoints[0], self.__initLimbJoints[2]))
-        self.__ikSystem = TwoBoneIK(self.longName+'ik_', ikJoints, poleVecCtrlPos)
+        self.__ikSystem = TwoBoneIK(self.shortName+'ik_', ikJoints, poleVecCtrlPos)
 
         if self._negateScaleX:
             self.__ikSystem.negateScaleX = True
@@ -134,7 +134,7 @@ class TwoBoneLimb(Module):
         self._addSystems(self.__ikSystem)
 
         fkJoints = utils.buildNewJointChain(self.__initLimbJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self.longName+'fk_', fkJoints)
+        self.__fkSystem = FK(self.shortName+'fk_', fkJoints)
         self.__fkSystem.endController = True
         if self._negateScaleX:
             self.__fkSystem.negateScaleX = True
@@ -144,7 +144,7 @@ class TwoBoneLimb(Module):
 
         if self.__upperLimbInbJoints:
             upperTwistJoints = utils.buildNewJointChain([self.__initLimbJoints[0]]+self.__initUpperLimbInbJoints+[self.__initLimbJoints[1]], searchStr='init', replaceStr='upTwist')
-            self.__upperTwistSystem = SplineIK(self.longName+'upTwist_', upperTwistJoints, 3)
+            self.__upperTwistSystem = SplineIK(self.shortName+'upTwist_', upperTwistJoints, 3)
             self.__upperTwistSystem.curveSpans = 1
             self.__upperTwistSystem.build()
             self.__upperTwistSystem.setupTwist()
@@ -155,7 +155,7 @@ class TwoBoneLimb(Module):
 
         if self.__lowerLimbInbJoints:
             lowerTwistJoints = utils.buildNewJointChain([self.__initLimbJoints[1]]+self.__initLowerLimbInbJoints+[self.__initLimbJoints[2]], searchStr='init', replaceStr='lowTwist')
-            self.__lowerTwistSystem = SplineIK(self.longName+'lowTwist_', lowerTwistJoints, 3)
+            self.__lowerTwistSystem = SplineIK(self.shortName+'lowTwist_', lowerTwistJoints, 3)
             self.__lowerTwistSystem.curveSpans = 1
             self.__lowerTwistSystem.build()
             self.__lowerTwistSystem.setupTwist()
@@ -261,7 +261,7 @@ class TwoBoneLimb(Module):
 
     def _connectSkeleton(self):
         for outJnt in self._outJoints:
-            skelJnt = outJnt.replace(self.longName+'out_', '')
+            skelJnt = outJnt.replace(self.shortName+'out_', '')
             utils.removeConnections(skelJnt)
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
             cmds.scaleConstraint(outJnt, skelJnt, mo=True)
@@ -269,14 +269,14 @@ class TwoBoneLimb(Module):
             #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def __buildControls(self):
-        moduleCtrl = Controller('{}module_ctrl'.format(self.longName), Controller.SHAPE.SPHERE)
+        moduleCtrl = Controller('{}module_ctrl'.format(self.shortName), Controller.SHAPE.SPHERE)
         moduleCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'])
         cmds.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         cmds.matchTransform(moduleCtrl.zeroGrp, self.__blendJoints[-1], position=True)
         cmds.parentConstraint(self.__blendJoints[-1], moduleCtrl.zeroGrp, mo=True)
         moduleCtrl.shapeOffset = om.MVector.kZnegAxisVector * 10
 
-        fkIkRev = cmds.createNode('reverse', n='{}fkIk_rev'.format(self.longName))
+        fkIkRev = cmds.createNode('reverse', n='{}fkIk_rev'.format(self.shortName))
         moduleCtrl.ik >> self.__ikSystem.topGrp.visibility
         moduleCtrl.ik >> fkIkRev.inputX
         fkIkRev.outputX >> self.__fkSystem.topGrp.visibility
@@ -290,7 +290,7 @@ class TwoBoneLimb(Module):
 
         if self.__upperTwistSystem or self.__lowerTwistSystem:
             cmds.addAttr(moduleCtrl, ln='bendCtrlVis', at='bool', dv=False, keyable=True)
-            moduleTwistCtrl = Controller('{}twist_ctrl'.format(self.longName))
+            moduleTwistCtrl = Controller('{}twist_ctrl'.format(self.shortName))
             cmds.matchTransform(moduleTwistCtrl.zeroGrp, self.__blendJoints[1], position=True)
             cmds.pointConstraint(self.__blendJoints[1], moduleTwistCtrl.zeroGrp, mo=False)
             oCnst = cmds.orientConstraint(self.__blendJoints[0], self.__blendJoints[1], moduleTwistCtrl.zeroGrp, mo=False)

@@ -19,10 +19,12 @@ class Eye(Module):
     def _addSystems(self):
         self._aimSystem = Aim(self._name, self._side)
         self._systems.append(self._aimSystem)
+
         self._fkSystem = FK(self._name, self._side)
         if len(self._skelJoints) == 1:
             self._fkSystem.endController = True
         self._systems.append(self._fkSystem)
+
         super(Eye, self)._addSystems()
 
     def preBuild(self):
