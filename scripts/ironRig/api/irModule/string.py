@@ -6,6 +6,10 @@ from ..irSystem import FK
 from .module import Module
 
 
+if not cmds.pluginInfo('multiRemapValue', q=True, loaded=True):
+    cmds.loadPlugin('multiRemapValue')
+
+
 class IKType:
     SPLINE = 0
     RIBBON = 1
@@ -19,218 +23,217 @@ class String(Module):
     """
     IK_TYPE = IKType
 
-    def __init__(self, prefix='', joints=[]):
-        super(String, self).__init__(prefix, joints)
+    def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[], ikType=IKType.SPLINE):
+        self._numberOfControllers = 3
+        self._fk = False
+        self._hybridIK = False
+        self._wave = False
+        self._coil = False
+        self._dynamic = False
+        self._ikType = ikType
 
-        # Properties
-        self.__numberOfControllers = 3
-        self.__fk = False
-        self.__hybridIK = False
-        self.__wave = False
-        self.__coil = False
-        self.__dynamic = False
-        self.__ikType = String.IK_TYPE.SPLINE
+        self._ikSystem = None
+        self._fkSystem = None
+        self._blendJoints = None
+        self._coilJoints = None
+        self._blendConstraints = None
+        self._scaleChoices = None
 
-        self.__ikSystem = None
-        self.__fkSystem = None
-        self.__blendJoints = None
-        self.__coilJoints = None
-        self.__blendConstraints = None
-        self.__scaleChoices = None
+        super(String, self).__init__(name, side, skeletonJoints)
 
     @property
     def numberOfControllers(self):
-        return self.__numberOfControllers
+        return self._numberOfControllers
 
     @numberOfControllers.setter
     def numberOfControllers(self, val):
-        self.__numberOfControllers = val
+        self._ikSystem.numberOfControllers = val
+        self._numberOfControllers = val
 
     @property
     def fk(self):
-        return self.__fk
+        return self._fk
 
     @fk.setter
     def fk(self, val):
-        self.__fk = val
+        self._fk = val
 
     @property
     def hybridIK(self):
-        return self.__hybridIK
+        return self._hybridIK
 
     @hybridIK.setter
     def hybridIK(self, val):
-        self.__hybridIK = val
+        self._hybridIK = val
 
     @property
     def wave(self):
-        return self.__wave
+        return self._wave
 
     @wave.setter
     def wave(self, val):
-        self.__wave = val
+        self._wave = val
 
     @property
     def coil(self):
-        return self.__coil
+        return self._coil
 
     @coil.setter
     def coil(self, val):
-        self.__coil = val
+        self._coil = val
 
     @property
     def dynamic(self):
-        return self.__dynamic
+        return self._dynamic
 
     @dynamic.setter
     def dynamic(self, val):
-        self.__dynamic = val
+        self._dynamic = val
 
     @property
     def ikType(self):
-        return self.__ikType
+        return self._ikType
 
     @ikType.setter
     def ikType(self, val):
-        self.__ikType = val
+        self._ikType = val
+
+    def _addSystems(self):
+        if self._ikType == String.IK_TYPE.SPLINE:
+            self._ikSystem = SplineIK(self._name, self._side, numberOfControllers=self._numberOfControllers)
+        elif self._ikType == String.IK_TYPE.RIBBON:
+            self._ikSystem = RibbonIK(self._name, self._side, numberOfControllers=self._numberOfControllers)
+        self._systems.append(self._ikSystem)
+
+        super(String, self)._addSystems()
 
     def build(self):
         super(String, self).build()
-        self.__buildControls()
+        self._buildControls()
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        if self.__ikType == String.IK_TYPE.SPLINE:
-            self.__ikSystem = SplineIK(self.shortName+'ik_', ikJoints, self.__numberOfControllers)
-            if self._negateScaleX:
-                self.__ikSystem.negateScaleX = True
-            self.__ikSystem.build()
-            self.__ikSystem.setupAdvancedTwist()
-            self.__ikSystem.setupStretch()
-            if self.__hybridIK:
-                self.__ikSystem.setupHybridIK()
-            if self.__wave:
-                self.__ikSystem.setupWave()
-            if self.__dynamic:
-                self.__ikSystem.setupDynamic()
-        elif self.__ikType == String.IK_TYPE.RIBBON:
-            self.__ikSystem = RibbonIK(self.shortName+'ik_', ikJoints, self.__numberOfControllers)
-            if self._negateScaleX:
-                self.__ikSystem.negateScaleX = True
-            self.__ikSystem.build()
-            if self.__hybridIK:
-                self.__ikSystem.setupHybridIK()
-            if self.__wave:
-                self.__ikSystem.setupWave()
-        self._addSystems(self.__ikSystem)
+        self._ikSystem.joints = ikJoints
+        if self._ikType == String.IK_TYPE.SPLINE:
+            self._ikSystem.build()
+            self._ikSystem.setupAdvancedTwist()
+            self._ikSystem.setupStretch()
+            if self._hybridIK:
+                self._ikSystem.setupHybridIK()
+            if self._wave:
+                self._ikSystem.setupWave()
+            if self._dynamic:
+                self._ikSystem.setupDynamic()
+        elif self._ikType == String.IK_TYPE.RIBBON:
+            self._ikSystem = RibbonIK(self.shortName+'ik_', ikJoints, self._numberOfControllers)
+            self._ikSystem.build()
+            if self._hybridIK:
+                self._ikSystem.setupHybridIK()
+            if self._wave:
+                self._ikSystem.setupWave()
 
-        if self.__fk:
+        if self._fk:
             fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-            self.__fkSystem = FK(self.shortName+'fk_', fkJoints)
-            if self._negateScaleX:
-                self.__fkSystem.negateScaleX = True
-            self.__fkSystem.build()
-            self._addSystems(self.__fkSystem)
+            self._fkSystem = FK(self._name, self._side, fkJoints)
+            self._fkSystem.build()
+            self._systems.append(self._fkSystem)
 
     def _connectSystems(self):
-        if self.__fk:
-            self.__blendJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='blend')
-            utils.parentKeepHierarchy(self.__blendJoints, self._systemGrp)
-            self.__blendJoints[0].hide()
+        if self._fk:
+            self._blendJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='blend')
+            utils.parentKeepHierarchy(self._blendJoints, self._systemGrp)
+            cmds.hide(self._blendJoints[0])
             blendCnsts = []
             scaleChoices = []
-            for ikJnt, fkJnt, blendJnt in zip(self.__ikSystem.joints, self.__fkSystem.joints, self.__blendJoints):
-                blendCnst = cmds.parentConstraint(ikJnt, fkJnt, blendJnt, mo=True)
-                blendCnst.interpType.set(2)
+            for ikJnt, fkJnt, blendJnt in zip(self._ikSystem.joints, self._fkSystem.joints, self._blendJoints):
+                blendCnst = cmds.parentConstraint(ikJnt, fkJnt, blendJnt, mo=True)[0]
+                cmds.setAttr('{}.interpType'.format(blendCnst), 2)
                 blendCnsts.append(blendCnst)
-                scaleChoice = cmds.createNode('choice', n='{0}scale_choice'.format(self.shortName))
+                scaleChoice = cmds.createNode('choice', n='{0}_scale_choice'.format(self.shortName))
                 scaleChoices.append(scaleChoice)
-                fkJnt.scale >> scaleChoice.input[0]
-                ikJnt.scale >> scaleChoice.input[1]
-                scaleChoice.output >> blendJnt.scale
-            self.__blendConstraints = blendCnsts
-            self.__scaleChoices = scaleChoices
+                cmds.connectAttr('{}.scale'.format(fkJnt), '{}.input[0]'.format(scaleChoice))
+                cmds.connectAttr('{}.scale'.format(ikJnt), '{}.input[1]'.format(scaleChoice))
+                cmds.connectAttr('{}.output'.format(scaleChoice), '{}.scale'.format(blendJnt))
+            self._blendConstraints = blendCnsts
+            self._scaleChoices = scaleChoices
 
-        if self.__coil:
-            self.__coilJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='coil')
-            utils.parentKeepHierarchy(self.__coilJoints, self._systemGrp)
-            self.__coilJoints[0].hide()
-            driverJoints = self.__blendJoints if self.__blendJoints else self.__ikSystem.joints
+        if self._coil:
+            self._coilJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='coil')
+            utils.parentKeepHierarchy(self._coilJoints, self._systemGrp)
+            cmds.hide(self._coilJoints[0])
+            driverJoints = self._blendJoints if self._blendJoints else self._ikSystem.joints
 
             # Connect channels of coil joints
-            pairDriverCoilJnts = zip(driverJoints, self.__coilJoints)
-
-            if not cmds.pluginInfo('multiRemapValue', q=True, loaded=True):
-                cmds.loadPlugin('multiRemapValue')
-            numCoilJnts = len(self.__coilJoints) - 1  # Subtract 1 from the number of coil joints to skip end joint
+            numCoilJnts = len(self._coilJoints) - 1  # Subtract 1 from the number of coil joints to skip end joint
             endIndex = numCoilJnts - 1
-            multRemapVal = cmds.createNode('multiRemapValue', n='{}coil_multRemap'.format(self.shortName))
-            multRemapVal.inputMin.set(endIndex)
-            multRemapVal.inputMax.set(endIndex)
-            multRemapVal.outputMax.set(-100)
+            multRemapVal = cmds.createNode('multiRemapValue', n='{}_coil_multRemap'.format(self.shortName))
+            cmds.setAttr('{}.inputMin'.format(multRemapVal), endIndex)
+            cmds.setAttr('{}.inputMax'.format(multRemapVal), endIndex)
+            cmds.setAttr('{}.outputMax'.format(multRemapVal), -100)
 
-            for i in range(numCoilJnts):
-                driverJnt = pairDriverCoilJnts[i][0]
-                coilJnt = pairDriverCoilJnts[i][1]
+            for i, pair in enumerate(zip(driverJoints[:-1], self._coilJoints[:-1])):
+                driverJnt = pair[0]
+                coilJnt = pair[1]
                 addNode = cmds.createNode('addDoubleLinear', n='{}_rz_add'.format(coilJnt))
-                multRemapVal.inputValue[i].set(i)
-                driverJnt.rotateX >> coilJnt.rotateX
-                driverJnt.rotateY >> coilJnt.rotateY
-                driverJnt.rotateZ >> addNode.input1
-                multRemapVal.outValue[i] >> addNode.input2
-                addNode.output >> coilJnt.rotateZ
+                cmds.setAttr('{}.inputValue[{}]'.format(multRemapVal, i), i)
+                cmds.connectAttr('{}.rotateX'.format(driverJnt), '{}.rotateX'.format(coilJnt))
+                cmds.connectAttr('{}.rotateY'.format(driverJnt), '{}.rotateY'.format(coilJnt))
+                cmds.connectAttr('{}.rotateZ'.format(driverJnt), '{}.input1'.format(addNode))
+                cmds.connectAttr('{}.outValue[{}]'.format(multRemapVal, i), '{}.input2'.format(addNode))
+                cmds.connectAttr('{}.output'.format(addNode), '{}.rotateZ'.format(coilJnt))
 
-            for driverJnt, coilJnt in pairDriverCoilJnts:
-                driverJnt.translate >> coilJnt.translate
-                driverJnt.scale >> coilJnt.scale
-            pairDriverCoilJnts[-1][0].rotate >> pairDriverCoilJnts[-1][1].rotate
+            for driverJnt, coilJnt in zip(driverJoints, self._coilJoints):
+                cmds.connectAttr('{}.translate'.format(driverJnt), '{}.translate'.format(coilJnt))
+                cmds.connectAttr('{}.scale'.format(driverJnt), '{}.scale'.format(coilJnt))
+
+            cmds.connectAttr('{}.rotate'.format(driverJoints[-1]), '{}.rotate'.format(self._coilJoints[-1]))
 
             # Setup control attribute
             coilAttrName = 'coil'
-            baseCtrl = self.__ikSystem.controllers[-1]
-            otherCtrls = self.__ikSystem.controllers[:-1]
-            if self.__fk:
-                otherCtrls.extend(self.__fkSystem.controllers)
+            baseCtrl = self._ikSystem.controllers[-1]
+            otherCtrls = self._ikSystem.controllers[:-1]
+            if self._fk:
+                otherCtrls.extend(self._fkSystem.controllers)
             cmds.addAttr(baseCtrl, ln=coilAttrName, at='float', min=0.0, max=1.0, dv=0.0, keyable=True)
             for ctrl in otherCtrls:
                 cmds.addAttr(ctrl, ln=coilAttrName, proxy='{0}.{1}'.format(baseCtrl, coilAttrName))
-            coilAttrRemap = cmds.createNode('remapValue', n='{}coil_remap'.format(self.shortName))
-            coilAttrRemap.outputMin.set(endIndex)
-            coilAttrRemap.outputMax.set(0.0)
-            baseCtrl.coil >> coilAttrRemap.inputValue
-            coilAttrRemap.outValue >> multRemapVal.inputMin
-            baseCtrl.coil >> multRemapVal.value[1].value_FloatValue
+            coilAttrRemap = cmds.createNode('remapValue', n='{}_coil_remap'.format(self.shortName))
+            cmds.setAttr('{}.outputMin'.format(coilAttrRemap), endIndex)
+            cmds.setAttr('{}.outputMax'.format(coilAttrRemap), 0.0)
+            cmds.connectAttr('{}.coil'.format(baseCtrl), '{}.inputValue'.format(coilAttrRemap))
+            cmds.connectAttr('{}.outValue'.format(coilAttrRemap), '{}.inputMin'.format(multRemapVal))
+            cmds.connectAttr('{}.coil'.format(baseCtrl), '{}.value[1].value_FloatValue'.format(multRemapVal))
 
             self.addMembers(multRemapVal, coilAttrRemap, addNode)
 
-        self._sysJoints = self.__ikSystem.joints
-        if self.__fk:
-            self._sysJoints = self.__blendJoints
-        if self.__coil:
-            self._sysJoints = self.__coilJoints
+        self._sysJoints = self._ikSystem.joints
+        if self._fk:
+            self._sysJoints = self._blendJoints
+        if self._coil:
+            self._sysJoints = self._coilJoints
 
-    def __buildControls(self):
-        if self.__fk:
+    def _buildControls(self):
+        if self._fk:
             # Add proxy switch attribute to all controls
             ikAttrName = 'ik'
-            baseCtrl = self.__ikSystem.controllers[-1]
-            otherCtrls = self.__ikSystem.controllers[:-1] + self.__fkSystem.controllers
+            baseCtrl = self._ikSystem.controllers[-1]
+            otherCtrls = self._ikSystem.controllers[:-1] + self._fkSystem.controllers
             cmds.addAttr(baseCtrl, ln=ikAttrName, at='float', min=0.0, max=1.0, dv=1.0, keyable=True)
             for ctrl in otherCtrls:
                 cmds.addAttr(ctrl, ln=ikAttrName, proxy='{0}.{1}'.format(baseCtrl, ikAttrName))
 
-            fkIkRev = cmds.createNode('reverse', n='{}fkIk_rev'.format(self.shortName))
-            baseCtrl.ik >> self.__ikSystem.topGrp.visibility
-            baseCtrl.ik >> fkIkRev.inputX
-            fkIkRev.outputX >> self.__fkSystem.topGrp.visibility
-            for cnst, choice in zip(self.__blendConstraints, self.__scaleChoices):
-                baseCtrl.ik >> cnst.target[0].targetWeight
-                fkIkRev.outputX >> cnst.target[1].targetWeight
-                baseCtrl.ik >> choice.selector
+            fkIkRev = cmds.createNode('reverse', n='{}_fkIk_rev'.format(self.shortName))
+            cmds.connectAttr('{}.ik'.format(baseCtrl), '{}.visibility'.format(self._ikSystem.topGrp))
+            cmds.connectAttr('{}.ik'.format(baseCtrl), '{}.inputX'.format(fkIkRev))
+            cmds.connectAttr('{}.outputX'.format(fkIkRev), '{}.visibility'.format(self._fkSystem.topGrp))
+            for cnst, choice in zip(self._blendConstraints, self._scaleChoices):
+                ikWeightAttr = cmds.listConnections('{}.target[0].targetParentMatrix'.format(cnst))[0] + 'W0'
+                cmds.connectAttr('{}.ik'.format(baseCtrl), '{}.{}'.format(cnst, ikWeightAttr))
+                fkWeightAttr = cmds.listConnections('{}.target[1].targetParentMatrix'.format(cnst))[0] + 'W1'
+                cmds.connectAttr('{}.outputX'.format(fkIkRev), '{}.{}'.format(cnst, fkWeightAttr))
+                cmds.connectAttr('{}.ik'.format(baseCtrl), '{}.selector'.format(choice))
 
     def _connectSkeleton(self):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
             cmds.scaleConstraint(outJnt, skelJnt, mo=True)
-            # for axis in 'XYZ':
-            #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)

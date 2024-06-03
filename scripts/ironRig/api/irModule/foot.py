@@ -66,9 +66,11 @@ class Foot(Module):
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
         self._ikSystem.joints = ikJoints
+        self._ikSystem.build()
+
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
         self._fkSystem.joints = fkJoints
-        super(Foot, self)._buildSystems()
+        self._fkSystem.build()
 
     def _connectSystems(self):
         self._blendJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='blend')
@@ -108,17 +110,17 @@ class Foot(Module):
         if isinstance(module, TwoBoneLimb) or isinstance(module, ThreeBoneLimb):
             # Connect ik joints
             utils.removeConnections(self._ikSystem.joints[0])
-            cmds.parentConstraint(module.ikSystem().joints[-1], self._ikSystem.joints[0], mo=True)
+            cmds.parentConstraint(module.ikSystem.joints[-1], self._ikSystem.joints[0], mo=True)
             # Connect skel joints
             utils.removeConnections(module.skelJoints[-1])
             cmds.parentConstraint(self._outJoints[0], module.skelJoints[-1], mo=True)
             # Connect ik handle
-            moduleIkHandleLoc = module.ikSystem().ikHandleLocator
+            moduleIkHandleLoc = module.ikSystem.ikHandleLocator
             utils.removeConnections(moduleIkHandleLoc)
             cmds.pointConstraint(self._ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
             # Connect ik controllers
-            cmds.parentConstraint(module.ikSystem().controllers[0], self._ikSystem.controllers[0], mo=True)
-            utils.cloneUserDefinedAttrs(self._ikSystem.controllers[0], module.ikSystem().controllers[0])
+            cmds.parentConstraint(module.ikSystem.controllers[0], self._ikSystem.controllers[0], mo=True)
+            utils.cloneUserDefinedAttrs(self._ikSystem.controllers[0], module.ikSystem.controllers[0])
             cmds.hide(self._ikSystem.controllers[0])
             # Connect fk controllers
             cmds.parentConstraint(module.fkSystem.controllers[-1], self._fkSystem.controllers[0], mo=True)

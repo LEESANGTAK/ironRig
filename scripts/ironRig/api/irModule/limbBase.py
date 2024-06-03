@@ -9,28 +9,25 @@ class LimbBase(Module):
 
     :param Module: Base class of a `Module`
     """
-    def __init__(self, prefix='', joints=[]):
-        super(LimbBase, self).__init__(prefix, joints)
+    def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
+        self._fkSystem = None
+        super(LimbBase, self).__init__(name, side, skeletonJoints)
 
-        self.__fkSystem = None
-
+    @property
     def fkSystem(self):
-        return self.__fkSystem
+        return self._fkSystem
+
+    def _addSystems(self):
+        self._fkSystem = FK(self._name, self._side)
+        self._systems.append(self._fkSystem)
+        super(LimbBase, self)._addSystems()
 
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self.shortName+'fk_', fkJoints)
-        if self._negateScaleX:
-            self.__fkSystem.negateScaleX = True
-        self.__fkSystem.build()
+        self._fkSystem.joints = fkJoints
+        self._fkSystem.build()
 
-        shapeOffset = utils.getDistance(self.__fkSystem.joints[0], self.__fkSystem.joints[-1]) * 0.8 * (self.__fkSystem.aimSign * utils.axisStrToVector(self.__fkSystem.aimAxis()))
-        if self._negateScaleX:
-            shapeOffset = -shapeOffset
-        self.__fkSystem.controllers[0].shapeOffset = shapeOffset
-
-        self._addSystems(self.__fkSystem)
-        self._sysJoints = self.__fkSystem.joints
+        self._sysJoints = self._fkSystem.joints
 
     def _connectSystems(self):
         pass
@@ -41,5 +38,3 @@ class LimbBase(Module):
                 break
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
             cmds.scaleConstraint(outJnt, skelJnt, mo=True)
-            # for axis in 'XYZ':
-            #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)

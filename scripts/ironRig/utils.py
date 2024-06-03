@@ -480,7 +480,11 @@ def getProjectedVector(vector1, vector2):
 
 
 def isParallel(vector1, vector2):
-    return round((vector1 ^ vector2).length()) == 0.0
+    return round((vector1.normal() ^ vector2.normal()).length()) == 0.0
+
+
+def isSameDirection(vector1, vector2):
+    return vector1.normal() * vector2.normal() > 0.0
 
 
 def getDistance(transform1, transform2):
@@ -560,7 +564,7 @@ def isOddNumber(number):
 
 
 def getSkinCluster(geo):
-    return mel.findRelatedSkinCluster(geo)
+    return mel.eval('findRelatedSkinCluster {}'.format(geo))
 
 
 def cleanupRig():
@@ -767,7 +771,7 @@ def changeSolver(dynamicNode, solver=None):
 
 def findMultiAttributeEmptyIndex(node, attribute):
     id = 0
-    while isConnectable('{}.{}[{}]'.format(node, attribute, id)):
+    while not isConnectable('{}.{}[{}]'.format(node, attribute, id)):
         id += 1
     return id
 
@@ -835,7 +839,11 @@ def getParent(node, generations=1):
 
 
 def getAllParents(node):
-    return cmds.listRelatives(node, parent=True, fullPath=True)[0].split('|')
+    parentFullPath = cmds.listRelatives(node, parent=True, fullPath=True)
+    if parentFullPath:
+        return parentFullPath[0].split('|')
+    else:
+        return []
 
 
 def getTransform(shape):
@@ -854,3 +862,7 @@ def isConnectable(attribute):
 
 def setRange(attribute, minimum, maximum):
     cmds.addAttr(attribute, e=True, min=minimum, max=maximum)
+
+
+def numberOfCVs(curve):
+    return cmds.getAttr("{}.spans".format(curve)) + cmds.getAttr("{}.degree".format(curve))

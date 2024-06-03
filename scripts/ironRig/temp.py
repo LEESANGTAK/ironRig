@@ -69,8 +69,9 @@ irRibIKSys.delete()
 name = 'hair'
 side = irs.System.SIDE.CENTER
 jnts = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
-irSpIKSys = irs.SplineIK(name=name, side=side, joints=jnts, numControllers=3)
+irSpIKSys = irs.SplineIK(name=name, side=side, joints=jnts, numberOfControllers=3)
 irSpIKSys.build()
+irSpIKSys.setupDynamic()
 irSpIKSys.delete()
 
 name = 'buttons'
@@ -129,3 +130,62 @@ fingerMod.build()
 fingerMod.controllerSize = 2
 fingerMod.controllerColor = irg.Controller.COLOR.BLUE
 fingerMod.delete()
+
+name = 'foot'
+side = irm.Module.SIDE.LEFT
+jnts = ['foot_l', 'ball_l', 'toe_l']
+footMod = irm.Foot(name, side, jnts)
+footMod.preBuild()
+footMod.build()
+footMod.controllerSize = 10
+footMod.controllerColor = irg.Controller.COLOR.BLUE
+footMod.delete()
+
+name = 'head'
+side = irm.Module.SIDE.CENTER
+jnts = ['head', 'head_end']
+headMod = irm.Head(name, side, jnts)
+headMod.preBuild()
+headMod.build()
+headMod.delete()
+
+name = 'jaw'
+side = irm.Module.SIDE.CENTER
+jnts = ['FACIAL_C_Jaw', 'FACIAL_C_Jawline']
+jawMod = irm.Jaw(name, side, jnts)
+jawMod.preBuild()
+jawMod.build()
+jawMod.delete()
+
+name = 'rope'
+side = irm.Module.SIDE.CENTER
+jnts = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
+ropeMod = irm.Rope(name, side, jnts)
+ropeMod.dynamic = True
+ropeMod.preBuild()
+ropeMod.build()
+ropeMod.delete()
+
+name = 'simple'
+side = irm.Module.SIDE.CENTER
+jnts = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
+simpMod = irm.Simple(name, side, jnts, irm.Simple.SYSTEM_TYPE.FK)
+simpMod.preBuild()
+simpMod.build()
+simpMod.delete()
+
+name = 'spine'
+side = irm.Module.SIDE.CENTER
+jnts = ['pelvis', 'spine_01', 'spine_02', 'spine_03', 'spine_04', 'spine_05']
+ropeMod = irm.Spine(name, side, jnts)
+ropeMod.preBuild()
+ropeMod.build()
+ropeMod.delete()
+
+name = 'tail'
+side = irm.Module.SIDE.CENTER
+jnts = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
+tailMod = irm.String(name, side, jnts, irm.String.IK_TYPE.SPLINE)
+tailMod.preBuild()
+tailMod.build()
+tailMod.delete()

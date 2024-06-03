@@ -58,14 +58,16 @@ class Eye(Module):
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
         self._aimSystem.joints = ikJoints
+        self._aimSystem.build()
+
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
         self._fkSystem.joints = fkJoints
-
-        super(Eye, self)._buildSystems()
-        self._sysJoints = self._fkSystem.joints
+        self._fkSystem.build()
 
         shapeOffset = utils.getDistance(self._fkSystem.joints[0], self._fkSystem.joints[-1])*1.2 * (self._aimSystem.aimSign * utils.axisStrToVector(self._aimSystem.aimAxis))
         self._fkSystem.controllers[0].shapeOffset = shapeOffset
+
+        self._sysJoints = self._fkSystem.joints
 
     def _connectSystems(self):
         cmds.parentConstraint(self._aimSystem.joints[0], self._fkSystem.controllers[0].zeroGrp)

@@ -18,15 +18,23 @@ class SplineIK(System):
     CURVE_DEGREE = CurveDegree
     DYNAMIC_LOCK = DynLock
 
-    def __init__(self, name='new', side=System.SIDE.CENTER, joints=[], numControllers=2):
+    def __init__(self, name='new', side=System.SIDE.CENTER, joints=[], numberOfControllers=2):
         super(SplineIK, self).__init__(name, side, System.TYPE.SPLINE_SYSTEM, joints)
-        self._numControllers = numControllers
+        self._numberOfControllers = numberOfControllers
         self._curve = None
         self._curveDegree = SplineIK.CURVE_DEGREE.CUBIC
         self._curveSpans = None
         self._curveJoints = None
         self._ikHandle = None
         self._follicle = None
+
+    @property
+    def numberOfControllers(self):
+        return self._numberOfControllers
+
+    @numberOfControllers.setter
+    def numberOfControllers(self, val):
+        self._numberOfControllers = val
 
     @property
     def curveDegree(self):
@@ -74,14 +82,14 @@ class SplineIK(System):
     def _createCurveWithJoints(self):
         editPoints = [cmds.xform(jnt, q=True, rp=True, ws=True) for jnt in self._joints]
         crv = cmds.curve(d=1, editPoint=editPoints, n='{}_crv'.format(self.shortName))
-        spans = self._numControllers-1
+        spans = self._numberOfControllers-1
         if self._curveSpans:
             spans = self._curveSpans
         self._curve = cmds.rebuildCurve(crv, d=self._curveDegree, spans=spans, keepRange=0, ch=False, replaceOriginal=True)[0]
         cmds.parent(self._curve, self._noTrsfGrp)
 
     def _buildCurveBindJoints(self):
-        self._curveJoints = utils.createJointsOnCurve(self._curve, self._numControllers, self.shortName)
+        self._curveJoints = utils.createJointsOnCurve(self._curve, self._numberOfControllers, self.shortName)
         self._orientCurveJoints()
         skinClst = cmds.skinCluster(self._curveJoints, self._curve, mi=1, dr=4.0, tsb=True, omi=False, nw=True)
         crvJntsGrp = cmds.group(self._curveJoints, n='{}_crvJnt_grp'.format(self.shortName))
@@ -184,7 +192,7 @@ class SplineIK(System):
         cmds.connectAttr('{}.worldMatrix'.format(self._controllers[-1]), '{}.dWorldUpMatrixEnd'.format(self._ikHandle))
 
     def setupHybridIK(self):
-        for i in range(1, self._numControllers):
+        for i in range(1, self._numberOfControllers):
             curCtrl = self._controllers[i]
             parentCtrl = self._controllers[i-1]
             cmds.parent(curCtrl.zeroGrp, parentCtrl.zeroGrp)
@@ -197,12 +205,12 @@ class SplineIK(System):
         blendshape = cmds.blendShape(crv, self._curve, n='{}_bs'.format(self._curve), origin='local', frontOfChain=True)[0]
         cmds.setAttr('{}.{}'.format(blendshape, crv), 1)
 
-        sine, sineHandle = cmds.nonLinear(crv, type='sine')  # If instanciate non-linear deformer as "PyNode", "Could not create desired MFn" warning is caused
+        sine, sineHandle = cmds.nonLinear(crv, type='sine')
         cmds.setAttr('{}.dropoff'.format(sine), -1)
         cmds.setAttr('{}.highBound'.format(sine), 0)
-        cmds.rename(sineHandle, '{0}_sineHandle'.format(self.shortName))
+        sineHandle = cmds.rename(sineHandle, '{0}_sineHandle'.format(self.shortName))
 
-        numCVs = cmds.getAttr("{}.spans".format(crv)) + cmds.getAttr("{}.degree".format(crv))
+        numCVs = utils.numberOfCVs(crv)
         startPosition = cmds.xform('{}.cv[{}]'.format(crv, 0), q=True, t=True, ws=True)
         endPosition = cmds.xform('{}.cv[{}]'.format(crv, numCVs-1), q=True, t=True, ws=True)
 
@@ -235,10 +243,10 @@ class SplineIK(System):
 
         cmds.connectAttr('{}.waveOnOff'.format(self._controllers[-1]), '{}.envelope'.format(sine))
         cmds.connectAttr('{}.waveOnOff'.format(self._controllers[-1]), '{}.{}'.format(blendshape, crv))
-        cmds.connectAttr('{}.waveAmplitude'.format(self._controllers[-1]), '{}.amplitude'.format(sineHandle))
-        cmds.connectAttr('{}.waveLength'.format(self._controllers[-1]), '{}.wavelength'.format(sineHandle))
-        cmds.connectAttr('{}.waveOffset'.format(self._controllers[-1]), '{}.offset'.format(sineHandle))
-        cmds.connectAttr('{}.waveOrient'.format(self._controllers[-1]), '{}.rotateY'.format(sineHandle))
+        cmds.connectAttr('{}.waveAmplitude'.format(self._controllers[-1]), '{}.amplitude'.format(sineHandle), f=True)
+        cmds.connectAttr('{}.waveLength'.format(self._controllers[-1]), '{}.wavelength'.format(sineHandle), f=True)
+        cmds.connectAttr('{}.waveOffset'.format(self._controllers[-1]), '{}.offset'.format(sineHandle), f=True)
+        cmds.connectAttr('{}.waveOrient'.format(self._controllers[-1]), '{}.rotateY'.format(sineHandle), f=True)
 
         self.addMembers(blendshape)
         cmds.parent(crv, sineHandleSpace, self._blbxGrp)
@@ -284,14 +292,16 @@ class SplineIK(System):
         cmds.setAttr('{}.stretchResistance'.format(hairSystem), 200)
         cmds.setAttr('{}.compressionResistance'.format(hairSystem), 200)
         cmds.setAttr('{}.stiffnessScale[1].stiffnessScale_FloatValue'.format(hairSystem), 1)
-        cmds.rename(utils.getParent(hairSystem), '{0}_hairSystem'.format(self.shortName))
+        hairSystemTrsf = cmds.rename(utils.getParent(hairSystem), '{0}_hairSystem'.format(self.shortName))
+        hairSystem = cmds.listRelatives(hairSystemTrsf, s=True)[0]
 
         self._follicle = cmds.createNode('follicle')
         cmds.setAttr('{}.restPose'.format(self._follicle), 1)
         cmds.setAttr('{}.startDirection'.format(self._follicle), 1)
         cmds.setAttr('{}.degree'.format(self._follicle), 3)
         cmds.getAttr('{}.pointLock'.format(self._follicle))
-        cmds.rename(utils.getParent(self._follicle), '{0}_follicle'.format(self.shortName))
+        folTrsf = cmds.rename(utils.getParent(self._follicle), '{0}_follicle'.format(self.shortName))
+        self._follicle = cmds.listRelatives(folTrsf, s=True)[0]
 
         dynCrv =  cmds.duplicate(self._curve, n='{0}_dyn_crv'.format(self.shortName))[0]
 
@@ -309,26 +319,26 @@ class SplineIK(System):
 
         cmds.connectAttr('{}.startFrame'.format(nucleus), '{}.startFrame'.format(hairSystem))
 
-        outputObjectsId = SplineIK.findMultiAttributeEmptyIndex(nucleus, 'outputObjects')
+        outputObjectsId = utils.findMultiAttributeEmptyIndex(nucleus, 'outputObjects')
         cmds.connectAttr('{}.outputObjects[{}]'.format(nucleus, outputObjectsId), '{}.nextState'.format(hairSystem))
 
-        inputActiveId = SplineIK.findMultiAttributeEmptyIndex(nucleus, 'inputActive')
+        inputActiveId = utils.findMultiAttributeEmptyIndex(nucleus, 'inputActive')
         cmds.connectAttr('{}.currentState'.format(hairSystem), '{}.inputActive[{}]'.format(nucleus, inputActiveId))
 
-        inputActiveStartId = SplineIK.findMultiAttributeEmptyIndex(nucleus, 'inputActiveStart')
+        inputActiveStartId = utils.findMultiAttributeEmptyIndex(nucleus, 'inputActiveStart')
         cmds.connectAttr('{}.startState'.format(hairSystem), '{}.inputActiveStart[{}]'.format(nucleus, inputActiveStartId))
 
         cmds.connectAttr('{}.outputHair[0]'.format(hairSystem), '{}.currentPosition'.format(self._follicle))
         cmds.connectAttr('{}.outHair'.format(self._follicle), '{}.inputHair[0]'.format(hairSystem))
 
         cmds.connectAttr('{}.worldSpace'.format(self._curve), '{}.inputCurve'.format(rebuildCrv))
-        cmds.connectAttr('{}.outputCurve'.format(rebuildCrv), '{}.create'.format(rebuildCrvShape))  # If use ">>" operator, "Could not create desired MFn" warning is caused
+        cmds.connectAttr('{}.outputCurve'.format(rebuildCrv), '{}.create'.format(rebuildCrvShape))
         cmds.connectAttr('{}.local'.format(rebuildCrvShape), '{}.startPosition'.format(self._follicle))
         cmds.connectAttr('{}.worldMatrix'.format(utils.getTransform(self._curve)), '{}.startPositionMatrix'.format(self._follicle))
 
         cmds.connectAttr('{}.outCurve'.format(self._follicle), '{}.create'.format(dynCrv))
 
-        cmds.connectAttr('{}.worldSpace'.format(dynCrv), '{}.inCurve'.format(self._ikHandle))
+        cmds.connectAttr('{}.worldSpace'.format(dynCrv), '{}.inCurve'.format(self._ikHandle), f=True)
 
         cmds.connectAttr('{}.enable'.format(self._controllers[-1]), '{}.enable'.format(nucleus))
         cmds.connectAttr('{}.enable'.format(self._controllers[-1]), '{}.active'.format(hairSystem))
@@ -390,19 +400,12 @@ class SplineIK(System):
                 else:
                     cmds.addAttr(self._controllers[-1], ln=attrName, at=attrProperties['type'], dv=attrProperties['defaultValue'], keyable=attrProperties['keyable'])
 
-    @staticmethod
-    def findMultiAttributeEmptyIndex(node, attribute):
-        id = 0
-        while utils.isConnectable('{}.{}[{}]'.format(node, attribute, id)):
-            id += 1
-        return id
-
     def _setupBakeLocators(self, dynCrv):
         crvMaxRange = cmds.getAttr('{}.maxValue'.format(dynCrv))
         fnCrv = om.MFnNurbsCurve(utils.getDagPath(self._curve))
         for ctrl in self._controllers:
-            ctrlPnt = cmds.xform(ctrl, q=True, rp=True, ws=True)
-            closestPnt = fnCrv.closestPoint(ctrlPnt, space=om.MSpace.kWorld)
+            ctrlPnt = utils.getWorldPoint(ctrl)
+            closestPnt = fnCrv.closestPoint(ctrlPnt, space=om.MSpace.kWorld)[0]
             param = fnCrv.getParamAtPoint(closestPnt, space=om.MSpace.kWorld)
             pointOnCrvInfo = cmds.createNode('pointOnCurveInfo', n='{}_pntOnCrvInfo'.format(ctrl))
             cmds.connectAttr('{}.worldSpace'.format(dynCrv), '{}.inputCurve'.format(pointOnCrvInfo))
@@ -411,7 +414,7 @@ class SplineIK(System):
             bakeLocAnchor = cmds.group(bakeLoc, n='{}_anchor'.format(bakeLoc))
             cmds.connectAttr('{}.result.position'.format(pointOnCrvInfo), '{}.translate'.format(bakeLocAnchor))
 
-            closestJnt = utils.findClosestObject(cmds.xform(bakeLocAnchor, q=True, rp=True, ws=True), self._joints)
+            closestJnt = utils.findClosestObject(utils.getWorldPoint(bakeLocAnchor), self._joints)
             if closestJnt == self._joints[-1]:
                 closestJnt = utils.getParent(self._joints[-1])
             cmds.orientConstraint(closestJnt, bakeLocAnchor, mo=False)
@@ -421,5 +424,5 @@ class SplineIK(System):
 
     def setCurveWeightsArc(self):
         skinClst = utils.getSkinCluster(self._curve)
-        cmds.skinPercent(skinClst, '{}.cv[1]'.format(self._curve), transformValue=[(self._curveJoints[1], 0.3)], prw=0)
-        cmds.skinPercent(skinClst, '{}.cv[-2]'.format(self._curve), transformValue=[(self._curveJoints[-2], 0.3)], prw=0)
+        cmds.skinPercent(skinClst, '{}.cv[{}]'.format(self._curve, 1), transformValue=[(self._curveJoints[1], 0.3)], prw=0)
+        cmds.skinPercent(skinClst, '{}.cv[{}]'.format(self._curve, utils.numberOfCVs(self._curve)-2), transformValue=[(self._curveJoints[-2], 0.3)], prw=0)

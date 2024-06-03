@@ -6,9 +6,9 @@ from .system import System
 
 
 class RibbonIK(System):
-    def __init__(self, name='new', side=System.SIDE.LEFT, joints=[], numControllers=2):
+    def __init__(self, name='new', side=System.SIDE.LEFT, joints=[], numberOfControllers=2):
         super(RibbonIK, self).__init__(name, side, System.TYPE.RIBBON_SYSTEM, joints)
-        self._numControllers = numControllers
+        self._numberOfControllers = numberOfControllers
         self._surface = None
         self._surfaceJoints = None
 
@@ -27,7 +27,7 @@ class RibbonIK(System):
             profileCurves.append(dupProfileCrv)
         self._surface = cmds.loft(profileCurves, ch=False)
 
-        spans = self._numControllers-1
+        spans = self._numberOfControllers-1
         self._surface = cmds.rebuildSurface(self._surface, su=spans, du=3, sv=1, dv=1, keepRange=0, ch=False, replaceOriginal=True)[0]
 
         cmds.delete([profileCurve] + profileCurves)
@@ -55,7 +55,7 @@ class RibbonIK(System):
             cmds.parent(folTransform, self._noTrsfGrp)
 
     def _buildSurfaceBindJoints(self):
-        self._surfaceJoints = utils.createJointsOnSurface(self._surface, self._numControllers, self.shortName)
+        self._surfaceJoints = utils.createJointsOnSurface(self._surface, self._numberOfControllers, self.shortName)
         self._orientSurfaceJoints()
         skinClst = cmds.skinCluster(self._surfaceJoints, self._surface, mi=1, dr=4.0, tsb=True, omi=False, nw=True)
         srfcJntsGrp = cmds.group(self._surfaceJoints, n='{}srfcJnt_grp'.format(self.shortName))
@@ -84,7 +84,7 @@ class RibbonIK(System):
         self._controllers = ctrls
 
     def setupHybridIK(self):
-        for i in range(1, self._numControllers):
+        for i in range(1, self._numberOfControllers):
             curCtrl = self._controllers[i]
             parentCtrl = self._controllers[i-1]
             cmds.parent(curCtrl.zeroGrp, parentCtrl.zeroGrp)

@@ -27,7 +27,7 @@ class Finger(Module):
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
         self._fkSystem.joints = fkJoints
-        super(Finger, self)._buildSystems()
+        self._fkSystem.build()
 
         self._sysJoints = self._fkSystem.joints
 

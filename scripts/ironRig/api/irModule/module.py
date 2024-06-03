@@ -111,8 +111,17 @@ class Module(Container):
     def master(self, master):
         self._master = master
 
+    def _buildGroups(self):
+        """Build groups that module's child groups.
+        """
+        self._geoGrp = cmds.group(n='{}_geo_grp'.format(self.shortName), empty=True)
+        self._initGrp = cmds.group(n='{}_init_grp'.format(self.shortName), empty=True)
+        self._outGrp = cmds.group(n='{}_out_grp'.format(self.shortName), empty=True)
+        self._systemGrp = cmds.group(n='{}_sys_grp'.format(self.shortName), empty=True)
+        cmds.parent([self._geoGrp, self._initGrp, self._outGrp, self._systemGrp], self._topGrp)
+
     def _addSystems(self):
-        """Add systems to a module.
+        """Add systems and set properties.
         """
         logger.debug('{}._addSystems()'.format(self.longName))
 
@@ -130,15 +139,6 @@ class Module(Container):
 
         cmds.matchTransform(self._oriPlaneLocators[1], self._initJoints[0], rotation=True)
         cmds.select(self._oriPlaneLocators[1], r=True)
-
-    def _buildGroups(self):
-        """Build groups that module's child groups.
-        """
-        self._geoGrp = cmds.group(n='{}_geo_grp'.format(self.shortName), empty=True)
-        self._initGrp = cmds.group(n='{}_init_grp'.format(self.shortName), empty=True)
-        self._outGrp = cmds.group(n='{}_out_grp'.format(self.shortName), empty=True)
-        self._systemGrp = cmds.group(n='{}_sys_grp'.format(self.shortName), empty=True)
-        cmds.parent([self._geoGrp, self._initGrp, self._outGrp, self._systemGrp], self._topGrp)
 
     def _buildInitSkelLocators(self):
         initSkelLocs = []
@@ -181,17 +181,18 @@ class Module(Container):
 
         aimVector = utils.getWorldPoint(self._initSkelLocators[-1]) - utils.getWorldPoint(self._initSkelLocators[0])
         if len(self._initSkelLocators) <= 2:
-            midOriPlaneLocVector = om.MVector.kZaxisVector
+            midOriPlaneLocVector = om.MVector.kZnegAxisVector
             if utils.isParallel(aimVector, midOriPlaneLocVector):
-                midOriPlaneLocVector = om.MVector.kYaxisVector
+                midOriPlaneLocVector = om.MVector.kYnegAxisVector
             midLocPos = utils.getWorldPoint(self._initSkelLocators[0]) + (midOriPlaneLocVector * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
         else:
             midInitSkelLoc = self._initSkelLocators[int(len(self._initSkelLocators)*0.5)]
             midOriPlaneLocVector = TwoBoneIK.getPoleVector(self._initSkelLocators[0], midInitSkelLoc, self._initSkelLocators[-1])
             if utils.isParallel(aimVector, midOriPlaneLocVector) or round(midOriPlaneLocVector.length()) == 0.0:
-                midOriPlaneLocVector = om.MVector.kZaxisVector
-                if self.__class__.__name__ == 'String':
+                if utils.isSameDirection(aimVector, om.MVector.kZaxisVector):
                     midOriPlaneLocVector = om.MVector.kYaxisVector
+                else:
+                    midOriPlaneLocVector = om.MVector.kYnegAxisVector
             midLocPos = utils.getWorldPoint(midInitSkelLoc) + (midOriPlaneLocVector.normal() * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
 
         midLoc = cmds.spaceLocator(n='{}_mid_oriPlane_loc'.format(self.shortName))[0]
@@ -270,7 +271,6 @@ class Module(Container):
         """
         self._cleanupSkelJoints()
         if not self._initJoints:
-            self._buildGroups()
             self._buildInitJointsWithSkelJoints()
         self._getAimAxisInfo()
         self._buildSystems()
@@ -325,8 +325,7 @@ class Module(Container):
         """
         logger.debug('{}._buildSystems()'.format(self.longName))
 
-        for system in self._systems:
-            system.build()
+        raise NotImplementedError()
 
     def _connectSystems(self):
         """Connects systems of a module.

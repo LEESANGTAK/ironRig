@@ -4,22 +4,24 @@ from .module import Module
 
 
 class Jaw(Module):
-    def __init__(self, prefix='', joints=[]):
-        super(Jaw, self).__init__(prefix, joints)
+    def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
+        self._fkSystem = None
+        super(Jaw, self).__init__(name, side, skeletonJoints)
 
-        self.__fkSystem = None
+    def _addSystems(self):
+        self._fkSystem = FK(self._name, self._side)
+        self._systems.append(self._fkSystem)
+        super(Jaw, self)._addSystems()
 
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
-        self.__fkSystem = FK(self.shortName+'fk_', fkJoints)
-        if self._negateScaleX:
-            self.__fkSystem.negateScaleX = True
-        self.__fkSystem.build()
-        shapeOffset = utils.getDistance(self.__fkSystem.joints[0], self.__fkSystem.joints[-1])*1.2 * (self.__fkSystem.aimSign * utils.axisStrToVector(self.__fkSystem.aimAxis()))
-        self.__fkSystem.controllers[0].shapeOffset = shapeOffset
+        self._fkSystem.joints = fkJoints
+        self._fkSystem.build()
 
-        self._addSystems(self.__fkSystem)
-        self._sysJoints = self.__fkSystem.joints
+        shapeOffset = utils.getDistance(self._fkSystem.joints[0], self._fkSystem.joints[-1])*1.2 * (self._fkSystem.aimSign * utils.axisStrToVector(self._fkSystem.aimAxis))
+        self._fkSystem.controllers[0].shapeOffset = shapeOffset
+
+        self._sysJoints = self._fkSystem.joints
 
     def _connectSystems(self):
         pass

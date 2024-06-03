@@ -270,12 +270,12 @@ class Controller(object):
 
     def alignShapeTo(self, targetPoint, side):
         bb = om.MFnDagNode(utils.getDagPath(self._transform)).boundingBox
-        topPoint = bb.center + om.MVector([0, bb.height()*0.5, 0])
-        bottomPoint = bb.center + om.MVector([0, bb.height()*-0.5, 0])
-        leftPoint = bb.center + om.MVector([bb.width()*0.5, 0, 0])
-        rightPoint = bb.center + om.MVector([bb.width()*-0.5, 0, 0])
-        frontPoint = bb.center + om.MVector([0, 0, bb.width()*0.5])
-        backPoint = bb.center + om.MVector([0, 0, bb.width()*-0.5])
+        topPoint = bb.center + om.MVector([0, bb.height*0.5, 0])
+        bottomPoint = bb.center + om.MVector([0, bb.height*-0.5, 0])
+        leftPoint = bb.center + om.MVector([bb.width*0.5, 0, 0])
+        rightPoint = bb.center + om.MVector([bb.width*-0.5, 0, 0])
+        frontPoint = bb.center + om.MVector([0, 0, bb.width*0.5])
+        backPoint = bb.center + om.MVector([0, 0, bb.width*-0.5])
         sideTable = {Side.TOP: topPoint,
                      Side.BOTTOM: bottomPoint,
                      Side.LEFT: leftPoint,

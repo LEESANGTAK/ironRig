@@ -7,69 +7,62 @@ from .module import Module
 
 
 class Spine(Module):
-    def __init__(self, prefix='', joints=[]):
-        super(Spine, self).__init__(prefix, joints)
-        self.__ikSystem = None
-        self.__fkSystem = None
+    def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
+        self._ikSystem = None
+        self._fkSystem = None
+        super(Spine, self).__init__(name, side, skeletonJoints)
 
+    @property
     def ikSystem(self):
-        return self.__ikSystem
+        return self._ikSystem
 
+    @property
     def fkSystem(self):
-        return self.__fkSystem
+        return self._fkSystem
+
+    def _addSystems(self):
+        self._ikSystem = SplineIK(self._name, self._side, numberOfControllers=4)
+        self._systems.append(self._ikSystem)
+        super(Spine, self)._addSystems()
 
     def _buildGroups(self):
         super(Spine, self)._buildGroups()
-        self.__controllerGrp = cmds.group(n='{}ctrl_grp'.format(self.shortName), empty=True)
-        cmds.parent(self.__controllerGrp, self._topGrp)
+        self._controllerGrp = cmds.group(n='{}_ctrl_grp'.format(self.shortName), empty=True)
+        cmds.parent(self._controllerGrp, self._topGrp)
 
     def build(self):
         super(Spine, self).build()
-        self.__buildControls()
+        self._buildControls()
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
-        self.__ikSystem = SplineIK(self.shortName+'ik_', ikJoints, numControllers=4)
-        if self._negateScaleX:
-            self.__ikSystem.negateScaleX = True
-        self.__ikSystem.build()
-        self.__ikSystem.setupAdvancedTwist()
-        self.__ikSystem.setupStretch()
-        self.__ikSystem.setupHybridIK()
-        self.__ikSystem.controllers[0].hide()
-        self.__ikSystem.controllers[-1].name = 'chest_ctrl'.format(self.shortName)
-        utils.removeConnections(self.__ikSystem.controllers[1].zeroGrp)
-        for ctrl in self.__ikSystem.controllers[1:-1]:
+        self._ikSystem.joints = ikJoints
+        self._ikSystem.build()
+
+        self._ikSystem.setupAdvancedTwist()
+        self._ikSystem.setupStretch()
+        self._ikSystem.setupHybridIK()
+        self._ikSystem.controllers[0].hide()
+        self._ikSystem.controllers[-1].name = 'chest_ctrl'
+        utils.removeConnections(self._ikSystem.controllers[1].zeroGrp)
+        for ctrl in self._ikSystem.controllers[1:-1]:
             ctrl.shape = Controller.SHAPE.CIRCLE
-        shapeOffset = (self.__ikSystem.aimSign * utils.axisStrToVector(self.__ikSystem.aimAxis())) * utils.getDistance(self.__ikSystem.joints[int(len(self.__ikSystem.joints)*0.5)], self.__ikSystem.joints[-1])
-        self.__ikSystem.controllers[-1].shapeOffset = shapeOffset
-        self._addSystems(self.__ikSystem)
 
-        # fkJoints = Spine.buildFKJoints(self._prefix, self._initJoints, 4)
-        # self.__fkSystem = FK(self._prefix+'fk_', fkJoints)
-        # if self._negateScaleX:
-        #     self.__fkSystem.negateSclaeX = True
-        # self.__fkSystem.build()
-        # self.__fkSystem.controllers[0].hide()
-        # for ctrl in self.__fkSystem.controllers:
-        #     ctrl.lockHideChannels(channels=['translate', 'scale', 'visibility'])
-        # self.addSystems(self.__fkSystem)
-
-        self._sysJoints = self.__ikSystem.joints
+        self._sysJoints = self._ikSystem.joints
 
     @staticmethod
     def buildFKJoints(prefix, joints, numFKJoints):
         fkJnts = []
 
-        startJntPnt = om.MPoint(cmds.xform(joints[0], q=True, rp=True, ws=True))
-        endJntPnt = om.MPoint(cmds.xform(joints[-1], q=True, rp=True, ws=True))
+        startJntPnt = utils.getWorldPoint(joints[0])
+        endJntPnt = utils.getWorldPoint(joints[-1])
         startToEndJntVec = endJntPnt - startJntPnt
         fkJntSegments = numFKJoints - 1
         increment = 1.0 / fkJntSegments
         for i in range(numFKJoints):
             fkJnt = cmds.createNode('joint', n='{}{:02d}_fk'.format(prefix, i))
             fkJntPos = om.MVector(startJntPnt) + startToEndJntVec * (increment * i)
-            cmds.xform(fkJnt, t=fkJntPos, ws=True)
+            cmds.xform(fkJnt, t=list(fkJntPos)[:3], ws=True)
             closestJnt = utils.findClosestObject(fkJntPos, joints)
             cmds.matchTransform(fkJnt, closestJnt, rotation=True)
             fkJnts.append(fkJnt)
@@ -80,22 +73,19 @@ class Spine(Module):
 
     def _connectSystems(self):
         pass
-        # cmds.parentConstraint(self.__fkSystem.controllers[-1], self.__ikSystem.controllers[-1].zeroGrp, mo=True)
 
-    def __buildControls(self):
+    def _buildControls(self):
         pelvisCtrl = Controller('pelvis_ctrl', Controller.SHAPE.CUBE)
-        cmds.matchTransform(pelvisCtrl.zeroGrp, self.__ikSystem.joints[1], position=True, rotation=True)
-        cmds.parentConstraint(pelvisCtrl, self.__ikSystem.controllers[0], mo=True)
-        pelvisCtrl.shapeOffset = utils.getDistance(self.__ikSystem.joints[0], self.__ikSystem.joints[1]) * (-self.__ikSystem.aimSign * utils.axisStrToVector(self.__ikSystem.aimAxis()))
-        cmds.parent(pelvisCtrl.zeroGrp, self.__controllerGrp)
+        cmds.matchTransform(pelvisCtrl.zeroGrp, self._ikSystem.joints[1], position=True, rotation=True)
+        cmds.parentConstraint(pelvisCtrl, self._ikSystem.controllers[0], mo=True)
+        cmds.parent(pelvisCtrl.zeroGrp, self._controllerGrp)
         pelvisCtrl.lockHideChannels(['scale', 'visibility'])
         self._controllers.append(pelvisCtrl)
         self.addMembers(pelvisCtrl.allNodes)
-        pelvisCtrl.shapeOffset = -(self.__ikSystem.aimSign * utils.axisStrToVector(self.__ikSystem.aimAxis())) * utils.getDistance(self.__ikSystem.joints[int(len(self.__ikSystem.joints)*0.5)], self.__ikSystem.joints[0])
 
         upBodyCtrl = Controller('upBody_ctrl', Controller.SHAPE.ARROW_QUAD, direction=Controller.DIRECTION.Y)
         cmds.matchTransform(upBodyCtrl.zeroGrp, self._initJoints[0], position=True)
-        cmds.parent(self._topGrp.getChildren(), upBodyCtrl)
-        self._topGrp | upBodyCtrl.zeroGrp
+        cmds.parent(cmds.listRelatives(self._topGrp, children=True), upBodyCtrl)
+        cmds.parent(upBodyCtrl.zeroGrp, self._topGrp)
         self._controllers.append(upBodyCtrl)
         self.addMembers(upBodyCtrl.allNodes)
