@@ -72,7 +72,7 @@ class Rope(Module):
             ikCtrls = self._ikSystem.controllers
             for index, curCtrl in enumerate(ikCtrls):
                 if utils.isOddNumber(index):
-                    cnst = cmds.parentConstraint(ikCtrls[index-1], ikCtrls[index+1], curCtrl.zeroGrp, mo=True)
+                    cnst = cmds.parentConstraint(ikCtrls[index-1], ikCtrls[index+1], curCtrl.zeroGrp, mo=True)[0]
                     cmds.setAttr('{}.interpType'.format(cnst), 2)
 
         self._sysJoints = self._sgSystem.joints
@@ -104,4 +104,4 @@ class Rope(Module):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             utils.removeConnections(skelJnt)
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
-            cmds.scaleConstraint(outJnt, skelJnt, mo=True)
+            # cmds.scaleConstraint(outJnt, skelJnt, mo=True)

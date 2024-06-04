@@ -230,7 +230,7 @@ def getMeshesFromJoints(joints):
     skinClusters = []
 
     for jnt in joints:
-        jntSkinClusters = cmds.listConnections('{}.worldMatrix'.format(jnt), source=False, type='skinCluster')[0]
+        jntSkinClusters = cmds.listConnections('{}.worldMatrix'.format(jnt), source=False, type='skinCluster')
         if jntSkinClusters:
             skinClusters.extend(jntSkinClusters)
     skinClusters = list(set(skinClusters))
@@ -248,7 +248,7 @@ def getAffectedVertices(joints, minWeight=0.1):
     preSels = cmds.ls()
     cmds.select(cl=True)
     for jnt in joints:
-        skinClusters = cmds.listConnections('{}.worldMatrix'.format(jnt), source=False, type='skinCluster')[0]
+        skinClusters = cmds.listConnections('{}.worldMatrix'.format(jnt), source=False, type='skinCluster')
         if skinClusters:
             selLs = om.MSelectionList()
             jntDagPath = om.MDagPath()

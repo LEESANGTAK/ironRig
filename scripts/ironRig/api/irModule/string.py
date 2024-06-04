@@ -236,4 +236,4 @@ class String(Module):
     def _connectSkeleton(self):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
-            cmds.scaleConstraint(outJnt, skelJnt, mo=True)
+            # cmds.scaleConstraint(outJnt, skelJnt, mo=True)

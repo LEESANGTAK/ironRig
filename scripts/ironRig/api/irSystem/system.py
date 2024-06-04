@@ -109,7 +109,6 @@ class System(Container):
 
     def _getAimAxisInfo(self):
         logger.debug('{}._getAimAxisInfo()'.format(self.longName))
-        print(self._joints)
 
         if len(self._joints) == 1:
             self._aimSign = 1

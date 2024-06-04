@@ -8,17 +8,18 @@ from .module import Module
 class Neck(Module):
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
         self._ikSystem = None
-        self._numControllers = 3
+        self._numberOfControllers = 3
         self._nonrollJoints = []
         super(Neck, self).__init__(name, side, skeletonJoints)
 
     @property
-    def numControllers(self):
-        return self._numControllers
+    def numberOfControllers(self):
+        return self._numberOfControllers
 
-    @numControllers.setter
-    def numControllers(self, numCtrl):
-        self._numControllers = max(2, numCtrl)
+    @numberOfControllers.setter
+    def numberOfControllers(self, numCtrl):
+        self._numberOfControllers = max(2, numCtrl)
+        self._ikSystem.numberOfControllers = self._numberOfControllers
 
     @property
     def ikSystem(self):
@@ -26,6 +27,7 @@ class Neck(Module):
 
     def _addSystems(self):
         self._ikSystem = SplineIK(self._name, self._side)
+        self._ikSystem.numberOfControllers = self._numberOfControllers
         self._systems.append(self._ikSystem)
 
         super(Neck, self)._addSystems()
@@ -33,14 +35,12 @@ class Neck(Module):
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
         self._ikSystem.joints = ikJoints
-        if self._numControllers == 2:
+        if self._numberOfControllers == 2:
             self._ikSystem.curveDegree = SplineIK.CURVE_DEGREE.LINEAR
             self._ikSystem.curveSpans = 1
-        elif self._numControllers == 3:
+        elif self._numberOfControllers == 3:
             self._ikSystem.curveDegree = SplineIK.CURVE_DEGREE.CUBIC
             self._ikSystem.curveSpans = 1
-        if self._negateScaleX:
-            self._ikSystem.negateScaleX = True
         self._ikSystem.build()
 
         if len(self._initJoints) > 2:

@@ -39,7 +39,7 @@ class Aim(System):
     def _buildSystems(self):
         super(Aim, self)._buildSystems()
         aimVec = utils.getWorldPoint(self._joints[1]) - utils.getWorldPoint(self._joints[0])
-        self._aimLoc = cmds.spaceLocator(n='{}_aim_loc'.format(self.longName))
+        self._aimLoc = cmds.spaceLocator(n='{}_aim_loc'.format(self.longName))[0]
         cmds.xform(self._aimLoc, t=list(utils.getWorldPoint(self._joints[0]) + (aimVec * 3))[:-1], ws=True)
         cmds.parent(self._aimLoc, self._blbxGrp)
 

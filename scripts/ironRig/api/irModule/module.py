@@ -137,7 +137,7 @@ class Module(Container):
         self._buildOrientPlane()
         self._buildInitJoints()
 
-        cmds.matchTransform(self._oriPlaneLocators[1], self._initJoints[0], rotation=True)
+        # cmds.matchTransform(self._oriPlaneLocators[1], self._initJoints[0], rotation=True)
         cmds.select(self._oriPlaneLocators[1], r=True)
 
     def _buildInitSkelLocators(self):
@@ -369,7 +369,7 @@ class Module(Container):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             utils.removeConnections(skelJnt)
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
-            cmds.scaleConstraint(outJnt, skelJnt, mo=True)
+            # cmds.scaleConstraint(outJnt, skelJnt, mo=True)
             # for axis in 'XYZ':
             #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
@@ -399,7 +399,7 @@ class Module(Container):
         """
         logger.debug('{}.attachTo()'.format(self.longName))
 
-        parentSpace = utils.findClosestObject(cmds.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints)
+        parentSpace = utils.findClosestObject(utils.getWorldPoint(self._topGrp), module.outJoints)
         cmds.matchTransform(self._topGrp, parentSpace, pivots=True)
         utils.removeConnections(self._topGrp)
         cmds.parentConstraint(parentSpace, self._topGrp, mo=True)

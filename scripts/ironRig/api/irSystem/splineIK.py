@@ -99,8 +99,7 @@ class SplineIK(System):
 
     def _orientCurveJoints(self):
         for crvJnt in self._curveJoints:
-            crvJntPos = cmds.xform(crvJnt, q=True, rp=True, ws=True)
-            closestJnt = utils.findClosestObject(om.MPoint(crvJntPos), self._joints)
+            closestJnt = utils.findClosestObject(utils.getWorldPoint(crvJnt), self._joints)
             cmds.matchTransform(crvJnt, closestJnt, rot=True)
 
     def _buildControls(self):
@@ -410,7 +409,7 @@ class SplineIK(System):
             pointOnCrvInfo = cmds.createNode('pointOnCurveInfo', n='{}_pntOnCrvInfo'.format(ctrl))
             cmds.connectAttr('{}.worldSpace'.format(dynCrv), '{}.inputCurve'.format(pointOnCrvInfo))
             cmds.setAttr('{}.parameter'.format(pointOnCrvInfo), param * crvMaxRange)
-            bakeLoc = cmds.spaceLocator(n='{}_bake_loc'.format(ctrl))
+            bakeLoc = cmds.spaceLocator(n='{}_bake_loc'.format(ctrl))[0]
             bakeLocAnchor = cmds.group(bakeLoc, n='{}_anchor'.format(bakeLoc))
             cmds.connectAttr('{}.result.position'.format(pointOnCrvInfo), '{}.translate'.format(bakeLocAnchor))
 

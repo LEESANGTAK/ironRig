@@ -50,7 +50,7 @@ class Foot(Module):
     def preBuild(self):
         super(Foot, self).preBuild()
         for pivotLoc in self._pivotLocators:
-            cmds.spaceLocator(n=pivotLoc)
+            cmds.spaceLocator(n=pivotLoc)[0]
         cmds.parent(self._pivotLocators, self._initGrp)
 
     def build(self):
@@ -59,7 +59,6 @@ class Foot(Module):
 
     def _buildGroups(self):
         super(Foot, self)._buildGroups()
-        print(self.shortName, self.longName)
         self._controllerGrp = cmds.group(n='{}_ctrl_grp'.format(self.longName), empty=True)
         cmds.parent(self._controllerGrp, self._topGrp)
 

@@ -186,6 +186,20 @@ name = 'tail'
 side = irm.Module.SIDE.CENTER
 jnts = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
 tailMod = irm.String(name, side, jnts, irm.String.IK_TYPE.SPLINE)
+tailMod.numberOfControllers = 5
+tailMod.wave = True
+tailMod.hybridIK = True
+tailMod.fk = True
+tailMod.coil = True
+tailMod.dynamic = True
 tailMod.preBuild()
 tailMod.build()
-tailMod.delete()
+#tailMod.delete()
+
+name = 'arm'
+side = irm.Module.SIDE.LEFT
+jnts = ['upperarm_l', 'lowerarm_l', 'hand_l']
+armMod = irm.TwoBoneLimb(name, side, jnts, True)
+armMod.preBuild()
+armMod.build()
+#armMod.delete()

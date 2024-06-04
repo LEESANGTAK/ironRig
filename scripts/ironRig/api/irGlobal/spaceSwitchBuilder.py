@@ -36,7 +36,7 @@ class SpaceSwitchBuilder(object):
         # Create driver locators
         spaceLocs = []
         for driverCtrl in allDriverCtrls:
-            spaceLoc = cmds.spaceLocator(n='{}_{}_space_loc'.format(self._drivenController, driverCtrl))
+            spaceLoc = cmds.spaceLocator(n='{}_{}_space_loc'.format(self._drivenController, driverCtrl))[0]
             spaceLocs.append(spaceLoc)
             cmds.matchTransform(spaceLoc, self._drivenController)
             spaceLocZeroGrp = utils.makeGroup(spaceLoc, '{}_zero'.format(spaceLoc))
@@ -50,9 +50,9 @@ class SpaceSwitchBuilder(object):
         # Constraint driven controller sapce group
         spaceGrp = utils.makeGroup(self._drivenController.extraGrp, '{}_space'.format(self._drivenController))
         if parent:
-            cnst = cmds.parentConstraint(spaceLocs, spaceGrp, mo=True)
+            cnst = cmds.parentConstraint(spaceLocs, spaceGrp, mo=True)[0]
         elif orient:
-            cnst = cmds.orientConstraint(spaceLocs, spaceGrp, mo=True)
+            cnst = cmds.orientConstraint(spaceLocs, spaceGrp, mo=True)[0]
 
         # Add attributes and connect to constraint weights
         defaultSpaceAttr = None

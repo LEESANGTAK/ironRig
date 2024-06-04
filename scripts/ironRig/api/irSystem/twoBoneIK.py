@@ -6,10 +6,10 @@ from .system import System
 
 
 class TwoBoneIK(System):
-    def __init__(self, name='new', side=System.SIDE.CENTER, joints=[], poleVectorPosition=None):
+    def __init__(self, name='new', side=System.SIDE.CENTER, joints=[]):
         super(TwoBoneIK, self).__init__(name, side, System.TYPE.IK_SYSTEM, joints)
 
-        self._poleVectorPosition = poleVectorPosition
+        self._poleVectorPosition = None
 
         self._ikHandle = None
         self._ikHandleLoc = None
@@ -33,6 +33,15 @@ class TwoBoneIK(System):
     def poleVectorController(self):
         return self._poleVectorController
 
+    @property
+    def poleVectorPosition(self):
+        return self._poleVectorPosition
+
+    @poleVectorPosition.setter
+    def poleVectorPosition(self, position):
+        cmds.xform(self._poleVectorController.zeroGrp, t=list(position)[:3], ws=True)
+        self._poleVectorPosition = position
+
     def build(self):
         super(TwoBoneIK, self).build()
         self._createPoleVectorLine()
@@ -48,11 +57,11 @@ class TwoBoneIK(System):
                 cmds.setAttr('{}.preferredAngleY'.format(self._joints[1]), -90)
 
         self._ikHandle = cmds.ikHandle(startJoint=self._joints[0], endEffector=self._joints[-1], solver='ikRPsolver', n='{}_ikh'.format(self.shortName))[0]
-        self._ikHandleLoc = cmds.spaceLocator(n='{}_zero'.format(self._ikHandle))
+        self._ikHandleLoc = cmds.spaceLocator(n='{}_zero'.format(self._ikHandle))[0]
         cmds.matchTransform(self._ikHandleLoc, self._ikHandle)
         utils.makeHierarchy(self._blbxGrp, self._ikHandleLoc, self._ikHandle)
 
-        jnt0Loc = cmds.spaceLocator(n='{}_loc'.format(self._joints[0]))
+        jnt0Loc = cmds.spaceLocator(n='{}_loc'.format(self._joints[0]))[0]
         cmds.matchTransform(jnt0Loc, self._joints[0])
         utils.makeHierarchy(self._blbxGrp, jnt0Loc, self._joints[0])
 
@@ -69,10 +78,8 @@ class TwoBoneIK(System):
         startToEndVector = utils.getWorldPoint(self._joints[2]) - utils.getWorldPoint(self._joints[0])
         poleVector = self.getPoleVector(self._joints[0], self._joints[1], self._joints[2])
         polePos = utils.getWorldPoint(self._joints[1]) + (poleVector.normal() * startToEndVector.length())
-        if self._poleVectorPosition:  # Override pole vector position if is given
-            polePos = self._poleVectorPosition
         self._poleVectorController = Controller('{}_pv_ctrl'.format(self.shortName), shape=Controller.SHAPE.LOCATOR)
-        cmds.xform(self._poleVectorController.zeroGrp, t=list(polePos)[:3], ws=True)
+        self.poleVectorPosition = polePos
         if self._negateScaleX:
             cmds.setAttr('{}.sx'.format(self._poleVectorController.zeroGrp), -1)
         cmds.poleVectorConstraint(self._poleVectorController, self._ikHandle)
@@ -126,9 +133,9 @@ class TwoBoneIK(System):
         stretchOutputNode = cmds.createNode('transform', n='{}_stretch_output'.format(self.shortName))
         cmds.addAttr(stretchOutputNode, at='double', ln='outLength1')
         cmds.addAttr(stretchOutputNode, at='double', ln='outLength2')
-        jnt0StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[0]))
-        jnt1StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[1]))
-        jnt2StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[2]))
+        jnt0StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[0]))[0]
+        jnt1StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[1]))[0]
+        jnt2StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[2]))[0]
 
         cmds.matchTransform(jnt0StretchLoc, self._joints[0])
         cmds.matchTransform(jnt1StretchLoc, self._joints[1])
@@ -259,9 +266,9 @@ class TwoBoneIK(System):
         cmds.addAttr(pinOutputNode, at='double', ln='outLength1')
         cmds.addAttr(pinOutputNode, at='double', ln='outLength2')
 
-        jnt0PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[0]))
-        jnt1PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[1]))
-        jnt2PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[2]))
+        jnt0PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[0]))[0]
+        jnt1PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[1]))[0]
+        jnt2PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[2]))[0]
 
         cmds.pointConstraint(utils.getParent(self._joints[0]), jnt0PinLoc, mo=False)
         cmds.pointConstraint(self._controllers[-1], jnt1PinLoc, mo=False)
@@ -323,7 +330,7 @@ class TwoBoneIK(System):
         cmds.connectAttr('{}.outLength1'.format(pinOutputNode), '{}.{}'.format(self._joints[1], 'translate{}'.format(self._aimAxis)))
         cmds.connectAttr('{}.outLength2'.format(pinOutputNode), '{}.{}'.format(self._joints[2], 'translate{}'.format(self._aimAxis)))
 
-    def buildStartController(self):
+    def buildRootController(self):
         startCtrl = Controller('{}_ctrl'.format(self._joints[0]), shape=Controller.SHAPE.SPHERE)
         cmds.matchTransform(startCtrl.zeroGrp, self._joints[0], position=True)
         cmds.matchTransform(startCtrl.zeroGrp, self._ikHandleController, rotation=True, scale=True)

@@ -85,7 +85,7 @@ def bakeDynToControllers(bakeLocators):
         cmds.matchTransform(bakeLoc, ctrl)
         cmds.cutKey(ctrl, attribute=['tx', 'ty', 'tz', 'rx', 'ry', 'rz'], clear=True)
 
-        ctrlSpaceLoc = cmds.spaceLocator(n='{}_space_loc'.format(ctrl))
+        ctrlSpaceLoc = cmds.spaceLocator(n='{}_space_loc'.format(ctrl))[0]
         ctrlSpaceLocs.append(ctrlSpaceLoc)
         # cmds.parent(ctrlSpaceLoc, ctrl.getParent())
         cmds.parentConstraint(bakeLoc, ctrlSpaceLoc, mo=False)
@@ -111,8 +111,6 @@ def bakeDynToControllers(bakeLocators):
 
     # cmds.delete(ctrlSpaceLocs)
 
-    print(ctrlSpaceLocs)
-    print(ctrls)
     for ctrlSpaceLoc, ctrl in zip(ctrlSpaceLocs, ctrls):
         cmds.parentConstraint(ctrlSpaceLoc, ctrl, mo=False)
     cmds.bakeResults(

@@ -36,6 +36,14 @@ class ThreeBoneIK(System):
     @property
     def poleVectorController(self):
         return self._poleVectorController
+    @property
+    def poleVectorPosition(self):
+        return self._poleVectorPosition
+
+    @poleVectorPosition.setter
+    def poleVectorPosition(self, position):
+        cmds.xform(self._poleVectorController.zeroGrp, t=list(position)[:3], ws=True)
+        self._poleVectorPosition = position
 
     def build(self):
         super(ThreeBoneIK, self).build()
@@ -68,12 +76,12 @@ class ThreeBoneIK(System):
         utils.makeHierarchy(self._calfAutoRotGrp, self._calfRotGrp, calfIkhZeroGrp)
         self._ankleIkHandle = cmds.ikHandle(startJoint=self._joints[2], endEffector=self._joints[3], solver='ikSCsolver', n='{}_ankle_ikh'.format(self.shortName))[0]
         ankleIkhZeroGrp = utils.makeGroup(self._ankleIkHandle, '{}_zero'.format(self._ankleIkHandle))
-        self._ikHandleLoc = cmds.spaceLocator(n='{}_ikh_loc'.format(self.shortName))
+        self._ikHandleLoc = cmds.spaceLocator(n='{}_ikh_loc'.format(self.shortName))[0]
         cmds.matchTransform(self._ikHandleLoc, self._joints[3])
         cmds.parent([self._calfAutoRotGrp, ankleIkhZeroGrp], self._ikHandleLoc)
         cmds.parent(self._ikHandleLoc, self._blbxGrp)
 
-        jnt0Loc = cmds.spaceLocator(n='{}_loc'.format(self._joints[0]))
+        jnt0Loc = cmds.spaceLocator(n='{}_loc'.format(self._joints[0]))[0]
         cmds.matchTransform(jnt0Loc, self._joints[0])
         cmds.parent([self._joints[0], self._hindJoints[0]], jnt0Loc)
         cmds.parent(jnt0Loc, self._blbxGrp)
@@ -155,13 +163,13 @@ class ThreeBoneIK(System):
         cmds.addAttr(stretchOutputNode, at='double', ln='outHindLength1')
         cmds.addAttr(stretchOutputNode, at='double', ln='outHindLength2')
 
-        jnt0StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[0]))
-        jnt1StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[1]))
-        jnt2StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[2]))
-        jnt3StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[3]))
-        hindJnt0StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._hindJoints[0]))
-        hindJnt1StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._hindJoints[1]))
-        hindJnt2StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._hindJoints[2]))
+        jnt0StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[0]))[0]
+        jnt1StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[1]))[0]
+        jnt2StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[2]))[0]
+        jnt3StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._joints[3]))[0]
+        hindJnt0StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._hindJoints[0]))[0]
+        hindJnt1StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._hindJoints[1]))[0]
+        hindJnt2StretchLoc = cmds.spaceLocator(n='{}_stretch_loc'.format(self._hindJoints[2]))[0]
 
         cmds.matchTransform(jnt0StretchLoc, self._joints[0])
         cmds.matchTransform(jnt1StretchLoc, self._joints[1])
@@ -237,7 +245,7 @@ class ThreeBoneIK(System):
         cmds.setAttr('{}.input1'.format(hindLen2SignMult), self._aimSign)
 
         # Connect nodes
-        cmds.connectAttr('{}.worldMatrix'.format(self._ikHandleLoc), '{}'.format())  >> ikhCtrlLocalMtx.matrixIn[0]
+        cmds.connectAttr('{}.worldMatrix'.format(self._ikHandleLoc), '{}.matrixIn[0]'.format(ikhCtrlLocalMtx))
         cmds.connectAttr('{}.worldInverseMatrix'.format(utils.getParent(self._joints[0])), '{}.matrixIn[1]'.format(ikhCtrlLocalMtx))
         cmds.connectAttr('{}.matrixSum'.format(ikhCtrlLocalMtx), '{}.inMatrix2'.format(ikhCtrlLocalDist))
 
@@ -387,9 +395,9 @@ class ThreeBoneIK(System):
         cmds.addAttr(pinOutputNode, at='double', ln='outLength1')
         cmds.addAttr(pinOutputNode, at='double', ln='outLength2')
 
-        jnt0PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[0]))
-        jnt1PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[1]))
-        jnt2PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[2]))
+        jnt0PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[0]))[0]
+        jnt1PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[1]))[0]
+        jnt2PinLoc = cmds.spaceLocator(n='{}_pin_loc'.format(self._joints[2]))[0]
         cmds.matchTransform(jnt2PinLoc, self._joints[2], position=True)
 
         cmds.pointConstraint(utils.getParent(self._joints[0]), jnt0PinLoc, mo=False)
@@ -454,7 +462,7 @@ class ThreeBoneIK(System):
         cmds.connectAttr('{}.outLength1'.format(pinOutputNode), '{}.{}'.format(self._joints[1]), 'translate{}'.format(self._aimAxis))
         cmds.connectAttr('{}.outLength2'.format(pinOutputNode), '{}.{}'.format(self._joints[2]), 'translate{}'.format(self._aimAxis))
 
-    def buildStartController(self):
+    def buildRootController(self):
         startCtrl = Controller('{}_ctrl'.format(self._joints[0]), shape=Controller.SHAPE.SPHERE)
         cmds.matchTransform(startCtrl.zeroGrp, self._joints[0], position=True)
         cmds.matchTransform(startCtrl.zeroGrp, self._ikHandleController, rotation=True, scale=True)

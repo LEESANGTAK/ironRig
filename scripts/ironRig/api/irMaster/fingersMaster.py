@@ -5,15 +5,15 @@ from ..irGlobal import Controller
 from .master import Master
 
 class FingersMaster(Master):
-    def __init__(self, prefix=''):
-        super(FingersMaster, self).__init__(prefix)
+    def __init__(self, name=''):
+        super(FingersMaster, self).__init__(name)
 
     def build(self):
         super(FingersMaster, self).build()
-        self.__movePivotToModulesCenter()
+        self._movePivotToModulesCenter()
 
-    def __movePivotToModulesCenter(self):
-        tempLoc = cmds.spaceLocator()
+    def _movePivotToModulesCenter(self):
+        tempLoc = cmds.spaceLocator()[0]
         cmds.xform(tempLoc, t=self._getModulesCenter(), ws=True)
         cmds.matchTransform(self._topGrp, tempLoc, pivots=True)
         cmds.delete(tempLoc)
@@ -23,17 +23,16 @@ class FingersMaster(Master):
         masterCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
         masterCtrl.shapeOffset = [0, 5, 0]
         for module in self._modules:
-            attrStr = module.prefix.split('_')[0]
-            cmds.addAttr(masterCtrl, ln='{}_curl'.format(attrStr), at='double', dv=0.0, keyable=True)
+            cmds.addAttr(masterCtrl, ln='{}_curl'.format(module.name), at='double', dv=0.0, keyable=True)
             for fkCtrl in module.fkSystem.controllers:
-                masterCtrl.attr('{}_curl'.format(attrStr)) >> fkCtrl.extraGrp.rotateZ
+                cmds.connectAttr('{}.{}'.format(masterCtrl, '{}_curl'.format(module.name)), '{}.rotateZ'.format(fkCtrl.extraGrp))
 
         cmds.xform(masterCtrl.zeroGrp, t=self._getModulesCenter(), ws=True)
-        self._topGrp | masterCtrl.zeroGrp
+        cmds.parent(masterCtrl.zeroGrp, self._topGrp)
         self.addMembers(masterCtrl.allNodes)
 
     def _getModulesCenter(self):
-        modulesCenter = cmds.dt.Vector()
+        modulesCenter = om.MVector()
         for module in self._modules:
             modulesCenter += om.MVector(utils.getWorldPoint(module.topGrp))
         return om.MPoint(modulesCenter / len(self._modules))

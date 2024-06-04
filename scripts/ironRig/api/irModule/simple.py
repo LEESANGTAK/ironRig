@@ -38,7 +38,6 @@ class Simple(Module):
         self._controllerShape = shape
 
     def _addSystems(self):
-        print(self._simpleType, Simple.SYSTEM_TYPE.FK)
         if self._simpleType == Simple.SYSTEM_TYPE.FK:
             self._system = FK(self._name, self._side)
         elif self._simpleType == Simple.SYSTEM_TYPE.SINGLE:

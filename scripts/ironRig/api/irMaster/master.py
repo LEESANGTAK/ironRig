@@ -9,8 +9,8 @@ class Master(Container):
     Master contains modules, controllers.
     Master controller controls modules behavior.
     """
-    def __init__(self, prefix=''):
-        super(Master, self).__init__(prefix)
+    def __init__(self, name=''):
+        super(Master, self).__init__(name)
 
         self._modules = []
         self._masters = []
@@ -40,9 +40,9 @@ class Master(Container):
         self._controllerSize = size
 
     def _createGroups(self):
-        self._topGrp.rename('{}master'.format(self.shortName))
-        self._modulesGrp = cmds.createNode('transform', n='{}modules'.format(self.shortName))
-        self._topGrp | self._modulesGrp
+        self._topGrp = cmds.rename(self._topGrp, '{}_master'.format(self.shortName))
+        self._modulesGrp = cmds.createNode('transform', n='{}_modules'.format(self.shortName))
+        cmds.parent(self._modulesGrp, self._topGrp)
 
     def addModules(self, *args):
         modules = sum([module if isinstance(module, list) else [module] for module in args], [])
@@ -64,34 +64,32 @@ class Master(Container):
 
     def _buildSystems(self):
         for module in self._modules:
-            self.set.forceElement(module.set)
-            self._modulesGrp | module.topGrp
+            cmds.sets(module.set, forceElement=self.set)
+            cmds.parent(module.topGrp, self._modulesGrp)
 
     def _buildControls(self):
         raise NotImplementedError()
 
     def postBuild(self):
-        for ctrl in self._controllers:
-            ctrl.color = self._controllerColor
-            ctrl.size = self._controllerSize
+        raise NotImplementedError()
 
     def attachTo(self, module):
         closestOutJnt = utils.findClosestObject(cmds.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints)
         cmds.matchTransform(self._topGrp, closestOutJnt, pivots=True)
         cmds.parentConstraint(closestOutJnt, self._topGrp, mo=True)
-        closestOutJnt.scale >> self._topGrp.scale
+        cmds.connectAttr('{}.scale'.format(closestOutJnt), '{}.scale'.format(self._topGrp))
         outJnts = []
         for module in self._modules:
             outJnts.extend(module.outJoints)
         for outJnt in outJnts:
-            scaleMult = outJnt.inputs(type='multiplyDivide')[0]
-            closestOutJnt.scale >> scaleMult.input2
+            scaleMult = cmds.listConnections(outJnt, destination=False, type='multiplyDivide')[0]
+            cmds.connectAttr('{}.scale'.format(closestOutJnt), '{}.input2'.format(scaleMult))
 
     def delete(self):
         for module in self._modules:
-            module.remove()
+            module.delete()
         for master in self._masters:
-            master.remove()
+            master.delete()
         self._modules = []
         self._masters = []
         self._controllers = []

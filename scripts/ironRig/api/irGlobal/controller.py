@@ -240,6 +240,8 @@ class Controller(object):
 
         self._createShapes()
         self._initCVsPosInfo = self._getCvsPosInfo(self.curves)
+        self.size = self._size
+        self.color = self._color
 
         self._zeroGrp = cmds.createNode('transform', n='{0}_{1}'.format(self._name, 'zero'))
         self._extraGrp = cmds.createNode('transform', n='{0}_{1}'.format(self._name, 'extra'))
