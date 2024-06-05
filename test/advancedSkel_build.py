@@ -154,7 +154,7 @@ footLMod = irm.Foot(name, irm.Module.SIDE.LEFT, skeletonJoints=joints)
 footLMod.preBuild()
 footLMod.build()
 footLMod.controllerColor = irg.Controller.COLOR.BLUE
-footLMod.controllerSize = 7
+footLMod.controllerSize = 10
 footLMod.attachTo(legLMod)
 globalMst.addModules(footLMod)
 #footLMod.delete()
@@ -182,7 +182,7 @@ footRMod.preBuild()
 footRMod.negateScaleX = True
 footRMod.build()
 footRMod.controllerColor = irg.Controller.COLOR.RED
-footRMod.controllerSize = 7
+footRMod.controllerSize = 10
 footRMod.attachTo(legRMod)
 globalMst.addModules(footRMod)
 #footRMod.delete()
