@@ -9,8 +9,8 @@ class Master(Container):
     Master contains modules, controllers.
     Master controller controls modules behavior.
     """
-    def __init__(self, name=''):
-        super(Master, self).__init__(name)
+    def __init__(self, name='', side=Container.SIDE.CENTER):
+        super(Master, self).__init__(name, side, Container.TYPE.MASTER)
 
         self._modules = []
         self._masters = []
@@ -73,17 +73,21 @@ class Master(Container):
     def postBuild(self):
         raise NotImplementedError()
 
-    def attachTo(self, module):
-        closestOutJnt = utils.findClosestObject(cmds.xform(self._topGrp, q=True, rp=True, ws=True), module.outJoints)
-        cmds.matchTransform(self._topGrp, closestOutJnt, pivots=True)
-        cmds.parentConstraint(closestOutJnt, self._topGrp, mo=True)
-        cmds.connectAttr('{}.scale'.format(closestOutJnt), '{}.scale'.format(self._topGrp))
+    def attachTo(self, module, outJointIndex=-1000000):
+        parentSpace = None
+        if outJointIndex > -1000000:
+            parentSpace = module.outJoints[outJointIndex]
+        else:
+            parentSpace = utils.findClosestObject(utils.getWorldPoint(self._topGrp), module.outJoints)
+        cmds.matchTransform(self._topGrp, parentSpace, pivots=True)
+        cmds.parentConstraint(parentSpace, self._topGrp, mo=True)
+        cmds.connectAttr('{}.scale'.format(parentSpace), '{}.scale'.format(self._topGrp))
         outJnts = []
         for module in self._modules:
             outJnts.extend(module.outJoints)
         for outJnt in outJnts:
             scaleMult = cmds.listConnections(outJnt, destination=False, type='multiplyDivide')[0]
-            cmds.connectAttr('{}.scale'.format(closestOutJnt), '{}.input2'.format(scaleMult))
+            cmds.connectAttr('{}.scale'.format(parentSpace), '{}.input2'.format(scaleMult), f=True)
 
     def delete(self):
         for module in self._modules:

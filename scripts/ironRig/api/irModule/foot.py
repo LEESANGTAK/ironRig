@@ -83,7 +83,7 @@ class Foot(Module):
         self._sysJoints = self._blendJoints
 
     def _buildControls(self):
-        moduleCtrl = Controller('{}_module_ctrl'.format(self.shortName), Controller.SHAPE.SPHERE)
+        moduleCtrl = Controller('{}_module'.format(self.shortName), Controller.SHAPE.SPHERE)
         moduleCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'])
         cmds.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         cmds.parentConstraint(self._blendJoints[1], moduleCtrl.zeroGrp, mo=False)

@@ -27,6 +27,7 @@ class SplineIK(System):
         self._curveJoints = None
         self._ikHandle = None
         self._follicle = None
+        self._alignEndControllerToWorld = False
 
     @property
     def numberOfControllers(self):
@@ -63,6 +64,14 @@ class SplineIK(System):
     @property
     def ikHandle(self):
         return self._ikHandle
+
+    @property
+    def alignEndControllerToWorld(self):
+        return self._alignEndControllerToWorld
+
+    @alignEndControllerToWorld.setter
+    def alignEndControllerToWorld(self, val):
+        self._alignEndControllerToWorld = val
 
     def _buildSystems(self):
         super(SplineIK, self)._buildSystems()
@@ -105,17 +114,25 @@ class SplineIK(System):
     def _buildControls(self):
         ctrls = []
         for crvJnt in self._curveJoints:
-            ctrl = Controller(name=crvJnt.replace('crvJnt', 'ctrl'), shape=Controller.SHAPE.CUBE, color=self.controllerColor)
+            ctrl = Controller(name=crvJnt.replace('_crvJnt', ''), shape=Controller.SHAPE.CUBE, color=self.controllerColor)
             ctrl.lockHideChannels(['scale', 'visibility'])
             cmds.matchTransform(ctrl.zeroGrp, crvJnt, position=True, rotation=True)
             if self._negateScaleX:
                 cmds.setAttr('{}.sx'.format(ctrl.zeroGrp), -1)
-            cmds.parentConstraint(ctrl, crvJnt, mo=True)
-            ctrls.append(ctrl)
             self.addMembers(ctrl.allNodes)
+            ctrls.append(ctrl)
+
+        if self._alignEndControllerToWorld:
+            cmds.xform(ctrls[-1].zeroGrp, m=utils.matrixAlignedToWorldAxis(ctrls[-1]), ws=True)
+
+        for ctrl, crvJnt in zip(ctrls, self._curveJoints):
+            cmds.parentConstraint(ctrl, crvJnt, mo=True)
+
+        cmds.orientConstraint(ctrls[-1], self._joints[-1], mo=True)
+        # Joint double transformed by twist attribute of the ik handle and controller rotate connection
+        # cmds.connectAttr('{}.rotate'.format(ctrls[-1]), '{}.rotate'.format(self._joints[-1]))  # Joint can't rotate when dynamic applied if drive using constraint
+
         cmds.parent([ctrl.zeroGrp for ctrl in ctrls], self._controllerGrp)
-        #cmds.orientConstraint(ctrls[-1], self._joints[-1], mo=True)
-        cmds.connectAttr('{}.rotate'.format(ctrls[-1]), '{}.rotate'.format(self._joints[-1]))  # Joint can't rotate when dynamic applied if drive using constraint
         self._controllers = ctrls
 
     def setupStretch(self):

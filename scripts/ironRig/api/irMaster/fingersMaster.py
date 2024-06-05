@@ -5,8 +5,8 @@ from ..irGlobal import Controller
 from .master import Master
 
 class FingersMaster(Master):
-    def __init__(self, name=''):
-        super(FingersMaster, self).__init__(name)
+    def __init__(self, name='', side=Master.SIDE.CENTER):
+        super(FingersMaster, self).__init__(name, side)
 
     def build(self):
         super(FingersMaster, self).build()
@@ -14,12 +14,12 @@ class FingersMaster(Master):
 
     def _movePivotToModulesCenter(self):
         tempLoc = cmds.spaceLocator()[0]
-        cmds.xform(tempLoc, t=self._getModulesCenter(), ws=True)
+        cmds.xform(tempLoc, t=list(self._getModulesCenter())[:3], ws=True)
         cmds.matchTransform(self._topGrp, tempLoc, pivots=True)
         cmds.delete(tempLoc)
 
     def _buildControls(self):
-        masterCtrl = Controller('{}ctrl'.format(self.shortName), Controller.SHAPE.CUBE, Controller.COLOR.GREEN)
+        masterCtrl = Controller('{}_ctrl'.format(self.shortName), Controller.SHAPE.CUBE, Controller.COLOR.GREEN)
         masterCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
         masterCtrl.shapeOffset = [0, 5, 0]
         for module in self._modules:
@@ -27,7 +27,7 @@ class FingersMaster(Master):
             for fkCtrl in module.fkSystem.controllers:
                 cmds.connectAttr('{}.{}'.format(masterCtrl, '{}_curl'.format(module.name)), '{}.rotateZ'.format(fkCtrl.extraGrp))
 
-        cmds.xform(masterCtrl.zeroGrp, t=self._getModulesCenter(), ws=True)
+        cmds.xform(masterCtrl.zeroGrp, t=list(self._getModulesCenter())[:3], ws=True)
         cmds.parent(masterCtrl.zeroGrp, self._topGrp)
         self.addMembers(masterCtrl.allNodes)
 

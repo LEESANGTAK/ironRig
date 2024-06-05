@@ -59,7 +59,7 @@ class ThreeBoneIK(System):
             elif orientY < 0:
                 cmds.setAttr('{}.preferredAngleY'.format(self._joints[1]), -90)
 
-        self._hindJoints = utils.duplicateJointChain([self._joints[0], self._joints[1], self._joints[3]], prefix='hind_')
+        self._hindJoints = utils.duplicateJointChain([self._joints[0], self._joints[1], self._joints[3]], name='hind_')
         cmds.setAttr('{}.tx'.format(self._hindJoints[1]), cmds.getAttr('{}.tx'.format(self._joints[2])))
         cmds.setAttr('{}.tx'.format(self._hindJoints[2]), cmds.getAttr('{}.tx'.format(self._joints[1])) + cmds.getAttr('{}.tx'.format(self._joints[3])))
         self._hindIkHandle = cmds.ikHandle(startJoint=self._hindJoints[0], endEffector=self._hindJoints[2], solver='ikRPsolver', n='{}_hind_ikh'.format(self.shortName))[0]
@@ -87,7 +87,7 @@ class ThreeBoneIK(System):
         cmds.parent(jnt0Loc, self._blbxGrp)
 
     def _buildControls(self):
-        self._ikHandleController = Controller('{0}_ctrl'.format(self._ankleIkHandle), shape=Controller.SHAPE.CUBE)
+        self._ikHandleController = Controller('{0}'.format(self._ankleIkHandle), shape=Controller.SHAPE.CUBE)
         cmds.matchTransform(self._ikHandleController.zeroGrp, self._joints[-1], position=True)
         if self._negateScaleX:
             cmds.setAttr('{}.sx'.format(self._ikHandleController.zeroGrp), -1)
@@ -104,7 +104,7 @@ class ThreeBoneIK(System):
         polePos = utils.getWorldPoint(self._joints[1]) + (poleVector.normal() * startToEndVector.length())
         if self._poleVectorPosition:  # Override pole vector position if is given
             polePos = self._poleVectorPosition
-        self._poleVectorController = Controller('{}_pv_ctrl'.format(self.shortName), shape=Controller.SHAPE.LOCATOR)
+        self._poleVectorController = Controller('{}_pv'.format(self.shortName), shape=Controller.SHAPE.LOCATOR)
         cmds.xform(self._poleVectorController.zeroGrp, t=list(polePos)[:3], ws=True)
         if self._negateScaleX:
             cmds.setAttr('{}.sx'.format(self._poleVectorController.zeroGrp), -1)
@@ -463,7 +463,7 @@ class ThreeBoneIK(System):
         cmds.connectAttr('{}.outLength2'.format(pinOutputNode), '{}.{}'.format(self._joints[2]), 'translate{}'.format(self._aimAxis))
 
     def buildRootController(self):
-        startCtrl = Controller('{}_ctrl'.format(self._joints[0]), shape=Controller.SHAPE.SPHERE)
+        startCtrl = Controller(self._joints[0], shape=Controller.SHAPE.SPHERE)
         cmds.matchTransform(startCtrl.zeroGrp, self._joints[0], position=True)
         cmds.matchTransform(startCtrl.zeroGrp, self._ikHandleController, rotation=True, scale=True)
         cmds.parentConstraint(startCtrl, utils.getParent(self._joints[0]), mo=True)

@@ -51,6 +51,18 @@ class TwoBoneLimb(Module):
     def fkSystem(self):
         return self._fkSystem
 
+    @property
+    def ikController(self):
+        return self._ikSystem.ikHandleController
+
+    @property
+    def fkRootController(self):
+        return self._fkSystem.controllers[0]
+
+    @property
+    def poleVectorController(self):
+        return self._ikSystem.poleVectorController
+
     def _addSystems(self):
         self._ikSystem = TwoBoneIK(self._name, self._side)
         self._systems.append(self._ikSystem)
@@ -292,7 +304,7 @@ class TwoBoneLimb(Module):
             # cmds.scaleConstraint(outJnt, skelJnt, mo=True)
 
     def _buildControls(self):
-        moduleCtrl = Controller('{}_module_ctrl'.format(self.shortName), Controller.SHAPE.SPHERE)
+        moduleCtrl = Controller('{}_module'.format(self.shortName), Controller.SHAPE.SPHERE)
         moduleCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'])
         cmds.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         cmds.matchTransform(moduleCtrl.zeroGrp, self._blendJoints[-1], position=True)
@@ -315,7 +327,7 @@ class TwoBoneLimb(Module):
 
         if self._upperTwistSystem or self._lowerTwistSystem:
             cmds.addAttr(moduleCtrl, ln='bendCtrlVis', at='bool', dv=False, keyable=True)
-            moduleTwistCtrl = Controller('{}_twist_ctrl'.format(self.shortName))
+            moduleTwistCtrl = Controller('{}_twist'.format(self.shortName))
             cmds.matchTransform(moduleTwistCtrl.zeroGrp, self._blendJoints[1], position=True)
             cmds.pointConstraint(self._blendJoints[1], moduleTwistCtrl.zeroGrp, mo=False)
             oCnst = cmds.orientConstraint(self._blendJoints[0], self._blendJoints[1], moduleTwistCtrl.zeroGrp, mo=False)[0]
@@ -357,7 +369,7 @@ class TwoBoneLimb(Module):
 
     def attachTo(self, module):
         if module.__class__.__name__ == 'LimbBase':
-            limbBaseCtrl = module.fkSystem.controllers[0]
+            limbBaseCtrl = module.fkRootController
 
             aimLoc = cmds.spaceLocator(n='{}_aim_loc'.format(limbBaseCtrl))[0]
             staticLoc = cmds.spaceLocator(n='{}_static_loc'.format(limbBaseCtrl))[0]
@@ -369,13 +381,13 @@ class TwoBoneLimb(Module):
 
             cmds.addAttr(limbBaseCtrl, ln='aim', at='float', min=0.0, max=1.0, dv=0.5, keyable=True)
             revNode = cmds.createNode('reverse', n='{}_aim_rev'.format(limbBaseCtrl))
-            cmds.connectAttr('{}.aim'.format(limbBaseCtrl), '{}.targetWeight'.format(cnst.target[0]))
+            cmds.connectAttr('{}.aim'.format(limbBaseCtrl), '{}.target[0].targetWeight'.format(cnst), f=True)
             cmds.connectAttr('{}.aim'.format(limbBaseCtrl), '{}.inputX'.format(revNode))
-            cmds.connectAttr('{}.outputX'.format(revNode), '{}.targetWeight'.format(cnst.target[1]))
+            cmds.connectAttr('{}.outputX'.format(revNode), '{}.target[1].targetWeight'.format(cnst), f=True)
 
             tempPoleVectorLoc = cmds.spaceLocator(n='tempPoleVector_loc')[0]
-            tempPoleVectorLocPos = utils.getWorldPoint(limbBaseCtrl.zeroGrp) + (utils.getWorldPoint(self._ikSystem.poleVectorController) - utils.getWorldPoint(self._ikSystem.joints[1]))[0]
-            cmds.xform(tempPoleVectorLoc, t=tempPoleVectorLocPos, ws=True)
+            tempPoleVectorLocPos = utils.getWorldPoint(limbBaseCtrl.zeroGrp) + (utils.getWorldPoint(self._ikSystem.poleVectorController) - utils.getWorldPoint(self._ikSystem.joints[1]))
+            cmds.xform(tempPoleVectorLoc, t=list(tempPoleVectorLocPos)[:3], ws=True)
             upAxisInfo = utils.getAimAxisInfo(limbBaseCtrl.zeroGrp, tempPoleVectorLoc)
             cmds.delete(tempPoleVectorLoc)
             cmds.aimConstraint(

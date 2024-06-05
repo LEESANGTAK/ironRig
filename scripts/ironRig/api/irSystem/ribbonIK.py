@@ -38,7 +38,7 @@ class RibbonIK(System):
         cmds.connectAttr('{}.worldMatrix'.format(self._topGrp), '{}.inputMatrix'.format(folScaleDecMtx))
 
         for joint in self._joints:
-            jntPoint = om.MPoint(cmds.xform(joint, q=True, t=True, ws=True))
+            jntPoint = utils.getWorldPoint(joint)
             fnSrfc = om.MFnNurbsSurface(utils.getDagPath(self._surface))
             closestPoint, paramU, paramV = fnSrfc.closestPoint(jntPoint, space=om.MSpace.kWorld)
             fol = cmds.createNode('follicle')
@@ -72,7 +72,7 @@ class RibbonIK(System):
     def _buildControls(self):
         ctrls = []
         for srfcJnt in self._surfaceJoints:
-            ctrl = Controller(name=srfcJnt.replace('srfcJnt', 'ctrl'), shape=Controller.SHAPE.CUBE, color=self.controllerColor)
+            ctrl = Controller(name=srfcJnt.replace('_srfcJnt', ''), shape=Controller.SHAPE.CUBE, color=self.controllerColor)
             ctrl.lockHideChannels(['scale', 'visibility'])
             cmds.matchTransform(ctrl.zeroGrp, srfcJnt, position=True, rotation=True)
             if self._negateScaleX:

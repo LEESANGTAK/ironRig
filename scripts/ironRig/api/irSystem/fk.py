@@ -23,7 +23,7 @@ class FK(System):
         for jnt in self._joints:
             if jnt == self._joints[-1] and not self._endController:
                 break
-            ctrl = Controller('{}_ctrl'.format(jnt))
+            ctrl = Controller(jnt)
             ctrl.direction = utils.axisStrToEnum(self._aimAxis)
             cmds.matchTransform(ctrl.zeroGrp, jnt, position=True, rotation=True)
             self.addMembers(cmds.parentConstraint(ctrl, jnt, mo=True))

@@ -17,6 +17,10 @@ class LimbBase(Module):
     def fkSystem(self):
         return self._fkSystem
 
+    @property
+    def fkRootController(self):
+        return self._fkSystem.controllers[0]
+
     def _addSystems(self):
         self._fkSystem = FK(self._name, self._side)
         self._systems.append(self._fkSystem)

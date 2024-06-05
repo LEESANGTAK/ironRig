@@ -25,9 +25,18 @@ class Neck(Module):
     def ikSystem(self):
         return self._ikSystem
 
+    @property
+    def neckController(self):
+        return self._ikSystem.controllers[-2]
+
+    @property
+    def headController(self):
+        return self._ikSystem.controllers[-1]
+
     def _addSystems(self):
         self._ikSystem = SplineIK(self._name, self._side)
         self._ikSystem.numberOfControllers = self._numberOfControllers
+        self._ikSystem.alignEndControllerToWorld = True
         self._systems.append(self._ikSystem)
 
         super(Neck, self)._addSystems()
@@ -50,7 +59,7 @@ class Neck(Module):
 
         self._ikSystem.controllerShape = Controller.SHAPE.CIRCLE
         self._ikSystem.controllers[-1].shape = Controller.SHAPE.CUBE
-        self._ikSystem.controllers[-1].name = 'head_ctrl'
+        self._ikSystem.controllers[-1].name = 'head'
 
         self._sysJoints = self._ikSystem.joints
 

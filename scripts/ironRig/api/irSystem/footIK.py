@@ -93,10 +93,7 @@ class FootIK(System):
                                        utils.getWorldPoint(self._joints[-1]),
                                        utils.getWorldPoint(self._joints[0]) + om.MVector.kYnegAxisVector)
         if centerPnt.x < 0:  # In case right side
-            oriMtx = om.MMatrix([oriMtx[0][0], oriMtx[0][1], oriMtx[0][2], oriMtx[0][3],
-                                   -oriMtx[1][0], -oriMtx[1][1], -oriMtx[1][2], oriMtx[1][3],
-                                   -oriMtx[2][0], -oriMtx[2][1], -oriMtx[2][2], oriMtx[2][3],
-                                   oriMtx[3][0], oriMtx[3][1], oriMtx[3][2], oriMtx[3][3]])
+            oriMtx = om.MMatrix(oriMtx)
 
         # Build reverse foot joints
         inBankRevJnt = cmds.createNode('joint', n='{}_inBank_revJnt'.format(self.shortName))
@@ -141,7 +138,7 @@ class FootIK(System):
         cmds.parent(ballIK, self._revFootJoints[-2])
 
     def _buildControls(self):
-        self._footCtrl = Controller('{0}_ctrl'.format(self.shortName), Controller.SHAPE.FOOT, size=5, direction=Controller.DIRECTION.Y)
+        self._footCtrl = Controller(self.shortName, Controller.SHAPE.FOOT, size=5, direction=Controller.DIRECTION.Y)
         jointsMidVec = (utils.getWorldVector(self._joints[0]) + utils.getWorldVector(self._joints[-1])) * 0.5
         cmds.xform(self._footCtrl.zeroGrp, t=[jointsMidVec.x, 0, jointsMidVec.z], ws=True)
         if self._negateScaleX:

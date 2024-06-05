@@ -56,6 +56,18 @@ class ThreeBoneLimb(Module):
     def fkSystem(self):
         return self._fkSystem
 
+    @property
+    def ikController(self):
+        return self._ikSystem.ikHandleController
+
+    @property
+    def fkRootController(self):
+        return self._fkSystem.controllers[0]
+
+    @property
+    def poleVectorController(self):
+        return self._ikSystem.poleVectorController
+
     def _addSystems(self):
         self._ikSystem = ThreeBoneIK(self._name, self._side)
         self._systems.append(self._ikSystem)
@@ -329,7 +341,7 @@ class ThreeBoneLimb(Module):
             # cmds.scaleConstraint(outJnt, skelJnt, mo=True)
 
     def _buildControls(self):
-        moduleCtrl = Controller('{}_module_ctrl'.format(self.shortName), Controller.SHAPE.SPHERE)
+        moduleCtrl = Controller('{}_module'.format(self.shortName), Controller.SHAPE.SPHERE)
         moduleCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'])
         cmds.addAttr(moduleCtrl, ln='ik', at='double', min=0.0, max=1.0, dv=1.0, keyable=True)
         cmds.matchTransform(moduleCtrl.zeroGrp, self._blendJoints[-1], position=True)
@@ -352,7 +364,7 @@ class ThreeBoneLimb(Module):
 
         if self._firstLimbTwistSystem or self._secondLimbTwistSystem or self._thirdLimbTwistSystem:
             cmds.addAttr(moduleCtrl, ln='bendCtrlVis', at='bool', dv=False, keyable=True)
-            moduleFirstTwistCtrl = Controller('{}_firstTwist_ctrl'.format(self.shortName))
+            moduleFirstTwistCtrl = Controller('{}_firstTwist'.format(self.shortName))
             cmds.matchTransform(moduleFirstTwistCtrl.zeroGrp, self._blendJoints[1], position=True)
             cmds.pointConstraint(self._blendJoints[1], moduleFirstTwistCtrl.zeroGrp, mo=False)
             oCnst = cmds.orientConstraint(self._blendJoints[0], self._blendJoints[1], moduleFirstTwistCtrl.zeroGrp, mo=False)[0]
@@ -365,7 +377,7 @@ class ThreeBoneLimb(Module):
             pvLineDecMtx = cmds.listConnections('{}.worldMatrix'.format(self._ikSystem.joints[1]), type='decomposeMatrix')[0]
             cmds.connectAttr('{}.worldMatrix'.format(moduleFirstTwistCtrl), '{}.inputMatrix'.format(pvLineDecMtx), f=True)
 
-            moduleSecondTwistCtrl = Controller('{}_secondTwist_ctrl'.format(self.shortName))
+            moduleSecondTwistCtrl = Controller('{}_secondTwist'.format(self.shortName))
             cmds.matchTransform(moduleSecondTwistCtrl.zeroGrp, self._blendJoints[2], position=True)
             cmds.pointConstraint(self._blendJoints[2], moduleSecondTwistCtrl.zeroGrp, mo=False)
             oCnst = cmds.orientConstraint(self._blendJoints[1], self._blendJoints[2], moduleSecondTwistCtrl.zeroGrp, mo=False)[0]

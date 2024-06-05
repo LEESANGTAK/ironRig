@@ -234,7 +234,7 @@ class Controller(object):
                 cmds.xform('{}.cv[{}]'.format(self.curves[shapeId], cvId), t=pos, os=True)
 
     def _initController(self):
-        self._transform = cmds.createNode('transform', n=self._name)
+        self._transform = cmds.createNode('transform', n=self._name+'_ctrl')
         self._controllerNode = cmds.createNode('controller', n='{}_controller'.format(self._name))
         cmds.connectAttr('{}.message'.format(self._transform), '{}.controllerObject'.format(self._controllerNode))
 
@@ -243,8 +243,8 @@ class Controller(object):
         self.size = self._size
         self.color = self._color
 
-        self._zeroGrp = cmds.createNode('transform', n='{0}_{1}'.format(self._name, 'zero'))
-        self._extraGrp = cmds.createNode('transform', n='{0}_{1}'.format(self._name, 'extra'))
+        self._zeroGrp = cmds.createNode('transform', n='{0}_{1}'.format(self._transform, 'zero'))
+        self._extraGrp = cmds.createNode('transform', n='{0}_{1}'.format(self._transform, 'extra'))
         cmds.parent(self._transform, self._extraGrp)
         cmds.parent(self._extraGrp, self._zeroGrp)
 

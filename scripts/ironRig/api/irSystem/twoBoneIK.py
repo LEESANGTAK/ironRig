@@ -66,7 +66,7 @@ class TwoBoneIK(System):
         utils.makeHierarchy(self._blbxGrp, jnt0Loc, self._joints[0])
 
     def _buildControls(self):
-        self._ikHandleController = Controller('{0}_ctrl'.format(self._ikHandle), shape=Controller.SHAPE.CUBE)
+        self._ikHandleController = Controller(self._ikHandle, shape=Controller.SHAPE.CUBE)
         cmds.matchTransform(self._ikHandleController.zeroGrp, self._joints[-1], position=True)
         if self._negateScaleX:
             cmds.setAttr('{}.sx'.format(self._ikHandleController.zeroGrp), -1)
@@ -78,7 +78,7 @@ class TwoBoneIK(System):
         startToEndVector = utils.getWorldPoint(self._joints[2]) - utils.getWorldPoint(self._joints[0])
         poleVector = self.getPoleVector(self._joints[0], self._joints[1], self._joints[2])
         polePos = utils.getWorldPoint(self._joints[1]) + (poleVector.normal() * startToEndVector.length())
-        self._poleVectorController = Controller('{}_pv_ctrl'.format(self.shortName), shape=Controller.SHAPE.LOCATOR)
+        self._poleVectorController = Controller('{}_pv'.format(self.shortName), shape=Controller.SHAPE.LOCATOR)
         self.poleVectorPosition = polePos
         if self._negateScaleX:
             cmds.setAttr('{}.sx'.format(self._poleVectorController.zeroGrp), -1)
@@ -91,9 +91,9 @@ class TwoBoneIK(System):
 
     @staticmethod
     def getPoleVector(startObject, midObject, endObject):
-        startVector = om.MVector(cmds.xform(startObject, q=True, rp=True, ws=True))
-        midVector = om.MVector(cmds.xform(midObject, q=True, rp=True, ws=True))
-        endVector = om.MVector(cmds.xform(endObject, q=True, rp=True, ws=True))
+        startVector = utils.getWorldVector(startObject)
+        midVector = utils.getWorldVector(midObject)
+        endVector = utils.getWorldVector(endObject)
 
         startToEndCenter = (startVector + endVector) * 0.5
         poleVector = midVector - startToEndCenter
@@ -331,7 +331,7 @@ class TwoBoneIK(System):
         cmds.connectAttr('{}.outLength2'.format(pinOutputNode), '{}.{}'.format(self._joints[2], 'translate{}'.format(self._aimAxis)))
 
     def buildRootController(self):
-        startCtrl = Controller('{}_ctrl'.format(self._joints[0]), shape=Controller.SHAPE.SPHERE)
+        startCtrl = Controller(self._joints[0], shape=Controller.SHAPE.SPHERE)
         cmds.matchTransform(startCtrl.zeroGrp, self._joints[0], position=True)
         cmds.matchTransform(startCtrl.zeroGrp, self._ikHandleController, rotation=True, scale=True)
         cmds.parentConstraint(startCtrl, utils.getParent(self._joints[0]), mo=True)

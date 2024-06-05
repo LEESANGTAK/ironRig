@@ -37,6 +37,7 @@ class GlobalMaster(Master):
     def build(self):
         super(GlobalMaster, self).build()
         cmds.parent([self._modulesGrp, self._mastersGrp], self._mainController)
+        self._set = cmds.rename(self._set, 'controlRig_set')
 
         # for jnt in self._rootJoint.getChildren(type='joint'):
         #     jnt.segmentScaleCompensate.set(False)
@@ -45,19 +46,20 @@ class GlobalMaster(Master):
         super(GlobalMaster, self)._createGroups()
         self._spaceSwtichGrp = cmds.createNode('transform', n='spaceSwitches_grp')
         cmds.hide(self._spaceSwtichGrp)
-        self._mastersGrp = cmds.createNode('transform', n='{}_masters'.format(self.shortName))
-        cmds.parent(self._spaceSwtichGrp, self._topGrp)
+        self._mastersGrp = cmds.createNode('transform', n='{}_masters'.format(self._name))
+        self._modulesGrp = cmds.rename(self._modulesGrp, '{}_modules'.format(self._name))
         self._topGrp = cmds.rename(self._topGrp, 'controlRig')
+        cmds.parent(self._spaceSwtichGrp, self._topGrp)
 
     def _buildSystems(self):
         pass
 
     def _buildControls(self):
-        self._globalController = Controller(name='global_ctrl', color=Controller.COLOR.YELLOW, size=30, direction=Controller.DIRECTION.Y)
+        self._globalController = Controller(name='global', color=Controller.COLOR.YELLOW, size=30, direction=Controller.DIRECTION.Y)
         GlobalMaster.setupGlobalScaleAttr(self._globalController)
         self._globalController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
 
-        self._mainController = Controller(name='main_ctrl', color=Controller.COLOR.DARKBLUE, size=25, direction=Controller.DIRECTION.Y)
+        self._mainController = Controller(name='main', color=Controller.COLOR.DARKBLUE, size=25, direction=Controller.DIRECTION.Y)
         self._mainController.lockHideChannels(channels=['scale', 'visibility'], axes=['X', 'Y', 'Z'])
         self.setupVisibilityAttr(self._mainController)
 
@@ -69,7 +71,7 @@ class GlobalMaster(Master):
         self.addMembers(self._globalController.allNodes, self._mainController.allNodes)
 
         if self._buildRootController:
-            rootCtrl = Controller(name='root_ctrl', color=Controller.COLOR.GREEN, shape=Controller.SHAPE.TRIANGLE, size=20, direction=Controller.DIRECTION.Y)
+            rootCtrl = Controller(name='root', color=Controller.COLOR.GREEN, shape=Controller.SHAPE.TRIANGLE, size=20, direction=Controller.DIRECTION.Y)
             cmds.parentConstraint(rootCtrl, self._rootJoint, mo=True)
             cmds.parent(rootCtrl.zeroGrp, self._globalController)
             self.addMembers(rootCtrl.allNodes)

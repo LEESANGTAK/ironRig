@@ -183,7 +183,7 @@ class Module(Container):
         if len(self._initSkelLocators) <= 2:
             midOriPlaneLocVector = om.MVector.kZnegAxisVector
             if utils.isParallel(aimVector, midOriPlaneLocVector):
-                midOriPlaneLocVector = om.MVector.kYnegAxisVector
+                midOriPlaneLocVector = om.MVector.kYaxisVector
             midLocPos = utils.getWorldPoint(self._initSkelLocators[0]) + (midOriPlaneLocVector * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
         else:
             midInitSkelLoc = self._initSkelLocators[int(len(self._initSkelLocators)*0.5)]
@@ -376,7 +376,7 @@ class Module(Container):
     def _buildGlobalController(self):
         logger.debug('{}._buildGlobalController()'.format(self.longName))
 
-        modGlobalCtrl = Controller('{}_global_ctrl'.format(self.shortName),
+        modGlobalCtrl = Controller('{}_global'.format(self.shortName),
                                    Controller.SHAPE.CUBE,
                                    Controller.COLOR.LIGHTGREEN,
                                    utils.getDistance(self._initJoints[0], self._initJoints[-1]))
@@ -391,15 +391,17 @@ class Module(Container):
         logger.debug('{}.postBuild()'.format(self.longName))
         raise NotImplementedError()
 
-    def attachTo(self, module):
+    def attachTo(self, module, outJointIndex=-1000000):
         """Attach a module to the other module.
-
-        :param module: Other module.
-        :type module: Module
         """
         logger.debug('{}.attachTo()'.format(self.longName))
 
-        parentSpace = utils.findClosestObject(utils.getWorldPoint(self._topGrp), module.outJoints)
+        parentSpace = None
+        if outJointIndex > -1000000:
+            parentSpace = module.outJoints[outJointIndex]
+        else:
+            parentSpace = utils.findClosestObject(utils.getWorldPoint(self._topGrp), module.outJoints)
+
         cmds.matchTransform(self._topGrp, parentSpace, pivots=True)
         utils.removeConnections(self._topGrp)
         cmds.parentConstraint(parentSpace, self._topGrp, mo=True)

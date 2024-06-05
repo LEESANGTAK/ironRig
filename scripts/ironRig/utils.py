@@ -48,10 +48,12 @@ def getWorldVector(object):
 
 def findClosestObject(searchPoint, objects):
     closestObj = None
+    if not isinstance(searchPoint, om.MPoint):
+        searchPoint = om.MPoint(searchPoint)
 
     minDist = 100000.0
     for obj in objects:
-        objPnt = om.MPoint(cmds.xform(obj, q=True, rp=True, ws=True))
+        objPnt = getWorldPoint(obj)
         delta = objPnt - searchPoint
         if delta.length() < minDist:
             closestObj = obj
@@ -65,7 +67,7 @@ def findClosestController(searchPoint, controllers):
 
     minDist = 100000.0
     for ctrl in controllers:
-        ctrlPnt = om.MPoint(cmds.xform(ctrl, q=True, rp=True, ws=True))
+        ctrlPnt = getWorldPoint(ctrl)
         delta = ctrlPnt - searchPoint
         if delta.length() < minDist:
             closestCtrl = ctrl
@@ -74,8 +76,8 @@ def findClosestController(searchPoint, controllers):
     return closestCtrl
 
 
-def buildNewJointChain(joints, prefix='', searchStr='', replaceStr=''):
-    newJoints = buildNewJoints(joints, prefix, searchStr, replaceStr)
+def buildNewJointChain(joints, name='', searchStr='', replaceStr=''):
+    newJoints = buildNewJoints(joints, name, searchStr, replaceStr)
 
     for index, newJnt in enumerate(newJoints):
         if index == 0:
@@ -87,10 +89,10 @@ def buildNewJointChain(joints, prefix='', searchStr='', replaceStr=''):
     return newJoints
 
 
-def buildNewJoints(joints, prefix='', searchStr='', replaceStr=''):
+def buildNewJoints(joints, name='', searchStr='', replaceStr=''):
     newJoints = []
     for jnt in joints:
-        newJnt = cmds.createNode('joint', n=prefix + jnt.replace(searchStr, replaceStr))
+        newJnt = cmds.createNode('joint', n='{}{}'.format(name, jnt.replace(searchStr, replaceStr)))
         cmds.matchTransform(newJnt, jnt)
         newJoints.append(newJnt)
 
@@ -99,8 +101,8 @@ def buildNewJoints(joints, prefix='', searchStr='', replaceStr=''):
     return newJoints
 
 
-def duplicateJointChain(joints, prefix='', searchStr='', replaceStr=''):
-    dupJnts = duplicateJoints(joints, prefix, searchStr, replaceStr)
+def duplicateJointChain(joints, name='', searchStr='', replaceStr=''):
+    dupJnts = duplicateJoints(joints, name, searchStr, replaceStr)
 
     for index, dupJnt in enumerate(dupJnts):
         if index == 0:
@@ -112,12 +114,12 @@ def duplicateJointChain(joints, prefix='', searchStr='', replaceStr=''):
     return dupJnts
 
 
-def duplicateJoints(joints, prefix='', searchStr='', replaceStr=''):
+def duplicateJoints(joints, name='', searchStr='', replaceStr=''):
     dupJnts = []
 
     for jnt in joints:
-        if prefix:
-            dupJnt = cmds.duplicate(jnt, n='{}{}'.format(prefix, jnt), po=True)[0]
+        if name:
+            dupJnt = cmds.duplicate(jnt, n='{}{}'.format(name, jnt), po=True)[0]
         else:
             dupJnt = cmds.duplicate(jnt, n=jnt.replace(searchStr, replaceStr), po=True)[0]
         dupJnts.append(dupJnt)
@@ -127,7 +129,7 @@ def duplicateJoints(joints, prefix='', searchStr='', replaceStr=''):
     return dupJnts
 
 
-def createJointsOnCurve(curve, numJoints, prefix):
+def createJointsOnCurve(curve, numJoints, name):
     joints = []
     crvFn = om.MFnNurbsCurve(getDagPath(curve))
     crvLength = crvFn.length()
@@ -137,7 +139,7 @@ def createJointsOnCurve(curve, numJoints, prefix):
     for i in range(numJoints):
         parm = crvFn.findParamFromLength(increment * i)
         pointOnCrv = crvFn.getPointAtParam(parm, space=om.MSpace.kWorld)
-        jnt = cmds.createNode('joint', n='{}{:02d}_crvJnt'.format(prefix, i))
+        jnt = cmds.createNode('joint', n='{}_{:02d}_crvJnt'.format(name, i))
         cmds.xform(jnt, t=list(pointOnCrv)[:3], ws=True)
         joints.append(jnt)
     cmds.makeIdentity(joints, apply=True)
@@ -146,7 +148,7 @@ def createJointsOnCurve(curve, numJoints, prefix):
     return joints
 
 
-def createJointsOnSurface(surface, numJoints, prefix):
+def createJointsOnSurface(surface, numJoints, name):
     joints = []
     srfcFn = om.MFnNurbsSurface(getDagPath(surface))
     segments = numJoints - 1
@@ -154,7 +156,7 @@ def createJointsOnSurface(surface, numJoints, prefix):
 
     for i in range(numJoints):
         pointOnSurface = srfcFn.getPointAtParam(increment * i, 0.5, space=om.MSpace.kWorld)
-        jnt = cmds.createNode('joint', n='{}{:02d}_srfcJnt'.format(prefix, i))
+        jnt = cmds.createNode('joint', n='{}_{:02d}_srfcJnt'.format(name, i))
         cmds.xform(jnt, t=list(pointOnSurface)[:3], ws=True)
         joints.append(jnt)
     cmds.makeIdentity(joints, apply=True)
@@ -164,8 +166,8 @@ def createJointsOnSurface(surface, numJoints, prefix):
 
 
 def getAimAxisInfo(startObject, endObject, space='local'):
-    startPnt = om.MPoint(cmds.xform(startObject, q=True, rp=True, ws=True))
-    endPnt = om.MPoint(cmds.xform(endObject, q=True, rp=True, ws=True))
+    startPnt = getWorldPoint(startObject)
+    endPnt = getWorldPoint(endObject)
     aimVector = endPnt - startPnt
     aimVector.normalize()
 
@@ -196,12 +198,12 @@ def getInbetweenJoints(startJoint, endJoint):
 
     inbJointsInfo = {}
 
-    startPnt = om.MPoint(cmds.xform(startJoint, q=True, rp=True, ws=True))
-    endPnt = om.MPoint(cmds.xform(endJoint, q=True, rp=True, ws=True))
+    startPnt = getWorldPoint(startJoint)
+    endPnt = getWorldPoint(endJoint)
     startToEndVector = endPnt - startPnt
 
     for childJnt in cmds.listRelatives(startJoint, ad=True, type='joint'):
-        childJntPnt = om.MPoint(cmds.xform(childJnt, q=True, rp=True, ws=True))
+        childJntPnt = getWorldPoint(childJnt)
         startToChildVec = childJntPnt - startPnt
         if (startToEndVector.normal() * startToChildVec.normal()) >= 0.99 and startToChildVec.length() < startToEndVector.length():
             inbJointsInfo[childJnt] = startToChildVec.length()
@@ -866,3 +868,31 @@ def setRange(attribute, minimum, maximum):
 
 def numberOfCVs(curve):
     return cmds.getAttr("{}.spans".format(curve)) + cmds.getAttr("{}.degree".format(curve))
+
+
+def matrixAlignedToWorldAxis(object):
+    mtx = cmds.xform(object, q=True, matrix=True, ws=True)
+
+    worldXVec = om.MVector.kXaxisVector
+    worldYVec = om.MVector.kYaxisVector
+    worldZVec = om.MVector.kZaxisVector
+
+    xVec = om.MVector(mtx[0], mtx[1], mtx[2])
+    yVec = om.MVector(mtx[4], mtx[5], mtx[6])
+
+    alignedXVec = om.MVector(round(worldXVec * xVec), round(worldYVec * xVec), round(worldZVec * xVec))
+    alignedYVec = om.MVector(round(worldXVec * yVec), round(worldYVec * yVec), round(worldZVec * yVec))
+    alignedZVec = alignedXVec ^ alignedYVec
+
+    alignedXVec.normalize()
+    alignedYVec.normalize()
+    alignedZVec.normalize()
+
+    alignedMtx = [
+        alignedXVec.x, alignedXVec.y, alignedXVec.z, 0.0,
+        alignedYVec.x, alignedYVec.y, alignedYVec.z, 0.0,
+        alignedZVec.x, alignedZVec.y, alignedZVec.z, 0.0,
+        mtx[12], mtx[13], mtx[14], 1.0
+    ]
+
+    return alignedMtx

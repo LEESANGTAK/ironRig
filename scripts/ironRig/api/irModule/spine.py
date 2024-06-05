@@ -20,6 +20,14 @@ class Spine(Module):
     def fkSystem(self):
         return self._fkSystem
 
+    @property
+    def pelvisController(self):
+        return self._controllers[0]
+
+    @property
+    def chestController(self):
+        return self._ikSystem.controllers[-1]
+
     def _addSystems(self):
         self._ikSystem = SplineIK(self._name, self._side, numberOfControllers=4)
         self._systems.append(self._ikSystem)
@@ -43,7 +51,7 @@ class Spine(Module):
         self._ikSystem.setupStretch()
         self._ikSystem.setupHybridIK()
         self._ikSystem.controllers[0].hide()
-        self._ikSystem.controllers[-1].name = 'chest_ctrl'
+        self._ikSystem.controllers[-1].name = 'chest'
         utils.removeConnections(self._ikSystem.controllers[1].zeroGrp)
         for ctrl in self._ikSystem.controllers[1:-1]:
             ctrl.shape = Controller.SHAPE.CIRCLE
@@ -75,7 +83,7 @@ class Spine(Module):
         pass
 
     def _buildControls(self):
-        pelvisCtrl = Controller('pelvis_ctrl', Controller.SHAPE.CUBE)
+        pelvisCtrl = Controller('pelvis', Controller.SHAPE.CUBE)
         cmds.matchTransform(pelvisCtrl.zeroGrp, self._ikSystem.joints[1], position=True, rotation=True)
         cmds.parentConstraint(pelvisCtrl, self._ikSystem.controllers[0], mo=True)
         cmds.parent(pelvisCtrl.zeroGrp, self._controllerGrp)
@@ -83,7 +91,7 @@ class Spine(Module):
         self._controllers.append(pelvisCtrl)
         self.addMembers(pelvisCtrl.allNodes)
 
-        upBodyCtrl = Controller('upBody_ctrl', Controller.SHAPE.ARROW_QUAD, direction=Controller.DIRECTION.Y)
+        upBodyCtrl = Controller('upBody', Controller.SHAPE.ARROW_QUAD, direction=Controller.DIRECTION.Y)
         cmds.matchTransform(upBodyCtrl.zeroGrp, self._initJoints[0], position=True)
         cmds.parent(cmds.listRelatives(self._topGrp, children=True), upBodyCtrl)
         cmds.parent(upBodyCtrl.zeroGrp, self._topGrp)

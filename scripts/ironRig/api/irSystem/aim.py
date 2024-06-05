@@ -61,7 +61,7 @@ class Aim(System):
         self.addMembers(self._aimLoc, upLoc)
 
     def _buildControls(self):
-        aimCtrl = Controller('{}_aim_ctrl'.format(self.longName), Controller.SHAPE.LOCATOR)
+        aimCtrl = Controller('{}_aim'.format(self.longName), Controller.SHAPE.LOCATOR)
         cmds.matchTransform(aimCtrl.zeroGrp, self._aimLoc, position=True)
         if self._negateScaleX:
             cmds.setAttr('{}.sx'.format(aimCtrl.zeroGrp), -1)

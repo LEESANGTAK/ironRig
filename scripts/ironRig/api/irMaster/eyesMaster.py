@@ -5,16 +5,17 @@ from .master import Master
 
 
 class EyesMaster(Master):
-    def __init__(self, name=''):
-        super(EyesMaster, self).__init__(name)
+    def __init__(self, name='', side=Master.SIDE.CENTER):
+        super(EyesMaster, self).__init__(name, side)
 
         self._controller = None
 
+    @property
     def controller(self):
         return self._controller
 
     def _buildControls(self):
-        self._controller = Controller('{}ctrl'.format(self.shortName), Controller.SHAPE.LOCATOR, Controller.COLOR.GREEN, self._modules[0].controllerSize*2)
+        self._controller = Controller('{}'.format(self.shortName), Controller.SHAPE.LOCATOR, Controller.COLOR.GREEN, self._modules[0].controllerSize*2)
         self._controller.lockHideChannels(['visibility'])
         modulesAimCtrlZeroGrps = [eyeModule.aimSystem.controllers[0].zeroGrp for eyeModule in self._modules]
         aimCtrlsCenterPnt = utils.getCenterVector(modulesAimCtrlZeroGrps)

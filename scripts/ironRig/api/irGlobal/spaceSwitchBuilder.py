@@ -28,7 +28,11 @@ class SpaceSwitchBuilder(object):
         self._driverControllers = controllers
 
     def build(self, parent=False, orient=False):
-        topGrp = cmds.createNode('transform', n='{}_spaceSwitch_grp'.format(self._drivenController))
+        topGrpName = '{}_spaceSwitch_grp'.format(self._drivenController)
+        if cmds.objExists(topGrpName):
+            cmds.delete(topGrpName)
+
+        topGrp = cmds.createNode('transform', n=topGrpName)
 
         allDriverCtrls = list((set(self._driverControllers) - set([self._defaultDriverController])))
         allDriverCtrls.insert(0, self._defaultDriverController)
@@ -61,7 +65,7 @@ class SpaceSwitchBuilder(object):
             attrName = driverCtrl.split('_')[0] + '_space'
             cmds.addAttr(self._drivenController, ln=attrName, at='float', min=0.0, max=1.0, dv=0.0, keyable=True)
             ctrlAttr = '{}.{}'.format(self._drivenController, attrName)
-            cmds.connectAttr(ctrlAttr, '{}.target[{}].targetWeight'.format(cnst, index))
+            cmds.connectAttr(ctrlAttr, '{}.target[{}].targetWeight'.format(cnst, index), f=True)
             if driverCtrl == self._defaultDriverController:
                 defaultSpaceAttr = ctrlAttr
             else:
@@ -77,6 +81,6 @@ class SpaceSwitchBuilder(object):
         cmds.connectAttr('{}.output1D'.format(SpaceAttrsSum), '{}.inputR'.format(spaceAttrsClamp))
         cmds.connectAttr('{}.outputR'.format(spaceAttrsClamp), '{}.inputX'.format(spaceAttrsRev))
         # spaceAttrsRev.outputX >> defaultSpaceAttr.outputs(plugs=True)[0]
-        cmds.connectAttr('{}.outputX'.format(spaceAttrsRev), cmds.listConnections(defaultSpaceAttr, source=False, plugs=True)[0])
+        cmds.connectAttr('{}.outputX'.format(spaceAttrsRev), cmds.listConnections(defaultSpaceAttr, source=False, plugs=True)[0], f=True)
         # defaultSpaceAttr.delete()
         cmds.deleteAttr(defaultSpaceAttr)
