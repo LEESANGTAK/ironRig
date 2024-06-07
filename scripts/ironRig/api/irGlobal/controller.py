@@ -3,6 +3,7 @@ import json
 from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
+from ... import common
 
 
 CONTROLLER_DIR = os.path.join(__file__.split("scripts")[0], "controllers")
@@ -226,6 +227,12 @@ class Controller(object):
         self._zeroGrp = self._zeroGrp.replace(searchStr, replaceStr)
         self._extraGrp = self._extraGrp.replace(searchStr, replaceStr)
         self._controllerNode = self._controllerNode.replace(searchStr, replaceStr)
+
+    def symmetrize(self, sideChar):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(sideChar)
+        oppSideCtrl = self._transform.replace('_{}_'.format(sideChar), '_{}_'.format(oppSideChar))
+        for crv, oppCrv in zip(self.curves, cmds.listRelatives(oppSideCtrl, s=True)):
+            utils.symmetrizeCurve(crv, oppCrv)
 
     def _transformCurve(self):
         for shapeId, cvsPos in enumerate(self._initCVsPosInfo):

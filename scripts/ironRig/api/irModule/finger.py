@@ -1,5 +1,6 @@
 from maya import cmds
 from ... import utils
+from ... import common
 from ..irSystem import FK
 from .module import Module
 
@@ -21,7 +22,7 @@ class Finger(Module):
     def preBuild(self):
         super(Finger, self).preBuild()
         cmds.addAttr(self._oriPlaneLocators[1], ln='curl', at='float', dv=0.0, keyable=True)
-        for initJnt in self._initJoints:
+        for initJnt in self._initJoints[1:]:
             cmds.connectAttr('{}.curl'.format(self._oriPlaneLocators[1]), '{}.rz'.format(initJnt))
 
     def _buildSystems(self):
@@ -33,3 +34,13 @@ class Finger(Module):
 
     def _connectSystems(self):
         pass
+
+    def mirror(self):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppMod = Finger(self._name, oppSideChar, oppSkelJoints)
+        oppMod.preBuild()
+        oppMod.symmetrizeGuide()
+        oppMod.build()
+        oppMod.symmetrizeControllers()
+        return oppMod

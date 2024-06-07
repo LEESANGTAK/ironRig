@@ -1,5 +1,6 @@
 from maya import cmds
 from ... import utils
+from ... import common
 from ..irGlobal import Aligner
 from ..irSystem import Aim
 from ..irSystem import FK
@@ -71,3 +72,13 @@ class Eye(Module):
 
     def _connectSystems(self):
         cmds.parentConstraint(self._aimSystem.joints[0], self._fkSystem.controllers[0].zeroGrp)
+
+    def mirror(self):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppMod = Eye(self._name, oppSideChar, oppSkelJoints)
+        oppMod.preBuild()
+        oppMod.symmetrizeGuide(jointAxis=False)
+        oppMod.build()
+        oppMod.symmetrizeControllers()
+        return oppMod

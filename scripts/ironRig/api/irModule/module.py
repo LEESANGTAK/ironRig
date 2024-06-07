@@ -4,7 +4,7 @@ from ... import utils
 from ..irGlobal import Container
 from ..irGlobal import Controller
 from ..irSystem import TwoBoneIK
-from ...common import logger
+from ... import common
 
 
 PLUGIN_NAME = 'orientPlane'
@@ -123,7 +123,7 @@ class Module(Container):
     def _addSystems(self):
         """Add systems and set properties.
         """
-        logger.debug('{}._addSystems()'.format(self.longName))
+        common.logger.debug('{}._addSystems()'.format(self.longName))
 
         for system in self._systems:
             cmds.sets(system.set, forceElement=self.set)
@@ -254,17 +254,25 @@ class Module(Container):
 
         self._initJoints = initJoints
 
-    def symmeterizeGuide(self):
-        searchStr = '_r_'
-        replaceStr = '_l_'
-        if '_l_' in self.shortName:
-            searchStr = '_l_'
-            replaceStr = '_r_'
+    def symmetrizeGuide(self, jointAxis=True):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSideOriPlaneLocators = [loc.replace('_{}_'.format(self._side), '_{}_'.format(oppSideChar)) for loc in self._oriPlaneLocators]
 
-        for loc in self._oriPlaneLocators:
-            symLoc = loc.replace(searchStr, replaceStr)
-            symLocPos = cmds.xform(symLoc, t=True, ws=True)
-            cmds.xform(loc, t=(-symLocPos[0], symLocPos[1], symLocPos[2]), ws=True)
+        # Symmetrize plane locators
+        for loc, oppSideLoc in zip(self._oriPlaneLocators, oppSideOriPlaneLocators):
+            oppSideLocPos = cmds.xform(oppSideLoc, q=True, t=True, ws=True)
+            cmds.xform(loc, t=(-oppSideLocPos[0], oppSideLocPos[1], oppSideLocPos[2]), ws=True)
+
+        if jointAxis:
+            # Symmetrize joint axis
+            revNegXAxisVal = 1-int(cmds.getAttr('{}.negateXAxis'.format(oppSideOriPlaneLocators[1])))
+            cmds.setAttr('{}.negateXAxis'.format(self._oriPlaneLocators[1]), revNegXAxisVal)
+            revNegZAxisVal = 1-int(cmds.getAttr('{}.negateZAxis'.format(oppSideOriPlaneLocators[1])))
+            cmds.setAttr('{}.negateZAxis'.format(self._oriPlaneLocators[1]), revNegZAxisVal)
+
+    def symmetrizeControllers(self):
+        for ctrl in self._allControllers():
+            ctrl.symmetrize(self._side)
 
     def build(self):
         """Build module with joints and objects from the initialize step.
@@ -298,7 +306,7 @@ class Module(Container):
             )
 
     def _buildInitJointsWithSkelJoints(self):
-        logger.debug('{}._buildInitJointsWithSkelJoints()'.format(self.longName))
+        common.logger.debug('{}._buildInitJointsWithSkelJoints()'.format(self.longName))
 
         initJoints = []
         for skelJnt in self._skelJoints:
@@ -323,21 +331,21 @@ class Module(Container):
     def _buildSystems(self):
         """Create systems and set systems state.
         """
-        logger.debug('{}._buildSystems()'.format(self.longName))
+        common.logger.debug('{}._buildSystems()'.format(self.longName))
 
         raise NotImplementedError()
 
     def _connectSystems(self):
         """Connects systems of a module.
         """
-        logger.debug('{}._connectSystems()'.format(self.longName))
+        common.logger.debug('{}._connectSystems()'.format(self.longName))
 
         raise NotImplementedError()
 
     def _buildOutputs(self):
         """Build output joints and attributes.
         """
-        logger.debug('{}._buildOutputs()'.format(self.longName))
+        common.logger.debug('{}._buildOutputs()'.format(self.longName))
 
         # Output joints
         self._outJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='out')
@@ -348,7 +356,7 @@ class Module(Container):
     def _connectOutputs(self):
         """Connects system joints and attributes to the output joints and attributes of a module.
         """
-        logger.debug('{}._connectOutputs()'.format(self.longName))
+        common.logger.debug('{}._connectOutputs()'.format(self.longName))
 
         for sysJnt, outJnt in zip(self._sysJoints, self._outJoints):
             cmds.pointConstraint(sysJnt, outJnt, mo=True)
@@ -364,7 +372,7 @@ class Module(Container):
     def _connectSkeleton(self):
         """Connects to the skeleton joints and attributes.
         """
-        logger.debug('{}._connectSkeleton()'.format(self.longName))
+        common.logger.debug('{}._connectSkeleton()'.format(self.longName))
 
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             utils.removeConnections(skelJnt)
@@ -374,7 +382,7 @@ class Module(Container):
             #     outJnt.attr('scale'+axis) >> skelJnt.attr('scale'+axis)
 
     def _buildGlobalController(self):
-        logger.debug('{}._buildGlobalController()'.format(self.longName))
+        common.logger.debug('{}._buildGlobalController()'.format(self.longName))
 
         modGlobalCtrl = Controller('{}_global'.format(self.shortName),
                                    Controller.SHAPE.CUBE,
@@ -388,13 +396,13 @@ class Module(Container):
     def postBuild(self):
         """Run custom procedures.
         """
-        logger.debug('{}.postBuild()'.format(self.longName))
+        common.logger.debug('{}.postBuild()'.format(self.longName))
         raise NotImplementedError()
 
     def attachTo(self, module, outJointIndex=-1000000):
         """Attach a module to the other module.
         """
-        logger.debug('{}.attachTo()'.format(self.longName))
+        common.logger.debug('{}.attachTo()'.format(self.longName))
 
         parentSpace = None
         if outJointIndex > -1000000:
@@ -411,7 +419,7 @@ class Module(Container):
     def delete(self):
         """Remove all nodes realted with a module.
         """
-        logger.debug('{}.delete()'.format(self.longName))
+        common.logger.debug('{}.delete()'.format(self.longName))
 
         if self._outJoints:
             for outJnt in self._outJoints:

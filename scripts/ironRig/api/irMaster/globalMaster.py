@@ -38,9 +38,8 @@ class GlobalMaster(Master):
         super(GlobalMaster, self).build()
         cmds.parent([self._modulesGrp, self._mastersGrp], self._mainController)
         self._set = cmds.rename(self._set, 'controlRig_set')
-
-        # for jnt in self._rootJoint.getChildren(type='joint'):
-        #     jnt.segmentScaleCompensate.set(False)
+        for jnt in cmds.listRelatives(self._rootJoint, children=True, type='joint'):
+            cmds.setAttr('{}.segmentScaleCompensate'.format(jnt), False)
 
     def _createGroups(self):
         super(GlobalMaster, self)._createGroups()

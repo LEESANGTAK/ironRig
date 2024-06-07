@@ -1,6 +1,7 @@
 from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
+from ... import common
 from ..irGlobal import Controller
 from ..irSystem import SplineIK
 from .module import Module
@@ -97,3 +98,13 @@ class Spine(Module):
         cmds.parent(upBodyCtrl.zeroGrp, self._topGrp)
         self._controllers.append(upBodyCtrl)
         self.addMembers(upBodyCtrl.allNodes)
+
+    def mirror(self):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppMod = Spine(self._name, oppSideChar, oppSkelJoints)
+        oppMod.preBuild()
+        oppMod.symmetrizeGuide()
+        oppMod.build()
+        oppMod.symmetrizeControllers()
+        return oppMod

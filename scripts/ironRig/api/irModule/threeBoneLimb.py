@@ -1,6 +1,7 @@
 from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
+from ... import common
 from ..irGlobal import Controller
 from ..irSystem import TwoBoneIK
 from ..irSystem import ThreeBoneIK
@@ -240,8 +241,8 @@ class ThreeBoneLimb(Module):
                                self._firstLimbTwistSystem.controllers[2],
                                self._firstLimbTwistSystem.controllers[1].zeroGrp,
                                mo=True)
-            cmds.hide(self._firstLimbTwistSystem.controllers[0].zeroGrp)
-            cmds.hide(self._firstLimbTwistSystem.controllers[-1].zeroGrp)
+            self._firstLimbTwistSystem.controllers[0].hide()
+            self._firstLimbTwistSystem.controllers[-1].hide()
             self.addMembers(blendJnt1LocalMtx, blendJnt1LocalDecMtx)
 
         if self._secondLimbTwistSystem:
@@ -260,8 +261,8 @@ class ThreeBoneLimb(Module):
                                self._secondLimbTwistSystem.controllers[2],
                                self._secondLimbTwistSystem.controllers[1].zeroGrp,
                                mo=True)
-            cmds.hide(self._secondLimbTwistSystem.controllers[0].zeroGrp)
-            cmds.hide(self._secondLimbTwistSystem.controllers[-1].zeroGrp)
+            self._secondLimbTwistSystem.controllers[0].hide()
+            self._secondLimbTwistSystem.controllers[-1].hide()
             self.addMembers(blendJnt2LocalMtx, blendJnt2LocalDecMtx)
 
         if self._thirdLimbTwistSystem:
@@ -282,8 +283,8 @@ class ThreeBoneLimb(Module):
                                self._thirdLimbTwistSystem.controllers[2],
                                self._thirdLimbTwistSystem.controllers[1].zeroGrp,
                                mo=True)
-            cmds.hide(self._thirdLimbTwistSystem.controllers[0].zeroGrp)
-            cmds.hide(self._thirdLimbTwistSystem.controllers[-1].zeroGrp)
+            self._thirdLimbTwistSystem.controllers[0].hide()
+            self._thirdLimbTwistSystem.controllers[-1].hide()
             self.addMembers(blendJnt3LocalMtx, blendJnt3LocalDecMtx)
 
         self._sysJoints = [self._nonrollJoints[0]] + self._blendJoints[1:]  # The first joint should be non roll
@@ -473,3 +474,13 @@ class ThreeBoneLimb(Module):
             cmds.parentConstraint(module.outJoints[-1], self._fkSystem.controllers[0].zeroGrp, mo=True)
         else:
             super(ThreeBoneLimb, self).attachTo(module)
+
+    def mirror(self):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppMod = ThreeBoneLimb(self._name, oppSideChar, oppSkelJoints)
+        oppMod.preBuild()
+        oppMod.symmetrizeGuide()
+        oppMod.build()
+        oppMod.symmetrizeControllers()
+        return oppMod

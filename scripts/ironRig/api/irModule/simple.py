@@ -1,5 +1,6 @@
 from maya import cmds
 from ... import utils
+from ... import common
 from ..irGlobal import Controller
 from ..irSystem import Single
 from ..irSystem import FK
@@ -98,3 +99,13 @@ class Simple(Module):
         for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
             cmds.scaleConstraint(outJnt, skelJnt, mo=True)
+
+    def mirror(self):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppMod = Simple(self._name, oppSideChar, oppSkelJoints)
+        oppMod.preBuild()
+        oppMod.symmetrizeGuide(jointAxis=False)
+        oppMod.build()
+        oppMod.symmetrizeControllers()
+        return oppMod

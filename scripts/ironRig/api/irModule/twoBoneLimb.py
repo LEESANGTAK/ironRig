@@ -1,6 +1,7 @@
 from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
+from ... import common
 from ..irGlobal import Controller
 from ..irSystem import TwoBoneIK
 from ..irSystem import FK
@@ -230,7 +231,7 @@ class TwoBoneLimb(Module):
                                self._upperTwistSystem.controllers[2],
                                self._upperTwistSystem.controllers[1].zeroGrp,
                                mo=True)
-            cmds.hide(self._upperTwistSystem.controllers[0].zeroGrp)
+            self._upperTwistSystem.controllers[0].hide()
 
         if self._lowerTwistSystem:
             blendJnt2NonrollGrp = self._setupNonroll(self._blendJoints[2])
@@ -251,7 +252,7 @@ class TwoBoneLimb(Module):
                                self._lowerTwistSystem.controllers[2],
                                self._lowerTwistSystem.controllers[1].zeroGrp,
                                mo=True)
-            cmds.hide(self._lowerTwistSystem.controllers[-1].zeroGrp)
+            self._lowerTwistSystem.controllers[-1].hide()
 
         self._sysJoints = [self._nonrollJoints[0]] + self._blendJoints[1:]
         if self._upperTwistSystem:
@@ -350,7 +351,7 @@ class TwoBoneLimb(Module):
                                 worldUpType='objectrotation',
                                 worldUpVector=utils.axisStrToVector(upAxis),
                                 worldUpObject=moduleTwistCtrl)
-                cmds.hide(self._upperTwistSystem.controllers[-1].zeroGrp)
+                self._upperTwistSystem.controllers[-1].hide()
             if self._lowerTwistSystem:
                 cmds.connectAttr('{}.bendCtrlVis'.format(moduleCtrl), '{}.visibility'.format(self._lowerTwistSystem.topGrp))
                 cmds.parentConstraint(moduleTwistCtrl, self._lowerTwistSystem.controllers[0].zeroGrp, mo=True)
@@ -361,7 +362,7 @@ class TwoBoneLimb(Module):
                                 worldUpType='objectrotation',
                                 worldUpVector=utils.axisStrToVector(upAxis),
                                 worldUpObject=moduleTwistCtrl)
-                cmds.hide(self._lowerTwistSystem.controllers[0].zeroGrp)
+                self._lowerTwistSystem.controllers[0].hide()
 
         self._controllers[0].size = self._controllerSize * 0.1  # Set scale of module controller
         if self._upperTwistSystem or self._lowerTwistSystem:
@@ -410,3 +411,13 @@ class TwoBoneLimb(Module):
             cmds.parentConstraint(module.outJoints[-1], self._fkSystem.controllers[0].zeroGrp, mo=True)
         else:
             super(TwoBoneLimb, self).attachTo(module)
+
+    def mirror(self):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppMod = TwoBoneLimb(self._name, oppSideChar, oppSkelJoints)
+        oppMod.preBuild()
+        oppMod.symmetrizeGuide()
+        oppMod.build()
+        oppMod.symmetrizeControllers()
+        return oppMod

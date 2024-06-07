@@ -1,4 +1,5 @@
 from ... import utils
+from ... import common
 from ..irSystem import FK
 from .module import Module
 
@@ -25,3 +26,13 @@ class Jaw(Module):
 
     def _connectSystems(self):
         pass
+
+    def mirror(self):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppMod = Jaw(self._name, oppSideChar, oppSkelJoints)
+        oppMod.preBuild()
+        oppMod.symmetrizeGuide()
+        oppMod.build()
+        oppMod.symmetrizeControllers()
+        return oppMod

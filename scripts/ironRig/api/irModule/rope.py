@@ -1,5 +1,6 @@
 from maya import cmds
 from ... import utils
+from ... import common
 from ..irGlobal import Controller
 from ..irSystem import SplineIK
 from ..irSystem import Single
@@ -105,3 +106,13 @@ class Rope(Module):
             utils.removeConnections(skelJnt)
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
             # cmds.scaleConstraint(outJnt, skelJnt, mo=True)
+
+    def mirror(self):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppMod = Rope(self._name, oppSideChar, oppSkelJoints)
+        oppMod.preBuild()
+        oppMod.symmetrizeGuide(jointAxis=False)
+        oppMod.build()
+        oppMod.symmetrizeControllers()
+        return oppMod

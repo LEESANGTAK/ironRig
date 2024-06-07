@@ -896,3 +896,12 @@ def matrixAlignedToWorldAxis(object):
     ]
 
     return alignedMtx
+
+
+def symmetrizeCurve(curve, oppositeCurve):
+        degs = cmds.getAttr('{}.degree'.format(curve))
+        spans = cmds.getAttr('{}.spans'.format(curve))
+        cvs = degs + spans
+        for i in range(cvs):
+            oppCVPos = cmds.xform('{}.cv[{}]'.format(oppositeCurve, i), q=True, t=True, ws=True)
+            cmds.xform('{}.cv[{}]'.format(curve, i), t=(-oppCVPos[0], oppCVPos[1], oppCVPos[2]), ws=True)

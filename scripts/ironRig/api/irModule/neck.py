@@ -1,5 +1,6 @@
 from maya import cmds
 from ... import utils
+from ... import common
 from ..irGlobal import Controller
 from ..irSystem import SplineIK
 from .module import Module
@@ -71,6 +72,7 @@ class Neck(Module):
         cmds.connectAttr('{}.worldInverseMatrix'.format(self._nonrollJoints[0]), '{}.matrixIn[1]'.format(headCtrlLocalMtx))
         cmds.connectAttr('{}.matrixSum'.format(headCtrlLocalMtx), '{}.inputMatrix'.format(headCtrlLocalDecMtx))
         cmds.connectAttr('{}.outputRotateX'.format(headCtrlLocalDecMtx), '{}.twist'.format(self._ikSystem.ikHandle))
+        cmds.setAttr('{}.rootTwistMode'.format(self._ikSystem.ikHandle), True)
 
     def _setupNonroll(self):
         nonrollGrp = cmds.createNode('transform', n='{}_nonroll_grp'.format(self.shortName))
@@ -100,3 +102,13 @@ class Neck(Module):
 
     def _buildControls(self):
         pass
+
+    def mirror(self):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppMod = Neck(self._name, oppSideChar, oppSkelJoints)
+        oppMod.preBuild()
+        oppMod.symmetrizeGuide()
+        oppMod.build()
+        oppMod.symmetrizeControllers()
+        return oppMod

@@ -1,12 +1,11 @@
 from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
+from ... import common
 from ..irGlobal import Controller
 from ..irSystem import FK
 from ..irSystem import FootIK
 from .module import Module
-from .twoBoneLimb import TwoBoneLimb
-from .threeBoneLimb import ThreeBoneLimb
 
 
 class Foot(Module):
@@ -106,7 +105,7 @@ class Foot(Module):
         self._controllers[0].size = self._controllerSize * 0.2
 
     def attachTo(self, module):
-        if isinstance(module, TwoBoneLimb) or isinstance(module, ThreeBoneLimb):
+        if module.__class__.__name__ in ['TwoBoneLimb', 'ThreeBoneLimb']:
             # Connect ik joints
             utils.removeConnections(self._ikSystem.joints[0])
             cmds.parentConstraint(module.ikSystem.joints[-1], self._ikSystem.joints[0], mo=True)
@@ -120,12 +119,30 @@ class Foot(Module):
             # Connect ik controllers
             cmds.parentConstraint(module.ikSystem.controllers[0], self._ikSystem.controllers[0], mo=True)
             utils.cloneUserDefinedAttrs(self._ikSystem.controllers[0], module.ikSystem.controllers[0])
-            cmds.hide(self._ikSystem.controllers[0])
+            self._ikSystem.controllers[0].hide()
             # Connect fk controllers
             cmds.parentConstraint(module.fkSystem.controllers[-1], self._fkSystem.controllers[0], mo=True)
-            cmds.hide(self._fkSystem.controllers[0])
+            self._fkSystem.controllers[0].hide()
             # Connect module controllers
             cmds.connectAttr('{}.ik'.format(module.controllers[0]), '{}.ik'.format(self._controllers[0]))
-            cmds.hide(self._controllers[0])
+            self._controllers[0].hide()
         else:
             super(Foot, self).attachTo(module)
+
+    def mirror(self):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppMod = Foot(self._name, oppSideChar, oppSkelJoints)
+        oppMod.preBuild()
+        oppMod.symmetrizeGuide()
+        oppMod.build()
+        oppMod.symmetrizeControllers()
+        return oppMod
+
+    def symmetrizeGuide(self, jointAxis=True):
+        super(Foot, self).symmetrizeGuide(jointAxis)
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        for pivotLoc in self._pivotLocators:
+            oppPivotLoc = pivotLoc.replace('_{}_'.format(self._side), '_{}_'.format(oppSideChar))
+            oppPivotLocPos = cmds.xform(oppPivotLoc, q=True, t=True, ws=True)
+            cmds.xform(pivotLoc, t=[-oppPivotLocPos[0], oppPivotLocPos[1], oppPivotLocPos[2]], ws=True)

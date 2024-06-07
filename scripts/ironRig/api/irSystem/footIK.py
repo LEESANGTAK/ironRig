@@ -93,7 +93,12 @@ class FootIK(System):
                                        utils.getWorldPoint(self._joints[-1]),
                                        utils.getWorldPoint(self._joints[0]) + om.MVector.kYnegAxisVector)
         if centerPnt.x < 0:  # In case right side
-            oriMtx = om.MMatrix(oriMtx)
+            oriMtx = om.MMatrix(
+                [oriMtx[0], oriMtx[1], oriMtx[2], oriMtx[3],
+                -oriMtx[4], -oriMtx[5], -oriMtx[6], oriMtx[7],
+                -oriMtx[8], -oriMtx[9], -oriMtx[10], oriMtx[11],
+                oriMtx[12], oriMtx[13], oriMtx[14], oriMtx[15]]
+            )
 
         # Build reverse foot joints
         inBankRevJnt = cmds.createNode('joint', n='{}_inBank_revJnt'.format(self.shortName))
