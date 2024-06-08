@@ -14,5 +14,16 @@ VERSION_MICRO = 5
 
 SYMMETRY_CHAR_TABLE = {
     'l': 'r',
-    'r': 'l'
+    'r': 'l',
+    'c': 'c',
+    'L': 'R',
+    'R': 'L',
+    'M': 'M',
+}
+
+
+SYMMETRY_COLOR_TABLE = {
+    'red': 'blue',
+    'blue': 'red',
+    'yellow': 'yellow',
 }

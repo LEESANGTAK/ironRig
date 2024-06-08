@@ -355,9 +355,9 @@ class ThreeBoneLimb(Module):
         cmds.connectAttr('{}.outputX'.format(fkIkRev), '{}.visibility'.format(self._fkSystem.topGrp))
         for cnst in self._blendConstraints:
             ikWeightAttr = cmds.listConnections('{}.target[0].targetParentMatrix'.format(cnst))[0] + 'W0'
-            cmds.connectAttr('{}.ik'.format(moduleCtrl), '{}.{}'.format(cnst, ikWeightAttr))
+            cmds.connectAttr('{}.ik'.format(moduleCtrl), '{}.{}'.format(cnst, ikWeightAttr), f=True)
             fkWeightAttr = cmds.listConnections('{}.target[1].targetParentMatrix'.format(cnst))[0] + 'W1'
-            cmds.connectAttr('{}.outputX'.format(fkIkRev), '{}.{}'.format(cnst, fkWeightAttr))
+            cmds.connectAttr('{}.outputX'.format(fkIkRev), '{}.{}'.format(cnst, fkWeightAttr), f=True)
 
         cmds.parent(moduleCtrl.zeroGrp, self._controllerGrp)
         self._controllers.append(moduleCtrl)
@@ -475,12 +475,13 @@ class ThreeBoneLimb(Module):
         else:
             super(ThreeBoneLimb, self).attachTo(module)
 
-    def mirror(self):
+    def mirror(self, skeletonSideChar='l'):
         oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
-        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppSkelJoints = [jnt.replace(skeletonSideChar, common.SYMMETRY_CHAR_TABLE.get(skeletonSideChar)) for jnt in self._skelJoints]
         oppMod = ThreeBoneLimb(self._name, oppSideChar, oppSkelJoints)
         oppMod.preBuild()
         oppMod.symmetrizeGuide()
         oppMod.build()
-        oppMod.symmetrizeControllers()
+        oppMod.symmetrizeControllerShapes()
+        oppMod.controllerColor = common.SYMMETRY_COLOR_TABLE.get(self._controllerColor)
         return oppMod

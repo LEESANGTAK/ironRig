@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 from math import sqrt
 from maya.api import OpenMaya as om
 from maya.api import OpenMayaAnim as oma

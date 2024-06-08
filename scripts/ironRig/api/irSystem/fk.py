@@ -20,10 +20,10 @@ class FK(System):
     def _buildControls(self):
         ctrls = []
 
-        for jnt in self._joints:
+        for i, jnt in enumerate(self._joints):
             if jnt == self._joints[-1] and not self._endController:
                 break
-            ctrl = Controller(jnt)
+            ctrl = Controller('{}_{:02d}'.format(self.shortName, i))
             ctrl.direction = utils.axisStrToEnum(self._aimAxis)
             cmds.matchTransform(ctrl.zeroGrp, jnt, position=True, rotation=True)
             self.addMembers(cmds.parentConstraint(ctrl, jnt, mo=True))

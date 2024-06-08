@@ -1,303 +1,259 @@
 from imp import reload
+import ironRig; reload(ironRig)
+import ironRig.api.irGlobal as irg
+import ironRig.api.irSystem as irs
+import ironRig.api.irModule as irm
+import ironRig.api.irMaster as irmst
 
-# -------------- Module Build ---------------------
-import ironRig as ir; reload(ir)
-from ironRig.api import irGlobal
-from ironRig.api import irMaster
-from ironRig.api import irModule
 
-
-globalMst = irMaster.GlobalMaster(skeletonRoot='root', cogJoint='Pelvis')
+globalMst = irmst.GlobalMaster('root', True)
 globalMst.build()
 globalMst.controllerScale = 50
-globalMst.postBuild()
 #globalMst.remove()
 
-prefix = 'spine_'
-joints = [u'Spine', u'Spine1', u'Spine2', u'Spine3', u'Spine4', u'Spine5']
-spineMod = irModule.Spine(prefix, joints)
+name = 'spine'
+joints = ['Pelvis', 'Spine', 'Spine1', 'Spine2', 'Spine3', 'Spine4', 'Spine5']
+spineMod = irm.Spine(name, irm.Module.SIDE.CENTER, joints)
 spineMod.preBuild()
 spineMod.build()
-spineMod.controllerScale = 8
-spineMod.postBuild()
+spineMod.controllerSize = 10
 globalMst.addModules(spineMod)
-#spineMod.remove()
+#spineMod.delete()
 
-prefix = 'neck_'
-joints = [u'Neck', u'Neck1', u'Head']
-neckMod = irModule.Neck(prefix, joints)
-neckMod.preBuild()
+name = 'neck'
+joints = ['Neck', 'Neck1', 'Head']
+neckMod = irm.Neck(name, irm.Module.SIDE.CENTER, joints)
 neckMod.numControllers = 2
+neckMod.preBuild()
 neckMod.build()
-neckMod.controllerScale = 10
-neckMod.postBuild()
+neckMod.controllerSize = 10
 neckMod.attachTo(spineMod)
 globalMst.addModules(neckMod)
-#neckMod.remove()
+#neckMod.delete()
 
-prefix = 'head_'
-joints = [u'Head']
-headMod = irModule.Simple(prefix, joints)
-headMod.preBuild()
-headMod.build()
-headMod.attachTo(neckMod)
-globalMst.addModules(headMod)
-#headMod.remove()
-
-# ---------------------------------------------------------------------------
-
-prefix = 'clavicle_L_'
-joints = [u'LClavicle', u'LUpperArm']
-claLMod = irModule.Clavicle(prefix, joints)
+name = 'clavicle'
+joints = ['LClavicle', 'LUpperArm']
+claLMod = irm.LimbBase(name, irm.Module.SIDE.LEFT, joints)
 claLMod.preBuild()
 claLMod.build()
-claLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-claLMod.controllerScale = 20
-claLMod.postBuild()
+claLMod.controllerColor = irg.Controller.COLOR.BLUE
+claLMod.controllerSize = 20
 claLMod.attachTo(spineMod)
 globalMst.addModules(claLMod)
-#claLMod.remove()
+#claLMod.delete()
 
-prefix = 'clavicle_R_'
-joints = [u'RClavicle', u'RUpperArm']
-claRMod = irModule.Clavicle(prefix, joints)
-claRMod.preBuild()
-claRMod.build()
-claRMod.controllerColor = irGlobal.Controller.COLOR.RED
-claRMod.controllerScale = 20
-claRMod.postBuild()
+claRMod = claLMod.mirror('L')
 claRMod.attachTo(spineMod)
 globalMst.addModules(claRMod)
-#claRMod.remove()
+#claRMod.delete()
 
-prefix = 'arm_L_'
-joints = [u'LUpperArm', u'LForearm', u'LHand']
-armLMod = irModule.TwoBoneLimb(prefix, joints)
+name = 'arm'
+joints = ['LUpperArm', 'LForearm', 'LHand']
+armLMod = irm.TwoBoneLimb(name, irm.Module.SIDE.LEFT, joints)
 armLMod.preBuild()
 armLMod.build()
-armLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-armLMod.controllerScale = 7
-armLMod.postBuild()
+armLMod.controllerColor = irg.Controller.COLOR.BLUE
+armLMod.controllerSize = 7
 armLMod.attachTo(claLMod)
 globalMst.addModules(armLMod)
-#armLMod.remove()
+#armLMod.delete()
 
-prefix = 'arm_R_'
-joints = [u'RUpperArm', u'RForearm', u'RHand']
-armRMod = irModule.TwoBoneLimb(prefix, joints)
-armRMod.preBuild()
-armRMod.build()
-armRMod.controllerColor = irGlobal.Controller.COLOR.RED
-armRMod.controllerScale = 7
-armRMod.postBuild()
+armRMod = armLMod.mirror('L')
 armRMod.attachTo(claRMod)
 globalMst.addModules(armRMod)
-#armRMod.remove()
+#armRMod.delete()
 
-prefix = 'leg_L_'
-joints = [u'LThigh', u'LCalf', u'LFoot']
-legLMod = irModule.TwoBoneLimb(prefix, joints)
+
+name = 'leg'
+joints = ['LThigh', 'LCalf', 'LFoot']
+legLMod = irm.TwoBoneLimb(name, irm.Module.SIDE.LEFT, joints)
 legLMod.preBuild()
 legLMod.build()
-legLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-legLMod.controllerScale = 7
-legLMod.postBuild()
+legLMod.controllerColor = irg.Controller.COLOR.BLUE
+legLMod.controllerSize = 7
 legLMod.attachTo(spineMod)
 globalMst.addModules(legLMod)
-#legLMod.remove()
+#legLMod.delete()
 
-prefix = 'leg_R_'
-joints = [u'RThigh', u'RCalf', u'RFoot']
-legRMod = irModule.TwoBoneLimb(prefix, joints)
+name = 'leg'
+joints = ['RThigh', 'RCalf', 'RFoot']
+legRMod = irm.TwoBoneLimb(name, joints)
 legRMod.preBuild()
 legRMod.build()
-legRMod.controllerColor = irGlobal.Controller.COLOR.RED
-legRMod.controllerScale = 7
-legRMod.postBuild()
+legRMod.controllerColor = irg.Controller.COLOR.RED
+legRMod.controllerSize = 7
 legRMod.attachTo(spineMod)
 globalMst.addModules(legRMod)
-#legRMod.remove()
+#legRMod.delete()
 
-prefix = 'foot_L_'
-joints = [u'LeftFoot', u'LeftToeBase', u'LeftToe_End']
-footLMod = irModule.Foot(prefix, joints)
+name = 'foot'
+joints = ['LeftFoot', 'LeftToeBase', 'LeftToe_End']
+footLMod = irm.Foot(name, irm.Module.SIDE.LEFT, joints)
 footLMod.preBuild()
 footLMod.build()
-footLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-footLMod.controllerScale = 7
-footLMod.postBuild()
+footLMod.controllerColor = irg.Controller.COLOR.BLUE
+footLMod.controllerSize = 7
 footLMod.attachTo(legLMod)
 globalMst.addModules(footLMod)
-#footLMod.remove()
+#footLMod.delete()
 
-prefix = 'foot_R_'
-joints = [u'RightFoot', u'RightToeBase', u'RightToe_End']
-footRMod = irModule.Foot(prefix, joints)
+name = 'foot'
+joints = ['RightFoot', 'RightToeBase', 'RightToe_End']
+footRMod = irm.Foot(name, joints)
 footRMod.preBuild()
 footRMod.negateScaleX = True
 footRMod.build()
-footRMod.controllerColor = irGlobal.Controller.COLOR.RED
-footRMod.controllerScale = 7
-footRMod.postBuild()
+footRMod.controllerColor = irg.Controller.COLOR.RED
+footRMod.controllerSize = 7
 footRMod.attachTo(legRMod)
 globalMst.addModules(footRMod)
-#footRMod.remove()
+#footRMod.delete()
 
 # ---------------------------------------------------------------------------
 
 # Fingers L Build
-prefix = 'thumbFinger_L_'
-joints = [u'ThumbFinger1_L1',
- u'ThumbFinger2_L1',
- u'ThumbFinger3_L1',
- u'ThumbFinger4_L1']
-thumbLMod = irModule.Finger(prefix, joints)
+name = 'thumbFinger'
+joints = ['ThumbFinger1_L1',
+ 'ThumbFinger2_L1',
+ 'ThumbFinger3_L1',
+ 'ThumbFinger4_L1']
+thumbLMod = irm.Finger(name, joints)
 thumbLMod.preBuild()
 thumbLMod.build()
-thumbLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-thumbLMod.controllerScale = 2
-thumbLMod.postBuild()
-#thumbLMod.remove()
+thumbLMod.controllerColor = irg.Controller.COLOR.BLUE
+thumbLMod.controllerSize = 2
+#thumbLMod.delete()
 
-prefix = 'indexFinger_L_'
-joints = [u'IndexFinger1_L1',
- u'IndexFinger2_L1',
- u'IndexFinger3_L1',
- u'IndexFinger4_L1']
-indexLMod = irModule.Finger(prefix, joints)
+name = 'indexFinger'
+joints = ['IndexFinger1_L1',
+ 'IndexFinger2_L1',
+ 'IndexFinger3_L1',
+ 'IndexFinger4_L1']
+indexLMod = irm.Finger(name, joints)
 indexLMod.preBuild()
 indexLMod.build()
-indexLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-indexLMod.controllerScale = 2
-indexLMod.postBuild()
-#indexLMod.remove()
+indexLMod.controllerColor = irg.Controller.COLOR.BLUE
+indexLMod.controllerSize = 2
+#indexLMod.delete()
 
-prefix = 'middleFinger_L_'
-joints = [u'MiddleFinger1_L1',
- u'MiddleFinger2_L1',
- u'MiddleFinger3_L1',
- u'MiddleFinger4_L1']
-middleLMod = irModule.Finger(prefix, joints)
+name = 'middleFinger'
+joints = ['MiddleFinger1_L1',
+ 'MiddleFinger2_L1',
+ 'MiddleFinger3_L1',
+ 'MiddleFinger4_L1']
+middleLMod = irm.Finger(name, joints)
 middleLMod.preBuild()
 middleLMod.build()
-middleLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-middleLMod.controllerScale = 2
-middleLMod.postBuild()
-#middleLMod.remove()
+middleLMod.controllerColor = irg.Controller.COLOR.BLUE
+middleLMod.controllerSize = 2
+#middleLMod.delete()
 
-prefix = 'ringFinger_L_'
-joints = [u'RingFinger1_L1',
- u'RingFinger2_L1',
- u'RingFinger3_L1',
- u'RingFinger4_L1']
-ringLMod = irModule.Finger(prefix, joints)
+name = 'ringFinger'
+joints = ['RingFinger1_L1',
+ 'RingFinger2_L1',
+ 'RingFinger3_L1',
+ 'RingFinger4_L1']
+ringLMod = irm.Finger(name, joints)
 ringLMod.preBuild()
 ringLMod.build()
-ringLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-ringLMod.controllerScale = 2
-ringLMod.postBuild()
-#ringLMod.remove()
+ringLMod.controllerColor = irg.Controller.COLOR.BLUE
+ringLMod.controllerSize = 2
+#ringLMod.delete()
 
-prefix = 'pinkyFinger_L_'
-joints = [u'PinkyFinger1_L1',
- u'PinkyFinger2_L1',
- u'PinkyFinger3_L1',
- u'PinkyFinger4_L1']
-pinkyLMod = irModule.Finger(prefix, joints)
+name = 'pinkyFinger'
+joints = ['PinkyFinger1_L1',
+ 'PinkyFinger2_L1',
+ 'PinkyFinger3_L1',
+ 'PinkyFinger4_L1']
+pinkyLMod = irm.Finger(name, joints)
 pinkyLMod.preBuild()
 pinkyLMod.build()
-pinkyLMod.controllerColor = irGlobal.Controller.COLOR.BLUE
-pinkyLMod.controllerScale = 2
-pinkyLMod.postBuild()
-#pinkyLMod.remove()
+pinkyLMod.controllerColor = irg.Controller.COLOR.BLUE
+pinkyLMod.controllerSize = 2
+#pinkyLMod.delete()
 
-prefix = 'fingers_L_'
-fingersLMaster = irMaster.FingersMaster(prefix)
+name = 'fingers'
+fingersLMaster = irmst.FingersMaster(name)
 fingersLMaster.addModules(thumbLMod, indexLMod, middleLMod, ringLMod, pinkyLMod)
 fingersLMaster.build()
 fingersLMaster.attachTo(armLMod)
 globalMst.addMasters(fingersLMaster)
-#fingersLMaster.remove()
+#fingersLMaster.delete()
 
 # ---------------------------------------------------------------------------
 # Fingers R Build
-prefix = 'thumbFinger_R_'
-joints = [u'ThumbFinger1_R1',
- u'ThumbFinger2_R1',
- u'ThumbFinger3_R1',
- u'ThumbFinger4_R1']
-thumbRMod = irModule.Finger(prefix, joints)
+name = 'thumbFinger'
+joints = ['ThumbFinger1_R1',
+ 'ThumbFinger2_R1',
+ 'ThumbFinger3_R1',
+ 'ThumbFinger4_R1']
+thumbRMod = irm.Finger(name, joints)
 thumbRMod.preBuild()
 thumbRMod.negateScaleX = True
 thumbRMod.build()
-thumbRMod.controllerColor = irGlobal.Controller.COLOR.RED
-thumbRMod.controllerScale = 2
-thumbRMod.postBuild()
-#thumbRMod.remove()
+thumbRMod.controllerColor = irg.Controller.COLOR.RED
+thumbRMod.controllerSize = 2
+#thumbRMod.delete()
 
-prefix = 'indexFinger_R_'
-joints = [u'IndexFinger1_R1',
- u'IndexFinger2_R1',
- u'IndexFinger3_R1',
- u'IndexFinger4_R1']
-indexRMod = irModule.Finger(prefix, joints)
+name = 'indexFinger'
+joints = ['IndexFinger1_R1',
+ 'IndexFinger2_R1',
+ 'IndexFinger3_R1',
+ 'IndexFinger4_R1']
+indexRMod = irm.Finger(name, joints)
 indexRMod.preBuild()
 indexRMod.negateScaleX = True
 indexRMod.build()
-indexRMod.controllerColor = irGlobal.Controller.COLOR.RED
-indexRMod.controllerScale = 2
-indexRMod.postBuild()
-#indexRMod.remove()
+indexRMod.controllerColor = irg.Controller.COLOR.RED
+indexRMod.controllerSize = 2
+#indexRMod.delete()
 
-prefix = 'middleFinger_R_'
-joints = [u'MiddleFinger1_R1',
- u'MiddleFinger2_R1',
- u'MiddleFinger3_R1',
- u'MiddleFinger4_R1']
-middleRMod = irModule.Finger(prefix, joints)
+name = 'middleFinger'
+joints = ['MiddleFinger1_R1',
+ 'MiddleFinger2_R1',
+ 'MiddleFinger3_R1',
+ 'MiddleFinger4_R1']
+middleRMod = irm.Finger(name, joints)
 middleRMod.preBuild()
 middleRMod.negateScaleX = True
 middleRMod.build()
-middleRMod.controllerColor = irGlobal.Controller.COLOR.RED
-middleRMod.controllerScale = 2
-middleRMod.postBuild()
-#middleRMod.remove()
+middleRMod.controllerColor = irg.Controller.COLOR.RED
+middleRMod.controllerSize = 2
+#middleRMod.delete()
 
-prefix = 'ringFinger_R_'
-joints = [u'RingFinger1_R1',
- u'RingFinger2_R1',
- u'RingFinger3_R1',
- u'RingFinger4_R1']
-ringRMod = irModule.Finger(prefix, joints)
+name = 'ringFinger'
+joints = ['RingFinger1_R1',
+ 'RingFinger2_R1',
+ 'RingFinger3_R1',
+ 'RingFinger4_R1']
+ringRMod = irm.Finger(name, joints)
 ringRMod.preBuild()
 ringRMod.negateScaleX = True
 ringRMod.build()
-ringRMod.controllerColor = irGlobal.Controller.COLOR.RED
-ringRMod.controllerScale = 2
-ringRMod.postBuild()
-#ringRMod.remove()
+ringRMod.controllerColor = irg.Controller.COLOR.RED
+ringRMod.controllerSize = 2
+#ringRMod.delete()
 
-prefix = 'pinkyFinger_R_'
-joints = [u'PinkyFinger1_R1',
- u'PinkyFinger2_R1',
- u'PinkyFinger3_R1',
- u'PinkyFinger4_R1']
-pinkyRMod = irModule.Finger(prefix, joints)
+name = 'pinkyFinger'
+joints = ['PinkyFinger1_R1',
+ 'PinkyFinger2_R1',
+ 'PinkyFinger3_R1',
+ 'PinkyFinger4_R1']
+pinkyRMod = irm.Finger(name, joints)
 pinkyRMod.preBuild()
 pinkyRMod.negateScaleX = True
 pinkyRMod.build()
-pinkyRMod.controllerColor = irGlobal.Controller.COLOR.RED
-pinkyRMod.controllerScale = 2
-pinkyRMod.postBuild()
-#pinkyRMod.remove()
+pinkyRMod.controllerColor = irg.Controller.COLOR.RED
+pinkyRMod.controllerSize = 2
+#pinkyRMod.delete()
 
-prefix = 'fingers_R_'
-fingersRMaster = irMaster.FingersMaster(prefix)
+name = 'fingers'
+fingersRMaster = irmst.FingersMaster(name)
 fingersRMaster.addModules(thumbRMod, indexRMod, middleRMod, ringRMod, pinkyRMod)
 fingersRMaster.build()
 fingersRMaster.attachTo(armRMod)
 globalMst.addMasters(fingersRMaster)
-#fingersRMaster.remove()
+#fingersRMaster.delete()
 
 # ---------------- Space Switch Setup ---------------------
 mainCtrl = globalMst.mainController()
@@ -318,57 +274,57 @@ footLCtrl = legLMod.ikSystem().ikHandleController()
 footRCtrl = legRMod.ikSystem().ikHandleController()
 
 
-handLIkhCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(handLCtrl,
+handLIkhCtrlSSBuilder = irg.SpaceSwitchBuilder(handLCtrl,
                                                      [mainCtrl, pelvisCtrl, chestCtrl, headCtrl],
                                                      mainCtrl)
 handLIkhCtrlSSBuilder.build(parent=True)
-shoulderLIkhCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(shoulderLCtrl,
+shoulderLIkhCtrlSSBuilder = irg.SpaceSwitchBuilder(shoulderLCtrl,
                                                          [mainCtrl, claLCtrl],
                                                          claLCtrl)
 shoulderLIkhCtrlSSBuilder.build(orient=True)
-armLPvCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(armLMod.ikSystem().poleVectorController(),
+armLPvCtrlSSBuilder = irg.SpaceSwitchBuilder(armLMod.ikSystem().poleVectorController(),
                                                    [mainCtrl, chestCtrl, handLCtrl],
                                                    mainCtrl)
 armLPvCtrlSSBuilder.build(parent=True)
 
 
-handRIkhCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(handRCtrl,
+handRIkhCtrlSSBuilder = irg.SpaceSwitchBuilder(handRCtrl,
                                                      [mainCtrl, pelvisCtrl, chestCtrl, headCtrl],
                                                      mainCtrl)
 handRIkhCtrlSSBuilder.build(parent=True)
-shoulderRIkhCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(shoulderRCtrl,
+shoulderRIkhCtrlSSBuilder = irg.SpaceSwitchBuilder(shoulderRCtrl,
                                                          [mainCtrl, claRCtrl],
                                                          claRCtrl)
 shoulderRIkhCtrlSSBuilder.build(orient=True)
-armRPvCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(armRMod.ikSystem().poleVectorController(),
+armRPvCtrlSSBuilder = irg.SpaceSwitchBuilder(armRMod.ikSystem().poleVectorController(),
                                                    [mainCtrl, chestCtrl, handRCtrl],
                                                    mainCtrl)
 armRPvCtrlSSBuilder.build(parent=True)
 
 
-footRIkhCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(footLCtrl,
+footRIkhCtrlSSBuilder = irg.SpaceSwitchBuilder(footLCtrl,
                                                      [mainCtrl, pelvisCtrl],
                                                      mainCtrl)
 footRIkhCtrlSSBuilder.build(parent=True)
-legRPvCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(legLMod.ikSystem().poleVectorController(),
+legRPvCtrlSSBuilder = irg.SpaceSwitchBuilder(legLMod.ikSystem().poleVectorController(),
                                                    [mainCtrl, footLCtrl],
                                                    mainCtrl)
 legRPvCtrlSSBuilder.build(parent=True)
 
 
-footRIkhCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(footRCtrl,
+footRIkhCtrlSSBuilder = irg.SpaceSwitchBuilder(footRCtrl,
                                                      [mainCtrl, pelvisCtrl],
                                                      mainCtrl)
 footRIkhCtrlSSBuilder.build(parent=True)
-legRPvCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(legRMod.ikSystem().poleVectorController(),
+legRPvCtrlSSBuilder = irg.SpaceSwitchBuilder(legRMod.ikSystem().poleVectorController(),
                                                    [mainCtrl, footRCtrl],
                                                    mainCtrl)
 legRPvCtrlSSBuilder.build(parent=True)
 
 
-headCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(headCtrl, [neckCtrl, mainCtrl], neckCtrl)
+headCtrlSSBuilder = irg.SpaceSwitchBuilder(headCtrl, [neckCtrl, mainCtrl], neckCtrl)
 headCtrlSSBuilder.build(orient=True)
 
 
-eyesCtrlSSBuilder = irGlobal.SpaceSwitchBuilder(eyesMaster.controller(), [headCtrl, mainCtrl], headCtrl)
+eyesCtrlSSBuilder = irg.SpaceSwitchBuilder(eyesMaster.controller(), [headCtrl, mainCtrl], headCtrl)
 eyesCtrlSSBuilder.build(parent=True)

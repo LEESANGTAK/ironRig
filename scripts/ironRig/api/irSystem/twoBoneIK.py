@@ -331,7 +331,7 @@ class TwoBoneIK(System):
         cmds.connectAttr('{}.outLength2'.format(pinOutputNode), '{}.{}'.format(self._joints[2], 'translate{}'.format(self._aimAxis)))
 
     def buildRootController(self):
-        startCtrl = Controller(self._joints[0], shape=Controller.SHAPE.SPHERE)
+        startCtrl = Controller('{}_root'.format(self.shortName), shape=Controller.SHAPE.SPHERE)
         cmds.matchTransform(startCtrl.zeroGrp, self._joints[0], position=True)
         cmds.matchTransform(startCtrl.zeroGrp, self._ikHandleController, rotation=True, scale=True)
         cmds.parentConstraint(startCtrl, utils.getParent(self._joints[0]), mo=True)

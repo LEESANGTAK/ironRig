@@ -17,8 +17,8 @@ class Single(System):
     def _buildControls(self):
         ctrls = []
 
-        for jnt in self._joints:
-            ctrl = Controller(jnt, color=Controller.COLOR.SKYBLUE)
+        for i, jnt in enumerate(self._joints):
+            ctrl = Controller('{}_{:02d}'.format(self.shortName, i), color=Controller.COLOR.SKYBLUE)
             cmds.matchTransform(ctrl.zeroGrp, jnt, position=True, rotation=True)
             if self._negateScaleX and utils.getWorldPoint(ctrl).x < 0.0:
                 cmds.setAttr('{}.zeroGrp'.format(ctrl), -1)

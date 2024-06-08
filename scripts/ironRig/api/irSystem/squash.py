@@ -42,7 +42,7 @@ class Squash(System):
         cmds.parent(ffdNodes[1:]+[self._squashHandle, self._sideBendHandle, self._forwardBendHandle], self._blbxGrp)
 
     def _buildControls(self):
-        ctrl = Controller('{}ctrl'.format(self.shortName), Controller.SHAPE.PYRAMID, Controller.COLOR.GREEN, direction=Controller.DIRECTION.Y)
+        ctrl = Controller('{}_ctrl'.format(self.shortName), Controller.SHAPE.PYRAMID, Controller.COLOR.GREEN, direction=Controller.DIRECTION.Y)
         ffdTopPos = cmds.xform('{}.pt[2][4][2]'.format(self._ffd), q=True, t=True, ws=True)
         cmds.xform(ctrl.zeroGrp, t=ffdTopPos, ws=True)
         ctrl.shapeOffset = [0.0, 4.0, 0.0]

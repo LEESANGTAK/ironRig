@@ -270,9 +270,9 @@ class Module(Container):
             revNegZAxisVal = 1-int(cmds.getAttr('{}.negateZAxis'.format(oppSideOriPlaneLocators[1])))
             cmds.setAttr('{}.negateZAxis'.format(self._oriPlaneLocators[1]), revNegZAxisVal)
 
-    def symmetrizeControllers(self):
+    def symmetrizeControllerShapes(self):
         for ctrl in self._allControllers():
-            ctrl.symmetrize(self._side)
+            ctrl.symmetrizeShapes(self._side)
 
     def build(self):
         """Build module with joints and objects from the initialize step.

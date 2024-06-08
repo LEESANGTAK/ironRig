@@ -228,7 +228,7 @@ class Controller(object):
         self._extraGrp = self._extraGrp.replace(searchStr, replaceStr)
         self._controllerNode = self._controllerNode.replace(searchStr, replaceStr)
 
-    def symmetrize(self, sideChar):
+    def symmetrizeShapes(self, sideChar):
         oppSideChar = common.SYMMETRY_CHAR_TABLE.get(sideChar)
         oppSideCtrl = self._transform.replace('_{}_'.format(sideChar), '_{}_'.format(oppSideChar))
         for crv, oppCrv in zip(self.curves, cmds.listRelatives(oppSideCtrl, s=True)):

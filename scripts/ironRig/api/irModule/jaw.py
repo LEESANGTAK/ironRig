@@ -27,12 +27,13 @@ class Jaw(Module):
     def _connectSystems(self):
         pass
 
-    def mirror(self):
+    def mirror(self, skeletonSideChar='l'):
         oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
-        oppSkelJoints = [jnt.replace('_{}'.format(self._side), '_{}'.format(oppSideChar)) for jnt in self._skelJoints]
+        oppSkelJoints = [jnt.replace(skeletonSideChar, common.SYMMETRY_CHAR_TABLE.get(skeletonSideChar)) for jnt in self._skelJoints]
         oppMod = Jaw(self._name, oppSideChar, oppSkelJoints)
         oppMod.preBuild()
         oppMod.symmetrizeGuide()
         oppMod.build()
-        oppMod.symmetrizeControllers()
+        oppMod.symmetrizeControllerShapes()
+        oppMod.controllerColor = common.SYMMETRY_COLOR_TABLE.get(self._controllerColor)
         return oppMod
