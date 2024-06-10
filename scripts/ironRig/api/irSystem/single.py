@@ -20,7 +20,7 @@ class Single(System):
         for i, jnt in enumerate(self._joints):
             ctrl = Controller('{}_{:02d}'.format(self.shortName, i), color=Controller.COLOR.SKYBLUE)
             cmds.matchTransform(ctrl.zeroGrp, jnt, position=True, rotation=True)
-            if self._negateScaleX and utils.getWorldPoint(ctrl).x < 0.0:
+            if self._mirrorTranslate and utils.getWorldPoint(ctrl).x < 0.0:
                 cmds.setAttr('{}.zeroGrp'.format(ctrl), -1)
             cmds.parentConstraint(ctrl, jnt, mo=True)
             cmds.connectAttr('{}.scale'.format(ctrl), '{}.scale'.format(jnt))

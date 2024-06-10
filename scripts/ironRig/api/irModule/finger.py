@@ -8,11 +8,20 @@ from .module import Module
 class Finger(Module):
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
         self._fkSystem = None
+        self._curlStartIndex = 1
         super(Finger, self).__init__(name, side, skeletonJoints)
 
     @property
     def fkSystem(self):
         return self._fkSystem
+
+    @property
+    def curlStartIndex(self):
+        return self._curlStartIndex
+
+    @curlStartIndex.setter
+    def curlStartIndex(self, val):
+        self._curlStartIndex = val
 
     def _addSystems(self):
         self._fkSystem = FK(self._name, self._side)
@@ -22,7 +31,7 @@ class Finger(Module):
     def preBuild(self):
         super(Finger, self).preBuild()
         cmds.addAttr(self._oriPlaneLocators[1], ln='curl', at='float', dv=0.0, keyable=True)
-        for initJnt in self._initJoints[1:]:
+        for initJnt in self._initJoints[self._curlStartIndex:]:
             cmds.connectAttr('{}.curl'.format(self._oriPlaneLocators[1]), '{}.rz'.format(initJnt))
 
     def _buildSystems(self):
@@ -35,10 +44,11 @@ class Finger(Module):
     def _connectSystems(self):
         pass
 
-    def mirror(self, skeletonSideChar='l'):
-        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
-        oppSkelJoints = [jnt.replace(skeletonSideChar, common.SYMMETRY_CHAR_TABLE.get(skeletonSideChar)) for jnt in self._skelJoints]
+    def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
+        oppSideChar, oppSkelJoints = super(Finger, self).mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Finger(self._name, oppSideChar, oppSkelJoints)
+        oppMod.mirrorTranslate = mirrorTranslate
+        oppMod.curlStartIndex = self._curlStartIndex
         oppMod.preBuild()
         oppMod.symmetrizeGuide()
         oppMod.build()

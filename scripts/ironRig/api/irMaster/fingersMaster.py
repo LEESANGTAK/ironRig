@@ -24,7 +24,7 @@ class FingersMaster(Master):
         masterCtrl.shapeOffset = [0, 5, 0]
         for module in self._modules:
             cmds.addAttr(masterCtrl, ln='{}_curl'.format(module.name), at='double', dv=0.0, keyable=True)
-            for fkCtrl in module.fkSystem.controllers[1:]:
+            for fkCtrl in module.fkSystem.controllers[module.curlStartIndex:]:
                 cmds.connectAttr('{}.{}'.format(masterCtrl, '{}_curl'.format(module.name)), '{}.rotateZ'.format(fkCtrl.extraGrp))
 
         cmds.xform(masterCtrl.zeroGrp, t=list(self._getModulesCenter())[:3], ws=True)

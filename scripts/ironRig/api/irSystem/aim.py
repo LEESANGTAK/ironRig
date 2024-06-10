@@ -63,7 +63,7 @@ class Aim(System):
     def _buildControls(self):
         aimCtrl = Controller('{}_aim'.format(self.longName), Controller.SHAPE.LOCATOR)
         cmds.matchTransform(aimCtrl.zeroGrp, self._aimLoc, position=True)
-        if self._negateScaleX:
+        if self._mirrorTranslate:
             cmds.setAttr('{}.sx'.format(aimCtrl.zeroGrp), -1)
         self.addMembers(cmds.pointConstraint(aimCtrl, self._aimLoc, mo=True))
         aimCtrl.lockHideChannels(['rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])

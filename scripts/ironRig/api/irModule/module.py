@@ -35,7 +35,7 @@ class Module(Container):
 
         self._aimSign = None
         self._aimAxis = None
-        self._negateScaleX = False
+        self._mirrorTranslate = False
         self._systems = []
         self._controllers = []
 
@@ -58,14 +58,14 @@ class Module(Container):
         self._skelJoints = skeletonJoints
 
     @property
-    def negateScaleX(self):
-        return self._negateScaleX
+    def mirrorTranslate(self):
+        return self._mirrorTranslate
 
-    @negateScaleX.setter
-    def negateScaleX(self, val):
-        self._negateScaleX = val
+    @mirrorTranslate.setter
+    def mirrorTranslate(self, val):
+        self._mirrorTranslate = val
         for sys in self._systems:
-            sys.negateScaleX = self._negateScaleX
+            sys.mirrorTranslate = self._mirrorTranslate
 
     @property
     def globalController(self):
@@ -180,20 +180,20 @@ class Module(Container):
         midLoc = None
 
         aimVector = utils.getWorldPoint(self._initSkelLocators[-1]) - utils.getWorldPoint(self._initSkelLocators[0])
-        if len(self._initSkelLocators) <= 2:
-            midOriPlaneLocVector = om.MVector.kZnegAxisVector
-            if utils.isParallel(aimVector, midOriPlaneLocVector):
-                midOriPlaneLocVector = om.MVector.kYaxisVector
-            midLocPos = utils.getWorldPoint(self._initSkelLocators[0]) + (midOriPlaneLocVector * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
+        if len(self._initSkelLocators) <= 2:  # In case single bone chain e.g. eye
+            oriPlaneMidLocVector = om.MVector.kZnegAxisVector
+            if utils.isParallel(aimVector, oriPlaneMidLocVector):
+                oriPlaneMidLocVector = om.MVector.kYaxisVector
+            midLocPos = utils.getWorldPoint(self._initSkelLocators[0]) + (oriPlaneMidLocVector * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
         else:
             midInitSkelLoc = self._initSkelLocators[int(len(self._initSkelLocators)*0.5)]
-            midOriPlaneLocVector = TwoBoneIK.getPoleVector(self._initSkelLocators[0], midInitSkelLoc, self._initSkelLocators[-1])
-            if utils.isParallel(aimVector, midOriPlaneLocVector) or round(midOriPlaneLocVector.length()) == 0.0:
+            oriPlaneMidLocVector = TwoBoneIK.getPoleVector(self._initSkelLocators[0], midInitSkelLoc, self._initSkelLocators[-1])
+            if utils.isParallel(aimVector, oriPlaneMidLocVector) or round(oriPlaneMidLocVector.length()) == 0.0:
                 if utils.isSameDirection(aimVector, om.MVector.kZaxisVector):
-                    midOriPlaneLocVector = om.MVector.kYaxisVector
+                    oriPlaneMidLocVector = om.MVector.kYaxisVector
                 else:
-                    midOriPlaneLocVector = om.MVector.kYnegAxisVector
-            midLocPos = utils.getWorldPoint(midInitSkelLoc) + (midOriPlaneLocVector.normal() * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
+                    oriPlaneMidLocVector = om.MVector.kYnegAxisVector
+            midLocPos = utils.getWorldPoint(midInitSkelLoc) + (oriPlaneMidLocVector.normal() * utils.getDistance(self._initSkelLocators[0], self._initSkelLocators[-1]))
 
         midLoc = cmds.spaceLocator(n='{}_mid_oriPlane_loc'.format(self.shortName))[0]
         cmds.setAttr('{}.overrideEnabled'.format(midLoc), True)
@@ -253,6 +253,11 @@ class Module(Container):
             cmds.connectAttr('{}.outputScale'.format(decMtx), '{}.scale'.format(initJnt))
 
         self._initJoints = initJoints
+
+    def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r'):
+        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
+        oppSkelJoints = [jnt.replace(skeletonSearchStr, skeletonReplaceStr) for jnt in self._skelJoints]
+        return oppSideChar, oppSkelJoints
 
     def symmetrizeGuide(self, jointAxis=True):
         oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)

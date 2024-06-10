@@ -146,7 +146,7 @@ class FootIK(System):
         self._footCtrl = Controller(self.shortName, Controller.SHAPE.FOOT, size=5, direction=Controller.DIRECTION.Y)
         jointsMidVec = (utils.getWorldVector(self._joints[0]) + utils.getWorldVector(self._joints[-1])) * 0.5
         cmds.xform(self._footCtrl.zeroGrp, t=[jointsMidVec.x, 0, jointsMidVec.z], ws=True)
-        if self._negateScaleX:
+        if self._mirrorTranslate:
             cmds.setAttr('{}.sx'.format(self._footCtrl.zeroGrp), -1)
         cmds.parentConstraint(self._footCtrl, self._blbxGrp, mo=True)
         cmds.parent(self._footCtrl.zeroGrp, self._controllerGrp)
@@ -159,7 +159,7 @@ class FootIK(System):
 
         self._connectAttributes()
 
-        if self._negateScaleX:
+        if self._mirrorTranslate:
             toeUnitConversion = cmds.listConnections('{}.toe'.format(self._footCtrl), source=False, type='unitConversion')[0]
             cmds.setAttr('{}.conversionFactor'.format(toeUnitConversion), -cmds.getAttr('{}.conversionFactor'.format(toeUnitConversion)))
 

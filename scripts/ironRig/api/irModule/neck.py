@@ -103,10 +103,10 @@ class Neck(Module):
     def _buildControls(self):
         pass
 
-    def mirror(self, skeletonSideChar='l'):
-        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
-        oppSkelJoints = [jnt.replace(skeletonSideChar, common.SYMMETRY_CHAR_TABLE.get(skeletonSideChar)) for jnt in self._skelJoints]
+    def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
+        oppSideChar, oppSkelJoints = super(Neck, self).mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Neck(self._name, oppSideChar, oppSkelJoints)
+        oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()
         oppMod.symmetrizeGuide()
         oppMod.build()

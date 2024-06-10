@@ -75,7 +75,7 @@ class RibbonIK(System):
             ctrl = Controller(name=srfcJnt.replace('_srfcJnt', ''), shape=Controller.SHAPE.CUBE, color=self.controllerColor)
             ctrl.lockHideChannels(['scale', 'visibility'])
             cmds.matchTransform(ctrl.zeroGrp, srfcJnt, position=True, rotation=True)
-            if self._negateScaleX:
+            if self._mirrorTranslate:
                 cmds.setAttr('{}.sx'.format(ctrl.zeroGrp), -1)
             cmds.parentConstraint(ctrl, srfcJnt, mo=True)
             ctrls.append(ctrl)

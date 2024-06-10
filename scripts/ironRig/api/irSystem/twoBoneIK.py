@@ -68,7 +68,7 @@ class TwoBoneIK(System):
     def _buildControls(self):
         self._ikHandleController = Controller(self._ikHandle, shape=Controller.SHAPE.CUBE)
         cmds.matchTransform(self._ikHandleController.zeroGrp, self._joints[-1], position=True)
-        if self._negateScaleX:
+        if self._mirrorTranslate:
             cmds.setAttr('{}.sx'.format(self._ikHandleController.zeroGrp), -1)
         cmds.pointConstraint(self._ikHandleController, utils.getParent(self._ikHandle), mo=True)
         cmds.orientConstraint(self._ikHandleController, self._joints[-1], mo=True)
@@ -80,7 +80,7 @@ class TwoBoneIK(System):
         polePos = utils.getWorldPoint(self._joints[1]) + (poleVector.normal() * startToEndVector.length())
         self._poleVectorController = Controller('{}_pv'.format(self.shortName), shape=Controller.SHAPE.LOCATOR)
         self.poleVectorPosition = polePos
-        if self._negateScaleX:
+        if self._mirrorTranslate:
             cmds.setAttr('{}.sx'.format(self._poleVectorController.zeroGrp), -1)
         cmds.poleVectorConstraint(self._poleVectorController, self._ikHandle)
         self._poleVectorController.lockHideChannels(['rotate', 'scale', 'visibility'])

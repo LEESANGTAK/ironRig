@@ -73,10 +73,10 @@ class Eye(Module):
     def _connectSystems(self):
         cmds.parentConstraint(self._aimSystem.joints[0], self._fkSystem.controllers[0].zeroGrp)
 
-    def mirror(self, skeletonSideChar='l'):
-        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
-        oppSkelJoints = [jnt.replace(skeletonSideChar, common.SYMMETRY_CHAR_TABLE.get(skeletonSideChar)) for jnt in self._skelJoints]
+    def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
+        oppSideChar, oppSkelJoints = super(Eye, self).mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Eye(self._name, oppSideChar, oppSkelJoints)
+        oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()
         oppMod.symmetrizeGuide(jointAxis=False)
         oppMod.build()

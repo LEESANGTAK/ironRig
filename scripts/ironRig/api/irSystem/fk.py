@@ -33,7 +33,7 @@ class FK(System):
             self.addMembers(ctrl.allNodes)
 
         for ctrl in ctrls:
-            if self._negateScaleX and utils.getWorldPoint(ctrl).x < 0.0:
+            if self._mirrorTranslate and utils.getWorldPoint(ctrl).x < 0.0:
                 cmds.setAttr('{}.sx'.format(ctrl.zeroGrp), -1)
 
         Controller.makeHierarchy(ctrls)

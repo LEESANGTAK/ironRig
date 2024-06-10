@@ -18,7 +18,7 @@ class System(Container):
 
         self._aimSign = None
         self._aimAxis = None
-        self._negateScaleX = False
+        self._mirrorTranslate = False
         self._joints = joints or []
         self._controllers = []
 
@@ -65,12 +65,12 @@ class System(Container):
         return self._controllers
 
     @property
-    def negateScaleX(self):
-        return self._negateScaleX
+    def mirrorTranslate(self):
+        return self._mirrorTranslate
 
-    @negateScaleX.setter
-    def negateScaleX(self, val):
-        self._negateScaleX = val
+    @mirrorTranslate.setter
+    def mirrorTranslate(self, val):
+        self._mirrorTranslate = val
 
     @property
     def controllerShape(self):

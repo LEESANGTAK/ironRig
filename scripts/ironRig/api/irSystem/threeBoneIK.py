@@ -89,7 +89,7 @@ class ThreeBoneIK(System):
     def _buildControls(self):
         self._ikHandleController = Controller(self._ankleIkHandle, shape=Controller.SHAPE.CUBE)
         cmds.matchTransform(self._ikHandleController.zeroGrp, self._joints[-1], position=True)
-        if self._negateScaleX:
+        if self._mirrorTranslate:
             cmds.setAttr('{}.sx'.format(self._ikHandleController.zeroGrp), -1)
         cmds.pointConstraint(self._ikHandleController, self._ikHandleLoc, mo=True)
         cmds.pointConstraint(self._ikHandleController, utils.getParent(self._hindIkHandle), mo=True)
@@ -106,7 +106,7 @@ class ThreeBoneIK(System):
             polePos = self._poleVectorPosition
         self._poleVectorController = Controller('{}_pv'.format(self.shortName), shape=Controller.SHAPE.LOCATOR)
         cmds.xform(self._poleVectorController.zeroGrp, t=list(polePos)[:3], ws=True)
-        if self._negateScaleX:
+        if self._mirrorTranslate:
             cmds.setAttr('{}.sx'.format(self._poleVectorController.zeroGrp), -1)
 
         cmds.poleVectorConstraint(self._poleVectorController, self._hindIkHandle)

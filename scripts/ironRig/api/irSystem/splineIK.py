@@ -117,7 +117,7 @@ class SplineIK(System):
             ctrl = Controller(name=crvJnt.replace('_crvJnt', ''), shape=Controller.SHAPE.CUBE, color=self.controllerColor)
             ctrl.lockHideChannels(['scale', 'visibility'])
             cmds.matchTransform(ctrl.zeroGrp, crvJnt, position=True, rotation=True)
-            if self._negateScaleX:
+            if self._mirrorTranslate:
                 cmds.setAttr('{}.sx'.format(ctrl.zeroGrp), -1)
             self.addMembers(ctrl.allNodes)
             ctrls.append(ctrl)

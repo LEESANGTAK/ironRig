@@ -239,10 +239,10 @@ class String(Module):
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
             # cmds.scaleConstraint(outJnt, skelJnt, mo=True)
 
-    def mirror(self, skeletonSideChar='l'):
-        oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
-        oppSkelJoints = [jnt.replace(skeletonSideChar, common.SYMMETRY_CHAR_TABLE.get(skeletonSideChar)) for jnt in self._skelJoints]
+    def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
+        oppSideChar, oppSkelJoints = super(String, self).mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = String(self._name, oppSideChar, oppSkelJoints)
+        oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()
         oppMod.symmetrizeGuide(jointAxis=False)
         oppMod.build()
