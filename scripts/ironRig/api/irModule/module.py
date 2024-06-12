@@ -22,6 +22,9 @@ class Module(Container):
     def __init__(self, name='new', side=Container.SIDE.CENTER, skeletonJoints=[]):
         super().__init__(name, side, Container.TYPE.MODULE)
 
+        self._parent = None
+        self._parentOutJointID = -1000000
+
         self._geoGrp = None
         self._outGrp = None
         self._systemGrp = None
@@ -422,6 +425,9 @@ class Module(Container):
         if module.__class__.__name__ != 'Spine':
             cmds.connectAttr('{}.scale'.format(parentSpace), '{}.scale'.format(self._topGrp))
 
+        self._parent = module
+        self._parentOutJointID = outJointIndex
+
     def delete(self):
         """Remove all nodes realted with a module.
         """
@@ -461,8 +467,12 @@ class Module(Container):
 
     def serialize(self):
         midLocator = self._oriPlaneLocators[1]
+        parentId = self._parent.id if self._parent else 0
         return OrderedDict([
+            ('id', self._id),
             ('type', self.__class__.__name__),
+            ('parentID', parentId),
+            ('parentOutJointID', self._parentOutJointID),
             ('name', self._name),
             ('side', self._side),
             ('skeletonJoints', self._skelJoints),
@@ -474,7 +484,9 @@ class Module(Container):
             ('allControllers', [ctrl.serialize() for ctrl in self._allControllers()]),
         ])
 
-    def deserialize(self, data):
+    def deserialize(self, data, hashmap={}):
+        super().deserialize(data, hashmap)
+
         # Set porperties before build
         self.mirrorTranslate = data.get('mirrorTranslate')
 
@@ -495,3 +507,7 @@ class Module(Container):
             ctrl.deserialize(ctrlData)
 
         # Attach to parent module
+        parentID = data.get('parentID')
+        if parentID:
+            parent = hashmap.get(parentID)
+            self.attachTo(parent, data.get('parentOutJointID'))

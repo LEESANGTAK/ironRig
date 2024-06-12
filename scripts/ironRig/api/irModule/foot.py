@@ -9,7 +9,9 @@ from .module import Module
 
 
 class Foot(Module):
-    def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
+    def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[], vertices=[]):
+        self._vertices = vertices
+
         self._ikSystem = None
         self._fkSystem = None
 
@@ -104,7 +106,7 @@ class Foot(Module):
         self._ikSystem.controllers[0].size = self._controllerSize * 2
         self._controllers[0].size = self._controllerSize * 0.2
 
-    def attachTo(self, module):
+    def attachTo(self, module, outJointIndex=-1000000):
         if module.__class__.__name__ in ['TwoBoneLimb', 'ThreeBoneLimb']:
             # Connect ik joints
             utils.removeConnections(self._ikSystem.joints[0])
@@ -126,8 +128,11 @@ class Foot(Module):
             # Connect module controllers
             cmds.connectAttr('{}.ik'.format(module.controllers[0]), '{}.ik'.format(self._controllers[0]))
             self._controllers[0].hide()
+
+            self._parent = module
+            self._parentOutJointID = outJointIndex
         else:
-            super().attachTo(module)
+            super().attachTo(module, outJointIndex)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
         oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)

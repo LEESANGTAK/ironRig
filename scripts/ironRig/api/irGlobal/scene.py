@@ -2,7 +2,7 @@ import json
 from collections import OrderedDict
 from ...common import logger
 from ..irMaster.globalMaster import GlobalMaster
-from .moduleFactory import ModuleFactory
+from .factory import Factory
 
 
 class Scene(object):
@@ -12,6 +12,7 @@ class Scene(object):
         self._modules = []
         self._masters = []
         self._spaceSwitchBuilders = []
+        self._customProcedures = []
 
     @property
     def globalMaster(self):
@@ -21,18 +22,24 @@ class Scene(object):
     def globalMaster(self, globalMaster):
         self._globalMaster = globalMaster
 
-    def addModule(self, module):
-        self._modules.append(module)
+    def addModule(self, type, name, side, skeletonJoints, vertices=[]):
+        mod = Factory.getModule(type, name, side, skeletonJoints)
+        self._modules.append(mod)
+        return mod
 
-    def addMaster(self, master):
-        self._masters.append(master)
+    def addMaster(self, type, name, side):
+        mst = Factory.getMaster(type, name, side)
+        self._masters.append(mst)
+        return mst
 
-    def addSpaceSwitcher(self, spaceSwitcher):
-        self._spaceSwitchBuilders.append(spaceSwitcher)
+    def addAttacher(self):
+        pass
 
-    def removeModules(self, modules):
-        if modules in self._modules:
-            self._modules.remove(modules)
+    def addSpaceSwitchBuilder(self):
+        pass
+
+    def addCustomProcedure(self):
+        pass
 
     def saveToFile(self, filename):
         with open(filename, "w") as f:
@@ -51,28 +58,37 @@ class Scene(object):
             ("globalMaster", self._globalMaster.serialize()),
             ("modules", [module.serialize() for module in self._modules]),
             ("masters", [master.serialize() for master in self._masters]),
+            ("attachers", []),
             ("spaceSwitchBuilders", [spaceSwitchBuilders.serialize() for spaceSwitchBuilders in self._spaceSwitchBuilders]),
+            ("customProcedures", []),
         ])
 
-    def deserialize(self, data):
+    def deserialize(self, data, hashmap={}):
         globalMasterData = data['globalMaster']
-        globalMst = GlobalMaster(globalMasterData.get('rootJoint'), globalMasterData.get('buildRootController'))
-        globalMst.build()
+        self._globalMaster = GlobalMaster(globalMasterData.get('rootJoint'), globalMasterData.get('buildRootController'))
+        self._globalMaster.build()
 
         for moduleData in data["modules"]:
-            mod = ModuleFactory.getModule(
+            mod = self.addModule(
                 moduleData.get('type'),
                 moduleData.get('name'),
                 moduleData.get('side'),
                 moduleData.get('skeletonJoints')
             )
-            mod.deserialize(moduleData)
+            mod.deserialize(moduleData, hashmap)
+            self._globalMaster.addModules(mod)
 
-        # for masterData in data["masters"]:
-        #     Master(self).deserialize(masterData)
+        for masterData in data["masters"]:
+            mst = self.addMaster(
+                masterData.get('type'),
+                masterData.get('name'),
+                masterData.get('side')
+            )
+            mst.deserialize(masterData, hashmap)
+            self._globalMaster.addMasters(mst)
 
         # for spaceSwitchBuildersData in data["spaceSwitchBuilders"]:
         #     SpaceSwitcher(self).deserialize(spaceSwitchBuildersData)
 
         logger.info("Deserialization was complete.")
-        return globalMst
+        return self._globalMaster

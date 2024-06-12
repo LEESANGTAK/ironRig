@@ -368,7 +368,7 @@ class TwoBoneLimb(Module):
         if self._upperTwistSystem or self._lowerTwistSystem:
             self._controllers[1].size = self._controllerSize * 0.9
 
-    def attachTo(self, module):
+    def attachTo(self, module, outJointIndex=-1000000):
         if module.__class__.__name__ == 'LimbBase':
             limbBaseCtrl = module.fkRootController
 
@@ -409,8 +409,11 @@ class TwoBoneLimb(Module):
             cmds.parentConstraint(module.outJoints[-1], ikStartObject, mo=True)
 
             cmds.parentConstraint(module.outJoints[-1], self._fkSystem.controllers[0].zeroGrp, mo=True)
+
+            self._parent = module
+            self._parentOutJointID = outJointIndex
         else:
-            super().attachTo(module)
+            super().attachTo(module, outJointIndex)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
         oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)

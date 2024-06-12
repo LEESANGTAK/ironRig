@@ -113,6 +113,7 @@ class Controller(Serializable):
 
         self._initCVsPos = []
         self._cvsPosition = []
+        self._crvsRGB = []
 
         self._initController()
 
@@ -220,6 +221,16 @@ class Controller(Serializable):
             for i, cvPos in enumerate(cvsPos):
                 cmds.xform('{}.cv[{}]'.format(crv, i), t=cvPos, os=True)
 
+    def storeCurvesRGB(self):
+        crvsRGB = []
+        for crv in self.curves:
+            crvsRGB.append(cmds.getAttr('{}.overrideColorRGB'.format(crv))[0])
+        self._crvsRGB = crvsRGB
+
+    def restoreCurvesRGB(self, curvesRGB):
+        for crv, crvRGB in zip(self.curves, curvesRGB):
+            cmds.setAttr('{}.overrideColorRGB'.format(crv), *crvRGB)
+
     def symmetrizeShapes(self, sideChar):
         oppSideChar = common.SYMMETRY_CHAR_TABLE.get(sideChar)
         oppSideCtrl = self._transform.replace('_{}_'.format(sideChar), '_{}_'.format(oppSideChar))
@@ -301,9 +312,15 @@ class Controller(Serializable):
 
     def serialize(self):
         self.storeCVsPosition()
+        self.storeCurvesRGB()
+
         return {
             'cvsPosition': self._cvsPosition,
+            'curvesRGB': self._crvsRGB,
         }
 
-    def deserialize(self, data):
+    def deserialize(self, data, hashmap={}):
+        super().deserialize(data, hashmap)
+
         self.restoreCVsPosition(data.get('cvsPosition'))
+        self.restoreCurvesRGB(data.get('curvesRGB'))

@@ -265,7 +265,7 @@ class SplineIK(System):
         cmds.connectAttr('{}.waveOrient'.format(self._controllers[-1]), '{}.rotateY'.format(sineHandle), f=True)
 
         self.addMembers(blendshape)
-        cmds.parent(crv, sineHandleSpace, self._blbxGrp)
+        cmds.parent(sineHandleSpace, self._blbxGrp)
 
     def _addWaveAttrs(self):
         ATTRIBUTES_INFO=[

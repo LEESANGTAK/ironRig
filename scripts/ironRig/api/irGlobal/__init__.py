@@ -8,7 +8,7 @@ from . import aligner
 from . import container
 from . import controller
 from . import spaceSwitchBuilder
-from . import moduleFactory
+from . import factory
 
 
 reload(serializable)
@@ -19,4 +19,4 @@ reload(aligner)
 reload(container)
 reload(controller)
 reload(spaceSwitchBuilder)
-reload(moduleFactory)
+reload(factory)
