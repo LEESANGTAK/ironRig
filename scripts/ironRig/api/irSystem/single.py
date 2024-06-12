@@ -1,12 +1,12 @@
 from maya import cmds
 from .system import System
 from ... import utils
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 
 
 class Single(System):
     def __init__(self, name='new', side=System.SIDE.CENTER, joints=[]):
-        super(Single, self).__init__(name, side, System.TYPE.SINGLE_SYSTEM, joints)
+        super().__init__(name, side, System.TYPE.SINGLE_SYSTEM, joints)
 
     def _getAimAxisInfo(self):
         pass

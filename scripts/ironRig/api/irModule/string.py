@@ -1,9 +1,9 @@
 from maya import cmds
 from ... import utils
 from ... import common
-from ..irSystem import SplineIK
-from ..irSystem import RibbonIK
-from ..irSystem import FK
+from ..irSystem.splineIK import SplineIK
+from ..irSystem.ribbonIK import RibbonIK
+from ..irSystem.fk import FK
 from .module import Module
 
 
@@ -40,7 +40,7 @@ class String(Module):
         self._blendConstraints = None
         self._scaleChoices = None
 
-        super(String, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     @property
     def numberOfControllers(self):
@@ -106,10 +106,10 @@ class String(Module):
             self._ikSystem = RibbonIK(self._name, self._side, numberOfControllers=self._numberOfControllers)
         self._systems.append(self._ikSystem)
 
-        super(String, self)._addSystems()
+        super()._addSystems()
 
     def build(self):
-        super(String, self).build()
+        super().build()
         self._buildControls()
 
     def _buildSystems(self):
@@ -240,7 +240,7 @@ class String(Module):
             # cmds.scaleConstraint(outJnt, skelJnt, mo=True)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(String, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = String(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()

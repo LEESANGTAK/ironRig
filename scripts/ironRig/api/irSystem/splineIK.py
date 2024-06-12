@@ -1,7 +1,7 @@
 from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 from .system import System
 
 
@@ -19,7 +19,7 @@ class SplineIK(System):
     DYNAMIC_LOCK = DynLock
 
     def __init__(self, name='new', side=System.SIDE.CENTER, joints=[], numberOfControllers=2):
-        super(SplineIK, self).__init__(name, side, System.TYPE.SPLINE_SYSTEM, joints)
+        super().__init__(name, side, System.TYPE.SPLINE_SYSTEM, joints)
         self._numberOfControllers = numberOfControllers
         self._curve = None
         self._curveDegree = SplineIK.CURVE_DEGREE.CUBIC
@@ -74,7 +74,7 @@ class SplineIK(System):
         self._alignEndControllerToWorld = val
 
     def _buildSystems(self):
-        super(SplineIK, self)._buildSystems()
+        super()._buildSystems()
         self._createCurveWithJoints()
         # Store rotation of the end joint
         endJntRo = cmds.xform(self._joints[-1], q=True, ro=True, ws=True)

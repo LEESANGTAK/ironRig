@@ -1,15 +1,22 @@
 from imp import reload
 
-from . import obb; reload(obb)
-from . import plane; reload(plane)
-from . import aligner; reload(aligner)
-from . import container; reload(container)
-from . import controller; reload(controller)
-from . import spaceSwitchBuilder; reload(spaceSwitchBuilder)
+from . import scene
+from . import serializable
+from . import obb
+from . import plane
+from . import aligner
+from . import container
+from . import controller
+from . import spaceSwitchBuilder
+from . import moduleFactory
 
 
-from .obb import OBB
-from .aligner import Aligner
-from .container import Container
-from .controller import Controller
-from .spaceSwitchBuilder import SpaceSwitchBuilder
+reload(serializable)
+reload(scene)
+reload(obb)
+reload(plane)
+reload(aligner)
+reload(container)
+reload(controller)
+reload(spaceSwitchBuilder)
+reload(moduleFactory)

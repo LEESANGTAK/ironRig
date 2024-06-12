@@ -1,7 +1,7 @@
 from maya import cmds
 from ... import utils
-from ..irGlobal import Container
-from ..irGlobal import Controller
+from ..irGlobal.container import Container
+from ..irGlobal.controller import Controller
 from ...common import logger
 
 
@@ -10,7 +10,7 @@ class System(Container):
     System contains joints, joint driving systems, controllers.
     """
     def __init__(self, name='new', side=Container.SIDE.CENTER, type=Container.TYPE.FK_SYSTEM, joints=[]):
-        super(System, self).__init__(name, side, type)
+        super().__init__(name, side, type)
 
         self._blbxGrp = None
         self._noTrsfGrp = None
@@ -130,7 +130,7 @@ class System(Container):
             for attrStr in attrs:
                 utils.disconnectAttr('{}.{}'.format(jnt, attrStr))
         self._controllers = []
-        super(System, self).delete()
+        super().delete()
 
     def _updateMembersName(self, oldStr, newStr):
         super()._updateMembersName(oldStr, newStr)

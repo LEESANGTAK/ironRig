@@ -1,18 +1,18 @@
 from ... import utils
 from ... import common
-from ..irSystem import FK
+from ..irSystem.fk import FK
 from .module import Module
 
 
 class Jaw(Module):
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
         self._fkSystem = None
-        super(Jaw, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     def _addSystems(self):
         self._fkSystem = FK(self._name, self._side)
         self._systems.append(self._fkSystem)
-        super(Jaw, self)._addSystems()
+        super()._addSystems()
 
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
@@ -28,7 +28,7 @@ class Jaw(Module):
         pass
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(Jaw, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Jaw(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()

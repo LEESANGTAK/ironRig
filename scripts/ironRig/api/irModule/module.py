@@ -1,9 +1,10 @@
+from collections import OrderedDict
 from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
-from ..irGlobal import Container
-from ..irGlobal import Controller
-from ..irSystem import TwoBoneIK
+from ..irGlobal.container import Container
+from ..irGlobal.controller import Controller
+from ..irSystem.twoBoneIK import TwoBoneIK
 from ... import common
 
 
@@ -19,7 +20,7 @@ class Module(Container):
     Module controller controls systems relationship.
     """
     def __init__(self, name='new', side=Container.SIDE.CENTER, skeletonJoints=[]):
-        super(Module, self).__init__(name, side, Container.TYPE.MODULE)
+        super().__init__(name, side, Container.TYPE.MODULE)
 
         self._geoGrp = None
         self._outGrp = None
@@ -445,7 +446,7 @@ class Module(Container):
 
         self._systems = []
         self._controllers = []
-        super(Module, self).delete()
+        super().delete()
 
         if self._master:
             self._master.removeModules(self)
@@ -457,3 +458,40 @@ class Module(Container):
         for ctrl in self._controllers:
             allCtrls.append(ctrl)
         return allCtrls
+
+    def serialize(self):
+        midLocator = self._oriPlaneLocators[1]
+        return OrderedDict([
+            ('type', self.__class__.__name__),
+            ('name', self._name),
+            ('side', self._side),
+            ('skeletonJoints', self._skelJoints),
+            ('midLocatorPosition', cmds.xform(midLocator, q=True, t=True, ws=True)),
+            ('midLocatorAxisAttributes', [cmds.getAttr('{}.negateXAxis'.format(midLocator)), cmds.getAttr('{}.negateZAxis'.format(midLocator)), cmds.getAttr('{}.swapYZAxis'.format(midLocator))]),
+            ('mirrorTranslate', self._mirrorTranslate),
+            ('controllerSize', self._controllerSize),
+            ('controllerColor', self._controllerColor),
+            ('allControllers', [ctrl.serialize() for ctrl in self._allControllers()]),
+        ])
+
+    def deserialize(self, data):
+        # Set porperties before build
+        self.mirrorTranslate = data.get('mirrorTranslate')
+
+        self.preBuild()
+
+        # Set mid locator position and attributes for the joint axis
+        midLocator = self._oriPlaneLocators[1]
+        cmds.xform(midLocator, t=data.get('midLocatorPosition'), ws=True)
+        for attr, val in zip(['negateXAxis', 'negateZAxis', 'swapYZAxis'], data.get('midLocatorAxisAttributes')):
+            cmds.setAttr('{}.{}'.format(midLocator, attr), val)
+
+        self.build()
+
+        # Set controllers shapes
+        self.controllerSize = data.get('controllerSize')
+        self.controllerColor = data.get('controllerColor')
+        for ctrl, ctrlData in zip(self._allControllers(), data.get('allControllers')):
+            ctrl.deserialize(ctrlData)
+
+        # Attach to parent module

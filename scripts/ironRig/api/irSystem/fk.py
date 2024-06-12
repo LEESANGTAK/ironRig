@@ -1,12 +1,12 @@
 from maya import cmds
 from ... import utils
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 from .system import System
 
 
 class FK(System):
     def __init__(self, name='new', side=System.SIDE.CENTER, joints=[]):
-        super(FK, self).__init__(name, side, System.TYPE.FK_SYSTEM, joints)
+        super().__init__(name, side, System.TYPE.FK_SYSTEM, joints)
         self._endController = False
 
     @property

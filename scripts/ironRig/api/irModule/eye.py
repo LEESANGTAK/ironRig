@@ -1,9 +1,9 @@
 from maya import cmds
 from ... import utils
 from ... import common
-from ..irGlobal import Aligner
-from ..irSystem import Aim
-from ..irSystem import FK
+from ..irGlobal.aligner import Aligner
+from ..irSystem.aim import Aim
+from ..irSystem.fk import FK
 from .module import Module
 
 
@@ -11,7 +11,7 @@ class Eye(Module):
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
         self._aimSystem = None
         self._fkSystem = None
-        super(Eye, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     @property
     def aimSystem(self):
@@ -26,7 +26,7 @@ class Eye(Module):
             self._fkSystem.endController = True
         self._systems.append(self._fkSystem)
 
-        super(Eye, self)._addSystems()
+        super()._addSystems()
 
     def preBuild(self):
         if len(self._skelJoints) == 1:
@@ -34,7 +34,7 @@ class Eye(Module):
             self._buildInitSkelLocators()
             self._buildInitJoints()
         else:
-            super(Eye, self).preBuild()
+            super().preBuild()
 
     def _buildInitJoints(self):
         if len(self._skelJoints) == 1:
@@ -49,7 +49,7 @@ class Eye(Module):
 
             self._initJoints = initJoints
         else:
-            super(Eye, self)._buildInitJoints()
+            super()._buildInitJoints()
 
     def orientInitJoints(self):
         upVector = utils.getWorldPoint(self.midLocPlane) - utils.getWorldPoint(self._initJoints[0])
@@ -74,7 +74,7 @@ class Eye(Module):
         cmds.parentConstraint(self._aimSystem.joints[0], self._fkSystem.controllers[0].zeroGrp)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(Eye, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Eye(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()

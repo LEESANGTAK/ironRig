@@ -2,8 +2,8 @@ from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
 from ... import common
-from ..irGlobal import Controller
-from ..irSystem import SplineIK
+from ..irGlobal.controller import Controller
+from ..irSystem.splineIK import SplineIK
 from .module import Module
 
 
@@ -11,7 +11,7 @@ class Spine(Module):
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
         self._ikSystem = None
         self._fkSystem = None
-        super(Spine, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     @property
     def ikSystem(self):
@@ -32,15 +32,15 @@ class Spine(Module):
     def _addSystems(self):
         self._ikSystem = SplineIK(self._name, self._side, numberOfControllers=4)
         self._systems.append(self._ikSystem)
-        super(Spine, self)._addSystems()
+        super()._addSystems()
 
     def _buildGroups(self):
-        super(Spine, self)._buildGroups()
+        super()._buildGroups()
         self._controllerGrp = cmds.group(n='{}_ctrl_grp'.format(self.shortName), empty=True)
         cmds.parent(self._controllerGrp, self._topGrp)
 
     def build(self):
-        super(Spine, self).build()
+        super().build()
         self._buildControls()
 
     def _buildSystems(self):
@@ -100,7 +100,7 @@ class Spine(Module):
         self.addMembers(upBodyCtrl.allNodes)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(Spine, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Spine(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()

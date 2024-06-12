@@ -1,9 +1,9 @@
 from maya import cmds
 from ... import utils
 from ... import common
-from ..irGlobal import Controller
-from ..irSystem import SplineIK
-from ..irSystem import Single
+from ..irGlobal.controller import Controller
+from ..irSystem.splineIK import SplineIK
+from ..irSystem.single import Single
 from .module import Module
 
 
@@ -12,7 +12,7 @@ class Rope(Module):
         self._numberOfControllers = 3
         self._autoOddnumController = False
         self._dynamic = False
-        super(Rope, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     @property
     def numberOfControllers(self):
@@ -50,7 +50,7 @@ class Rope(Module):
         self._ikSystem.numberOfControllers = self._numberOfControllers
         self._systems.append(self._ikSystem)
 
-        super(Rope, self)._addSystems()
+        super()._addSystems()
 
     def _buildSystems(self):
         sgJoints = utils.buildNewJoints(self._initJoints, searchStr='init', replaceStr='sg')
@@ -108,7 +108,7 @@ class Rope(Module):
             # cmds.scaleConstraint(outJnt, skelJnt, mo=True)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(Rope, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Rope(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()

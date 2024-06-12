@@ -1,13 +1,13 @@
 from maya.api import OpenMaya as om
 from maya import cmds
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 from .system import System
 from ... import utils
 
 
 class Aim(System):
     def __init__(self, name='new', side=System.SIDE.CENTER, joints=[]):
-        super(Aim, self).__init__(name, side, System.TYPE.AIM_SYSTEM, joints)
+        super().__init__(name, side, System.TYPE.AIM_SYSTEM, joints)
 
         self._isSingleJoint = False
         self._origJoints = None
@@ -37,7 +37,7 @@ class Aim(System):
         self._joints.insert(1, endJoint)
 
     def _buildSystems(self):
-        super(Aim, self)._buildSystems()
+        super()._buildSystems()
         aimVec = utils.getWorldPoint(self._joints[1]) - utils.getWorldPoint(self._joints[0])
         self._aimLoc = cmds.spaceLocator(n='{}_aim_loc'.format(self.longName))[0]
         cmds.xform(self._aimLoc, t=list(utils.getWorldPoint(self._joints[0]) + (aimVec * 3))[:-1], ws=True)

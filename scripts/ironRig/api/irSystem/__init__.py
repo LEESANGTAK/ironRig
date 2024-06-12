@@ -1,24 +1,24 @@
 from imp import reload
 
-from . import system; reload(system)
-from . import single; reload(single)
-from . import fk; reload(fk)
-from . import splineIK; reload(splineIK)
-from . import ribbonIK; reload(ribbonIK)
-from . import twoBoneIK; reload(twoBoneIK)
-from . import threeBoneIK; reload(threeBoneIK)
-from . import footIK; reload(footIK)
-from . import aim; reload(aim)
-from . import squash; reload(squash)
+from . import system
+from . import single
+from . import fk
+from . import splineIK
+from . import ribbonIK
+from . import twoBoneIK
+from . import threeBoneIK
+from . import footIK
+from . import aim
+from . import squash
 
 
-from .system import System
-from .single import Single
-from .fk import FK
-from .splineIK import SplineIK
-from .ribbonIK import RibbonIK
-from .twoBoneIK import TwoBoneIK
-from .threeBoneIK import ThreeBoneIK
-from .footIK import FootIK
-from .aim import Aim
-from .squash import Squash
+reload(system)
+reload(single)
+reload(fk)
+reload(splineIK)
+reload(ribbonIK)
+reload(twoBoneIK)
+reload(threeBoneIK)
+reload(footIK)
+reload(aim)
+reload(squash)

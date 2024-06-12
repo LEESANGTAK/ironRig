@@ -1,19 +1,19 @@
 from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 from .system import System
 
 
 class RibbonIK(System):
     def __init__(self, name='new', side=System.SIDE.LEFT, joints=[], numberOfControllers=2):
-        super(RibbonIK, self).__init__(name, side, System.TYPE.RIBBON_SYSTEM, joints)
+        super().__init__(name, side, System.TYPE.RIBBON_SYSTEM, joints)
         self._numberOfControllers = numberOfControllers
         self._surface = None
         self._surfaceJoints = None
 
     def _buildSystems(self):
-        super(RibbonIK, self)._buildSystems()
+        super()._buildSystems()
         self._createSurfaceWithJoints()
         self._attachJointsToSurface()
         self._buildSurfaceBindJoints()

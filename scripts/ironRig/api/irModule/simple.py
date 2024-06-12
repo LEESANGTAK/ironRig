@@ -1,9 +1,9 @@
 from maya import cmds
 from ... import utils
 from ... import common
-from ..irGlobal import Controller
-from ..irSystem import Single
-from ..irSystem import FK
+from ..irGlobal.controller import Controller
+from ..irSystem.single import Single
+from ..irSystem.fk import FK
 from .module import Module
 
 
@@ -24,7 +24,7 @@ class Simple(Module):
         self._controllerShape = Controller.SHAPE.CIRCLE
         self._controllerColor = Controller.COLOR.SKYBLUE
 
-        super(Simple, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     @property
     def system(self):
@@ -45,18 +45,18 @@ class Simple(Module):
             self._system = Single(self._name, self._side)
 
         self._systems.append(self._system)
-        super(Simple, self)._addSystems()
+        super()._addSystems()
 
     def preBuild(self):
         if self._simpleType == Simple.SYSTEM_TYPE.FK:
-            super(Simple, self).preBuild()
+            super().preBuild()
         elif self._simpleType == Simple.SYSTEM_TYPE.SINGLE:
             self._buildInitSkelLocators()
             self._buildInitJoints()
 
     def _buildInitJoints(self):
         if self._simpleType == Simple.SYSTEM_TYPE.FK:
-            super(Simple, self)._buildInitJoints()
+            super()._buildInitJoints()
         elif self._simpleType == Simple.SYSTEM_TYPE.SINGLE:
             initJoints = []
             for initSkelLoc in self._initSkelLocators:
@@ -101,7 +101,7 @@ class Simple(Module):
             cmds.scaleConstraint(outJnt, skelJnt, mo=True)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(Simple, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Simple(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()

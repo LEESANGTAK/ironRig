@@ -4,6 +4,7 @@ from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
 from ... import common
+from .serializable import Serializable
 
 
 CONTROLLER_DIR = os.path.join(__file__.split("scripts")[0], "controllers")
@@ -65,23 +66,13 @@ class Color:
     BLACK = 'black'
 
 
-class Side:
-    TOP = 0
-    BOTTOM = 1
-    LEFT = 2
-    RIGHT = 3
-    FRONT = 4
-    BACK = 5
-
-
 class Direction:
     X = 0
     Y = 1
     Z = 2
 
 
-class Controller(object):
-    SIDE = Side
+class Controller(Serializable):
     SHAPE = Shape
     COLOR = Color
     DIRECTION = Direction
@@ -107,6 +98,8 @@ class Controller(object):
     }
 
     def __init__(self, name='new', shape=SHAPE.CIRCLE, color=COLOR.YELLOW, size=1.0, direction=DIRECTION.X):
+        super().__init__()
+
         self._name = name
         self._shape = shape
         self._color = color
@@ -118,8 +111,8 @@ class Controller(object):
         self._extraGrp = None
         self._controllerNode = None
 
-        self._initCVsPosInfo = {}
-        self._shapeOffset = [0, 0, 0]
+        self._initCVsPos = []
+        self._cvsPosition = []
 
         self._initController()
 
@@ -162,7 +155,7 @@ class Controller(object):
     def shape(self, shape):
         self._shape = shape
         self._replaceShape()
-        self._initCVsPosInfo = self._getCvsPosInfo(self.curves)
+        self._initCVsPos = self._getCVsPos(self.curves)
         self._transformCurve()
 
     @property
@@ -193,15 +186,6 @@ class Controller(object):
         self._transformCurve()
 
     @property
-    def shapeOffset(self):
-        return self._shapeOffset
-
-    @shapeOffset.setter
-    def shapeOffset(self, offset):
-        self._shapeOffset = offset
-        self._transformCurve()
-
-    @property
     def zeroGrp(self):
         return self._zeroGrp
 
@@ -228,6 +212,14 @@ class Controller(object):
         self._extraGrp = self._extraGrp.replace(searchStr, replaceStr)
         self._controllerNode = self._controllerNode.replace(searchStr, replaceStr)
 
+    def storeCVsPosition(self):
+        self._cvsPosition = self._getCVsPos(self.curves)
+
+    def restoreCVsPosition(self, cvsPos):
+        for crv, cvsPos in zip(self.curves, cvsPos):
+            for i, cvPos in enumerate(cvsPos):
+                cmds.xform('{}.cv[{}]'.format(crv, i), t=cvPos, os=True)
+
     def symmetrizeShapes(self, sideChar):
         oppSideChar = common.SYMMETRY_CHAR_TABLE.get(sideChar)
         oppSideCtrl = self._transform.replace('_{}_'.format(sideChar), '_{}_'.format(oppSideChar))
@@ -235,9 +227,9 @@ class Controller(object):
             utils.symmetrizeCurve(crv, oppCrv)
 
     def _transformCurve(self):
-        for shapeId, cvsPos in enumerate(self._initCVsPosInfo):
+        for shapeId, cvsPos in enumerate(self._initCVsPos):
             for cvId, cvPos in enumerate(cvsPos):
-                pos = om.MVector(cvPos) * self._size * Controller.ROTATE_MATRIX_INFO[self._direction] + om.MVector(self._shapeOffset)
+                pos = om.MVector(cvPos) * self._size * Controller.ROTATE_MATRIX_INFO[self._direction]
                 cmds.xform('{}.cv[{}]'.format(self.curves[shapeId], cvId), t=pos, os=True)
 
     def _initController(self):
@@ -246,7 +238,7 @@ class Controller(object):
         cmds.connectAttr('{}.message'.format(self._transform), '{}.controllerObject'.format(self._controllerNode))
 
         self._createShapes()
-        self._initCVsPosInfo = self._getCvsPosInfo(self.curves)
+        self._initCVsPos = self._getCVsPos(self.curves)
         self.size = self._size
         self.color = self._color
 
@@ -271,33 +263,11 @@ class Controller(object):
         self._updateColor()
         cmds.select(cl=True)
 
-    def _getCvsPosInfo(self, curves):
+    def _getCVsPos(self, curves):
         cvsPosInfo = []
         for curve in curves:
             cvsPosInfo.append([cmds.pointPosition(cv, local=True) for cv in cmds.ls('{}.cv[*]'.format(curve), flatten=True)])
         return cvsPosInfo
-
-    def alignShapeTo(self, targetPoint, side):
-        bb = om.MFnDagNode(utils.getDagPath(self._transform)).boundingBox
-        topPoint = bb.center + om.MVector([0, bb.height*0.5, 0])
-        bottomPoint = bb.center + om.MVector([0, bb.height*-0.5, 0])
-        leftPoint = bb.center + om.MVector([bb.width*0.5, 0, 0])
-        rightPoint = bb.center + om.MVector([bb.width*-0.5, 0, 0])
-        frontPoint = bb.center + om.MVector([0, 0, bb.width*0.5])
-        backPoint = bb.center + om.MVector([0, 0, bb.width*-0.5])
-        sideTable = {Side.TOP: topPoint,
-                     Side.BOTTOM: bottomPoint,
-                     Side.LEFT: leftPoint,
-                     Side.RIGHT: rightPoint,
-                     Side.FRONT: frontPoint,
-                     Side.BACK: backPoint}
-
-        sidePoint = sideTable[side]
-        moveVector = targetPoint - sidePoint
-        for curve in self.curves:
-            cvsPoses = [cmds.pointPosition(cv, local=True) for cv in cmds.ls('{}.cv[*]'.format(curve), flatten=True)]
-            for i, cvPos in enumerate(cvsPoses):
-                cmds.xform('{}.cv[{}]'.format(curve, i), t=om.MVector(cvPos) + moveVector, os=True)
 
     def lockHideChannels(self, channels=['visibility'], axes=['X', 'Y', 'Z']):
         attrNames = list(set([ch + axis if ch in ['translate', 'rotate', 'scale'] else ch for ch in channels for axis in axes]))
@@ -328,3 +298,12 @@ class Controller(object):
     def makeHierarchy(controllers):
         for parent, child in zip(controllers[:-1], controllers[1:]):
             cmds.parent(child.zeroGrp, parent)
+
+    def serialize(self):
+        self.storeCVsPosition()
+        return {
+            'cvsPosition': self._cvsPosition,
+        }
+
+    def deserialize(self, data):
+        self.restoreCVsPosition(data.get('cvsPosition'))

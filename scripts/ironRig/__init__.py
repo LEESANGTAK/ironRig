@@ -1,7 +1,14 @@
 from imp import reload
 
-from . import api; reload(api)
-from . import gui; reload(gui)
-from . import utils; reload(utils)
-from . import common; reload(common)
-from . import decorators; reload(decorators)
+from . import api
+from . import gui
+from . import utils
+from . import common
+from . import decorators
+
+
+reload(api)
+reload(gui)
+reload(utils)
+reload(common)
+reload(decorators)

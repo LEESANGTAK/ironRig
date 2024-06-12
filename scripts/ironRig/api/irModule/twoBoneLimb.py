@@ -2,10 +2,10 @@ from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
 from ... import common
-from ..irGlobal import Controller
-from ..irSystem import TwoBoneIK
-from ..irSystem import FK
-from ..irSystem import SplineIK
+from ..irGlobal.controller import Controller
+from ..irSystem.twoBoneIK import TwoBoneIK
+from ..irSystem.fk import FK
+from ..irSystem.splineIK import SplineIK
 from .module import Module
 
 
@@ -34,7 +34,7 @@ class TwoBoneLimb(Module):
 
         self._ikRootController = False
 
-        super(TwoBoneLimb, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     @property
     def ikRootController(self):
@@ -86,7 +86,7 @@ class TwoBoneLimb(Module):
                 self._lowerTwistSystem.curveSpans = 1
                 self._systems.append(self._lowerTwistSystem)
 
-        super(TwoBoneLimb, self)._addSystems()
+        super()._addSystems()
 
     def _buildInitSkelLocators(self):
         if self._detectInbetweenJoints:
@@ -106,20 +106,20 @@ class TwoBoneLimb(Module):
             self._initSkelLocators = initSkelLocs
             cmds.parent(self._initSkelLocators, self._initGrp)
         else:
-            super(TwoBoneLimb, self)._buildInitSkelLocators()
+            super()._buildInitSkelLocators()
 
     def _buildInitJoints(self):
         if self._detectInbetweenJoints:
-            super(TwoBoneLimb, self)._buildInitJoints()
+            super()._buildInitJoints()
             self._initLimbJoints = [self._initJoints[self._limbJnt0Index], self._initJoints[self._limbJnt1Index], self._initJoints[self._limbJnt2Index]]
             self._initUpperLimbInbJoints = utils.getInbetweenJoints(self._initLimbJoints[0], self._initLimbJoints[1])
             self._initLowerLimbInbJoints = utils.getInbetweenJoints(self._initLimbJoints[1], self._initLimbJoints[2])
         else:
-            super(TwoBoneLimb, self)._buildInitJoints()
+            super()._buildInitJoints()
             self._initLimbJoints = self._initJoints
 
     def build(self):
-        super(TwoBoneLimb, self).build()
+        super().build()
         self._buildControls()
 
     def _buildInitJointsWithSkelJoints(self):
@@ -150,10 +150,10 @@ class TwoBoneLimb(Module):
             self._initUpperLimbInbJoints = utils.getInbetweenJoints(self._initLimbJoints[0], self._initLimbJoints[1])
             self._initLowerLimbInbJoints = utils.getInbetweenJoints(self._initLimbJoints[1], self._initLimbJoints[2])
         else:
-            super(TwoBoneLimb, self)._buildInitJointsWithSkelJoints()
+            super()._buildInitJointsWithSkelJoints()
 
     def _buildGroups(self):
-        super(TwoBoneLimb, self)._buildGroups()
+        super()._buildGroups()
         self._controllerGrp = cmds.group(n='{}_ctrl_grp'.format(self.shortName), empty=True)
         cmds.parent(self._controllerGrp, self._topGrp)
 
@@ -410,10 +410,10 @@ class TwoBoneLimb(Module):
 
             cmds.parentConstraint(module.outJoints[-1], self._fkSystem.controllers[0].zeroGrp, mo=True)
         else:
-            super(TwoBoneLimb, self).attachTo(module)
+            super().attachTo(module)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(TwoBoneLimb, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = TwoBoneLimb(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()

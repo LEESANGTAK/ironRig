@@ -1,14 +1,14 @@
 from ... import utils
 from ... import common
-from ..irGlobal import Controller
-from ..irSystem import FK
+from ..irGlobal.controller import Controller
+from ..irSystem.fk import FK
 from .module import Module
 
 
 class Head(Module):
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
         self._fkSystem = None
-        super(Head, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     @property
     def fkSystem(self):
@@ -17,7 +17,7 @@ class Head(Module):
     def _addSystems(self):
         self._fkSystem = FK(self._name, self._side)
         self._systems.append(self._fkSystem)
-        super(Head, self)._addSystems()
+        super()._addSystems()
 
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
@@ -33,7 +33,7 @@ class Head(Module):
         pass
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(Head, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Head(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()

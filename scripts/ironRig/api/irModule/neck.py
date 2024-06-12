@@ -1,8 +1,8 @@
 from maya import cmds
 from ... import utils
 from ... import common
-from ..irGlobal import Controller
-from ..irSystem import SplineIK
+from ..irGlobal.controller import Controller
+from ..irSystem.splineIK import SplineIK
 from .module import Module
 
 
@@ -11,7 +11,7 @@ class Neck(Module):
         self._ikSystem = None
         self._numberOfControllers = 3
         self._nonrollJoints = []
-        super(Neck, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     @property
     def numberOfControllers(self):
@@ -40,7 +40,7 @@ class Neck(Module):
         self._ikSystem.alignEndControllerToWorld = True
         self._systems.append(self._ikSystem)
 
-        super(Neck, self)._addSystems()
+        super()._addSystems()
 
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
@@ -104,7 +104,7 @@ class Neck(Module):
         pass
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(Neck, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Neck(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()

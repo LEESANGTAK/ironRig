@@ -1,7 +1,7 @@
 from maya import cmds
 from ... import utils
 from ... import common
-from ..irSystem import FK
+from ..irSystem.fk import FK
 from .module import Module
 
 
@@ -9,7 +9,7 @@ class Finger(Module):
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
         self._fkSystem = None
         self._curlStartIndex = 1
-        super(Finger, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     @property
     def fkSystem(self):
@@ -26,10 +26,10 @@ class Finger(Module):
     def _addSystems(self):
         self._fkSystem = FK(self._name, self._side)
         self._systems.append(self._fkSystem)
-        super(Finger, self)._addSystems()
+        super()._addSystems()
 
     def preBuild(self):
-        super(Finger, self).preBuild()
+        super().preBuild()
         cmds.addAttr(self._oriPlaneLocators[1], ln='curl', at='float', dv=0.0, keyable=True)
         for initJnt in self._initJoints[self._curlStartIndex:]:
             cmds.connectAttr('{}.curl'.format(self._oriPlaneLocators[1]), '{}.rz'.format(initJnt))
@@ -45,7 +45,7 @@ class Finger(Module):
         pass
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(Finger, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Finger(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.curlStartIndex = self._curlStartIndex

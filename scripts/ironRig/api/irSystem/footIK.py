@@ -1,7 +1,7 @@
 from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 from .system import System
 
 
@@ -20,7 +20,7 @@ class FootIK(System):
     ]
 
     def __init__(self, name='new', side=System.SIDE.CENTER, joints=[], pivotLocators=[]):
-        super(FootIK, self).__init__(name, side, System.TYPE.FOOTIK_SYSTEM, joints)
+        super().__init__(name, side, System.TYPE.FOOTIK_SYSTEM, joints)
 
         self._isSingleBone = False  # In case of horse, elephant
         self._origJoints = None
@@ -56,13 +56,13 @@ class FootIK(System):
         return self._revFootJoints
 
     def build(self):
-        super(FootIK, self).build()
+        super().build()
         if self._isSingleBone:
             cmds.setAttr('{}.toeLiftStartAngle'.format(self._footCtrl), 0)
             self._footCtrl.lockHideChannels(['toeLiftStartAngle', 'ballLift', 'ballTwist', 'toe'])
 
     def _buildSystems(self):
-        super(FootIK, self)._buildSystems()
+        super()._buildSystems()
         self._revFootJoints = self._buildRevFootJoints()
         self._createIKs()
         cmds.parentConstraint(self._revFootJoints[-1], self._joints[0], mo=True)

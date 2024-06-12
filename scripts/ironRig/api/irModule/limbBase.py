@@ -1,7 +1,7 @@
 from maya import cmds
 from ... import utils
 from ... import common
-from ..irSystem import FK
+from ..irSystem.fk import FK
 from .module import Module
 
 
@@ -12,7 +12,7 @@ class LimbBase(Module):
     """
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[]):
         self._fkSystem = None
-        super(LimbBase, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     @property
     def fkSystem(self):
@@ -25,7 +25,7 @@ class LimbBase(Module):
     def _addSystems(self):
         self._fkSystem = FK(self._name, self._side)
         self._systems.append(self._fkSystem)
-        super(LimbBase, self)._addSystems()
+        super()._addSystems()
 
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
@@ -45,7 +45,7 @@ class LimbBase(Module):
             cmds.scaleConstraint(outJnt, skelJnt, mo=True)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(LimbBase, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = LimbBase(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()

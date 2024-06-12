@@ -1,5 +1,5 @@
 from maya import cmds
-
+from .serializable import Serializable
 
 class Side:
     NONE = 'n'
@@ -21,11 +21,13 @@ class Type:
     MASTER = 'mst'
 
 
-class Container(object):
+class Container(Serializable):
     SIDE = Side
     TYPE = Type
 
     def __init__(self, name='new', side=Side.CENTER, type=Type.FK_SYSTEM):
+        super().__init__()
+
         self._name = name
         self._side = side
         self._type = type

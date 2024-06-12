@@ -2,9 +2,9 @@ from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
 from ... import common
-from ..irGlobal import Controller
-from ..irSystem import FK
-from ..irSystem import FootIK
+from ..irGlobal.controller import Controller
+from ..irSystem.fk import FK
+from ..irSystem.footIK import FootIK
 from .module import Module
 
 
@@ -16,7 +16,7 @@ class Foot(Module):
         self._blendJoints = []
         self._blendConstraints = []
 
-        super(Foot, self).__init__(name, side, skeletonJoints)
+        super().__init__(name, side, skeletonJoints)
 
     def _addSystems(self):
         self._pivotLocators = ['{}_in_loc'.format(self.shortName), '{}_out_loc'.format(self.shortName), '{}_heel_loc'.format(self.shortName), '{}_tip_loc'.format(self.shortName)]
@@ -26,7 +26,7 @@ class Foot(Module):
         self._fkSystem = FK(self._name, self._side)
         self._systems.append(self._fkSystem)
 
-        super(Foot, self)._addSystems()
+        super()._addSystems()
 
     def _createMidLocator(self):
         midLoc = None
@@ -47,17 +47,17 @@ class Foot(Module):
         return midLoc
 
     def preBuild(self):
-        super(Foot, self).preBuild()
+        super().preBuild()
         for pivotLoc in self._pivotLocators:
             cmds.spaceLocator(n=pivotLoc)[0]
         cmds.parent(self._pivotLocators, self._initGrp)
 
     def build(self):
-        super(Foot, self).build()
+        super().build()
         self._buildControls()
 
     def _buildGroups(self):
-        super(Foot, self)._buildGroups()
+        super()._buildGroups()
         self._controllerGrp = cmds.group(n='{}_ctrl_grp'.format(self.longName), empty=True)
         cmds.parent(self._controllerGrp, self._topGrp)
 
@@ -127,10 +127,10 @@ class Foot(Module):
             cmds.connectAttr('{}.ik'.format(module.controllers[0]), '{}.ik'.format(self._controllers[0]))
             self._controllers[0].hide()
         else:
-            super(Foot, self).attachTo(module)
+            super().attachTo(module)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        oppSideChar, oppSkelJoints = super(Foot, self).mirror(skeletonSearchStr, skeletonReplaceStr)
+        oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Foot(self._name, oppSideChar, oppSkelJoints)
         oppMod.mirrorTranslate = mirrorTranslate
         oppMod.preBuild()
@@ -141,7 +141,7 @@ class Foot(Module):
         return oppMod
 
     def symmetrizeGuide(self, jointAxis=True):
-        super(Foot, self).symmetrizeGuide(jointAxis)
+        super().symmetrizeGuide(jointAxis)
         oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
         for pivotLoc in self._pivotLocators:
             oppPivotLoc = pivotLoc.replace('_{}_'.format(self._side), '_{}_'.format(oppSideChar))

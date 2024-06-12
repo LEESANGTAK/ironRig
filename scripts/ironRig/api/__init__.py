@@ -1,6 +1,12 @@
 from imp import reload
 
-from . import irGlobal; reload(irGlobal)
-from . import irSystem; reload(irSystem)
-from . import irModule; reload(irModule)
-from . import irMaster; reload(irMaster)
+from . import irGlobal
+from . import irSystem
+from . import irModule
+from . import irMaster
+
+
+reload(irGlobal)
+reload(irSystem)
+reload(irModule)
+reload(irMaster)

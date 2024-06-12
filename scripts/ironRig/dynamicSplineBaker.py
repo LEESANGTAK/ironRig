@@ -228,7 +228,7 @@ class DynamicSplineBaker(object):
     objects = []
 
     def __init__(self):
-        super(DynamicSplineBaker, self).__init__()
+        super().__init__()
 
         if cmds.window(DynamicSplineBaker.name, q=True, exists=True):
             cmds.deleteUI(DynamicSplineBaker.name)

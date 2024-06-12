@@ -1,15 +1,15 @@
 from maya.api import OpenMaya as om
 from maya import cmds
 from ... import utils
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 from .master import Master
 
 class FingersMaster(Master):
     def __init__(self, name='', side=Master.SIDE.CENTER):
-        super(FingersMaster, self).__init__(name, side)
+        super().__init__(name, side)
 
     def build(self):
-        super(FingersMaster, self).build()
+        super().build()
         self._movePivotToModulesCenter()
 
     def _movePivotToModulesCenter(self):

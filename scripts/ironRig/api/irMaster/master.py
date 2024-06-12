@@ -1,7 +1,7 @@
 from maya import cmds
 from ... import utils
-from ..irGlobal import Container
-from ..irGlobal import Controller
+from ..irGlobal.container import Container
+from ..irGlobal.controller import Controller
 
 
 class Master(Container):
@@ -10,7 +10,7 @@ class Master(Container):
     Master controller controls modules behavior.
     """
     def __init__(self, name='', side=Container.SIDE.CENTER):
-        super(Master, self).__init__(name, side, Container.TYPE.MASTER)
+        super().__init__(name, side, Container.TYPE.MASTER)
 
         self._modules = []
         self._masters = []
@@ -97,4 +97,4 @@ class Master(Container):
         self._modules = []
         self._masters = []
         self._controllers = []
-        super(Master, self).delete()
+        super().delete()

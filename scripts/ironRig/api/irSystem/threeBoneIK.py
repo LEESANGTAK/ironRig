@@ -1,5 +1,5 @@
 from maya import cmds
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 from ... import utils
 from .system import System
 from .twoBoneIK import TwoBoneIK
@@ -7,7 +7,7 @@ from .twoBoneIK import TwoBoneIK
 
 class ThreeBoneIK(System):
     def __init__(self, name='new', side=System.SIDE.CENTER, joints=[], poleVectorPosition=None):
-        super(ThreeBoneIK, self).__init__(name, side, System.TYPE.IK_SYSTEM, joints)
+        super().__init__(name, side, System.TYPE.IK_SYSTEM, joints)
 
         self._poleVectorPosition = poleVectorPosition
 
@@ -46,11 +46,11 @@ class ThreeBoneIK(System):
         self._poleVectorPosition = position
 
     def build(self):
-        super(ThreeBoneIK, self).build()
+        super().build()
         self._createPoleVectorLine()
 
     def _buildSystems(self):
-        super(ThreeBoneIK, self)._buildSystems()
+        super()._buildSystems()
 
         orientY = cmds.getAttr('{}.jointOrientY'.format(self._joints[1]))
         if abs(orientY) <= 0.02:  # IK does not working if jointOrient has too small value in case straight joint chain

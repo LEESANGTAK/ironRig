@@ -1,31 +1,32 @@
 from imp import reload
 
-from . import module; reload(module)
-from . import simple; reload(simple)
-from . import spine; reload(spine)
-from . import neck; reload(neck)
-from . import limbBase; reload(limbBase)
-from . import twoBoneLimb; reload(twoBoneLimb)
-from . import threeBoneLimb; reload(threeBoneLimb)
-from . import foot; reload(foot)
-from . import finger; reload(finger)
-from . import head; reload(head)
-from . import eye; reload(eye)
-from . import jaw; reload(jaw)
-from . import string; reload(string)
-from . import rope; reload(rope)
+from . import module
+from . import simple
+from . import spine
+from . import neck
+from . import limbBase
+from . import twoBoneLimb
+from . import threeBoneLimb
+from . import foot
+from . import finger
+from . import head
+from . import eye
+from . import jaw
+from . import string
+from . import rope
 
-from .module import Module
-from .simple import Simple
-from .spine import Spine
-from .neck import Neck
-from .limbBase import LimbBase
-from .twoBoneLimb import TwoBoneLimb
-from .threeBoneLimb import ThreeBoneLimb
-from .foot import Foot
-from .finger import Finger
-from .head import Head
-from .eye import Eye
-from .jaw import Jaw
-from .string import String
-from .rope import Rope
+
+reload(module)
+reload(simple)
+reload(spine)
+reload(neck)
+reload(limbBase)
+reload(twoBoneLimb)
+reload(threeBoneLimb)
+reload(foot)
+reload(finger)
+reload(head)
+reload(eye)
+reload(jaw)
+reload(string)
+reload(rope)

@@ -1,15 +1,14 @@
+from collections import OrderedDict
 from maya import cmds
 from ... import utils
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 from .master import Master
 
 
 class GlobalMaster(Master):
     def __init__(self, rootJoint, buildRootController=False):
-        self._mastersGrp = None
-
-        super(GlobalMaster, self).__init__(name='controlRig')
-
+        super().__init__(name='controlRig')
+        self._spaceSwitchers = []
         self._rootJoint = rootJoint
         self._globalController = None
         self._mainController = None
@@ -35,14 +34,14 @@ class GlobalMaster(Master):
         self._masters.extend(masters)
 
     def build(self):
-        super(GlobalMaster, self).build()
+        super().build()
         cmds.parent([self._modulesGrp, self._mastersGrp], self._mainController)
-        self._set = cmds.rename(self._set, 'controlRig_set')
+        self._set = cmds.rename(self._set, 'controlRig_sets')
         for jnt in cmds.listRelatives(self._rootJoint, children=True, type='joint'):
             cmds.setAttr('{}.segmentScaleCompensate'.format(jnt), False)
 
     def _createGroups(self):
-        super(GlobalMaster, self)._createGroups()
+        super()._createGroups()
         self._spaceSwtichGrp = cmds.createNode('transform', n='spaceSwitches_grp')
         cmds.hide(self._spaceSwtichGrp)
         self._mastersGrp = cmds.createNode('transform', n='{}_masters'.format(self._name))
@@ -90,3 +89,9 @@ class GlobalMaster(Master):
         cmds.setAttr('{}.geometryVis'.format(mainController), channelBox=True)
         cmds.connectAttr('{}.geometryVis'.format(mainController), '{}.displayType'.format(geoLayer))
         cmds.editDisplayLayerMembers(geoLayer, utils.getMeshesFromJoints(cmds.ls(self._rootJoint, dag=True, type='joint')))
+
+    def serialize(self):
+        return OrderedDict([
+            ('rootJoint', self._rootJoint),
+            ('buildRootController', self._buildRootController),
+        ])

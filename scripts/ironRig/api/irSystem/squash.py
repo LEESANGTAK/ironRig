@@ -1,11 +1,11 @@
 from maya import cmds
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 from .system import System
 
 
 class Squash(System):
     def __init__(self, name='new', side=System.SIDE.CENTER, vertices=[]):
-        super(Squash, self).__init__(name, side, System.TYPE.SQUASH_SYSTEM)
+        super().__init__(name, side, System.TYPE.SQUASH_SYSTEM)
 
         self._vertices = vertices
         self._ffd = None

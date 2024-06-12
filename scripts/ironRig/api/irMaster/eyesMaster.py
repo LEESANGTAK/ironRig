@@ -1,12 +1,12 @@
 from maya import cmds
 from ... import utils
-from ..irGlobal import Controller
+from ..irGlobal.controller import Controller
 from .master import Master
 
 
 class EyesMaster(Master):
     def __init__(self, name='', side=Master.SIDE.CENTER):
-        super(EyesMaster, self).__init__(name, side)
+        super().__init__(name, side)
 
         self._controller = None
 

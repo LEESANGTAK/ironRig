@@ -1,14 +1,22 @@
 from imp import reload
 import ironRig; reload(ironRig)
-import ironRig.api.irGlobal as irg
 import ironRig.api.irSystem as irs
 import ironRig.api.irModule as irm
 import ironRig.api.irMaster as irmst
+import ironRig.api.irGlobal as irg
+
+
+irScene = irg.scene.Scene()
+filePath = 'C:/users/stakl/downloads/test.json'
+#irScene.saveToFile(filePath)
+globalMst = irScene.buildFromFile(filePath)
+
 
 # -------------- Module Build ---------------------
 globalMst = irmst.GlobalMaster('root', True)
 globalMst.build()
 #globalMst.delete()
+irScene.globalMaster = globalMst
 
 name = 'spine'
 joints = ['pelvis', 'spine_01', 'spine_02', 'spine_03', 'spine_04']
@@ -18,6 +26,7 @@ spineMod.build()
 spineMod.controllerSize = 15
 globalMst.addModules(spineMod)
 #spineMod.delete()
+irScene.addModule(spineMod)
 
 name = 'neck'
 joints = ['neck_01', 'neck_02', 'head']
@@ -31,6 +40,7 @@ globalMst.addModules(neckMod)
 #neckMod.delete()
 headCtrlSSBuilder = irg.SpaceSwitchBuilder(neckMod.headController, [neckMod.neckController, globalMst.mainController], neckMod.neckController)
 headCtrlSSBuilder.build(orient=True)
+irScene.addModule(neckMod)
 
 # ---------------------------------------------------------------------------
 name = 'leg'
