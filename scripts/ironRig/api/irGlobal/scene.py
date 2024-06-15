@@ -1,8 +1,10 @@
 import json
 from collections import OrderedDict
-from ...common import logger
 from ..irMaster.globalMaster import GlobalMaster
+from .spaceSwitchBuilder import SpaceSwitchBuilder
+from .customScript import CustomScript
 from .factory import Factory
+from ...common import logger
 
 
 class Scene(object):
@@ -12,7 +14,7 @@ class Scene(object):
         self._modules = []
         self._masters = []
         self._spaceSwitchBuilders = []
-        self._customProcedures = []
+        self._customScripts = []
 
     @property
     def globalMaster(self):
@@ -22,24 +24,25 @@ class Scene(object):
     def globalMaster(self, globalMaster):
         self._globalMaster = globalMaster
 
-    def addModule(self, type, name, side, skeletonJoints, vertices=[]):
+    def addModule(self, type='', name='', side='', skeletonJoints=[], vertices=[]):
         mod = Factory.getModule(type, name, side, skeletonJoints)
         self._modules.append(mod)
         return mod
 
-    def addMaster(self, type, name, side):
+    def addMaster(self, type='', name='', side=''):
         mst = Factory.getMaster(type, name, side)
         self._masters.append(mst)
         return mst
 
-    def addAttacher(self):
-        pass
+    def addSpaceSwitchBuilder(self, name='', drivenController='', driverControllers='', defaultDriverController=''):
+        ssb = SpaceSwitchBuilder(name, drivenController, driverControllers, defaultDriverController)
+        self._spaceSwitchBuilders.append(ssb)
+        return ssb
 
-    def addSpaceSwitchBuilder(self):
-        pass
-
-    def addCustomProcedure(self):
-        pass
+    def addCustomScript(self, name='', code=''):
+        cs = CustomScript(name, code)
+        self._customScripts.append(cs)
+        return cs
 
     def saveToFile(self, filename):
         with open(filename, "w") as f:
@@ -58,9 +61,8 @@ class Scene(object):
             ("globalMaster", self._globalMaster.serialize()),
             ("modules", [module.serialize() for module in self._modules]),
             ("masters", [master.serialize() for master in self._masters]),
-            ("attachers", []),
             ("spaceSwitchBuilders", [spaceSwitchBuilders.serialize() for spaceSwitchBuilders in self._spaceSwitchBuilders]),
-            ("customProcedures", []),
+            ("customScripts", [CustomScript.serialize() for CustomScript in self._customScripts]),
         ])
 
     def deserialize(self, data, hashmap={}):
@@ -87,8 +89,15 @@ class Scene(object):
             mst.deserialize(masterData, hashmap)
             self._globalMaster.addMasters(mst)
 
-        # for spaceSwitchBuildersData in data["spaceSwitchBuilders"]:
-        #     SpaceSwitcher(self).deserialize(spaceSwitchBuildersData)
+        for spaceSwitchBuildersData in data["spaceSwitchBuilders"]:
+            ssb = self.addSpaceSwitchBuilder(spaceSwitchBuildersData.get('name'))
+            ssb.deserialize(spaceSwitchBuildersData, hashmap)
+            self._globalMaster.addSpaceSwitchBuilder(ssb)
+
+        for customScriptData in data["customScripts"]:
+            cs = CustomScript(customScriptData.get('name'))
+            cs.deserialize(customScriptData, hashmap)
+            self._globalMaster.addCustomScripts(cs)
 
         logger.info("Deserialization was complete.")
         return self._globalMaster

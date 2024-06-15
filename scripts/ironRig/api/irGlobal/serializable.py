@@ -14,8 +14,8 @@ class Serializable(object):
     def deserialize(self, data, hashmap={}):
         """Restore object with data
 
-        :param data: objects information in json format
-        :param hashmap: id key and object value data, defaults to {}
+        :param data: objects data in json format
+        :param hashmap: {"intanceID": instance, ...} data to use restore object relationships, defaults to {}
         """
         # Assign instance to id key for using other class deserialize
         hashmap[data.get('id')] = self

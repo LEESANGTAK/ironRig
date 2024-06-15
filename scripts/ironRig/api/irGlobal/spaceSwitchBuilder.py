@@ -1,11 +1,15 @@
 from maya import cmds
 from ... import utils
+from .serializable import Serializable
 
 
-class SpaceSwitchBuilder(object):
+class SpaceSwitchBuilder(Serializable):
     SPACE_SWITCH_GRP = 'spaceSwitches_grp'
 
-    def __init__(self, drivenController=None, driverControllers=None, defaultDriverController=None):
+    def __init__(self, name='new', drivenController=None, driverControllers=None, defaultDriverController=None):
+        super().__init__()
+
+        self._name = name
         self._drivenController = drivenController
         self._driverControllers = driverControllers
         self._defaultDriverController = defaultDriverController
@@ -84,3 +88,18 @@ class SpaceSwitchBuilder(object):
         cmds.connectAttr('{}.outputX'.format(spaceAttrsRev), cmds.listConnections(defaultSpaceAttr, source=False, plugs=True)[0], f=True)
         # defaultSpaceAttr.delete()
         cmds.deleteAttr(defaultSpaceAttr)
+
+    def serialize(self):
+        return {
+            'name': self._name,
+            'drivenController': self._drivenController,
+            'driverControllers': self._driverControllers,
+            'defaultDriverController': self._defaultDriverController
+        }
+
+    def deserialize(self, data, hashmap={}):
+        super().deserialize(data, hashmap)
+        self._drivenController = data.get('drivenController')
+        self._driverControllers = data.get('driverControllers')
+        self._defaultDriverController = data.get('defaultDriverController')
+        self.build()

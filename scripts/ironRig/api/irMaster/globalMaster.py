@@ -8,7 +8,9 @@ from .master import Master
 class GlobalMaster(Master):
     def __init__(self, rootJoint, buildRootController=False):
         super().__init__(name='controlRig')
-        self._spaceSwitchers = []
+
+        self._spaceSwitchBuilders = []
+        self._customScripts =[]
         self._rootJoint = rootJoint
         self._globalController = None
         self._mainController = None
@@ -32,6 +34,14 @@ class GlobalMaster(Master):
             cmds.sets(master.set, forceElement=self.set)
             cmds.parent(master.topGrp, self._mastersGrp)
         self._masters.extend(masters)
+
+    def addSpaceSwitchBuilder(self, *args):
+        spaceSwitchBuilders = sum([spaceSwitchBuilder if isinstance(spaceSwitchBuilder, list) else [spaceSwitchBuilder] for spaceSwitchBuilder in args], [])
+        self._spaceSwitchBuilders.extend(spaceSwitchBuilders)
+
+    def addCustomScripts(self, *args):
+        customScripts = sum([customScript if isinstance(customScript, list) else [customScript] for customScript in args], [])
+        self._customScripts.extend(customScripts)
 
     def build(self):
         super().build()
