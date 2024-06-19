@@ -6,10 +6,9 @@ from .serializable import Serializable
 class SpaceSwitchBuilder(Serializable):
     SPACE_SWITCH_GRP = 'spaceSwitches_grp'
 
-    def __init__(self, name='new', drivenController=None, driverControllers=None, defaultDriverController=None):
+    def __init__(self, drivenController=None, driverControllers=None, defaultDriverController=None):
         super().__init__()
 
-        self._name = name
         self._drivenController = drivenController
         self._driverControllers = driverControllers
         self._defaultDriverController = defaultDriverController
@@ -91,7 +90,6 @@ class SpaceSwitchBuilder(Serializable):
 
     def serialize(self):
         return {
-            'name': self._name,
             'drivenController': self._drivenController,
             'driverControllers': self._driverControllers,
             'defaultDriverController': self._defaultDriverController

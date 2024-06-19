@@ -513,11 +513,6 @@ def removeConnections(node):
         for keyAttr in keyAttrs:
             disconnectAttr('{}.{}'.format(node, keyAttr))
 
-    udAttrs = cmds.listAttr(node, userDefined=True)
-    if udAttrs:
-        for udAttr in udAttrs:
-            disconnectAttr('{}.{}'.format(node, udAttr))
-
 
 def makeGroup(object, groupName):
     grp = None
