@@ -10,15 +10,21 @@ from ...common import logger
 class Scene(object):
     def __init__(self):
         super().__init__()
+        self._preCustomScripts = []
         self._globalMaster = None
         self._modules = []
         self._masters = []
         self._spaceSwitchBuilders = []
-        self._customScripts = []
+        self._postCustomScripts = []
 
     @property
     def globalMaster(self):
         return self._globalMaster
+
+    def addPreCustomScript(self, name='', code=''):
+        cs = CustomScript(name, code)
+        self._preCustomScripts.append(cs)
+        return cs
 
     def addGlobalMaster(self, rootJoint, buildRootController=False):
         self._globalMaster = GlobalMaster(rootJoint, buildRootController)
@@ -28,6 +34,14 @@ class Scene(object):
         mod = Factory.getModule(type, name, side, skeletonJoints)
         self._modules.append(mod)
         return mod
+
+    def removeModule(self, name, side):
+        self._modules.remove(self.getModule(name, side))
+
+    def getModule(self, name, side):
+        for mod in self._modules:
+            if name == mod.name and side == mod.side:
+                return mod
 
     def addMaster(self, type='', name='', side=''):
         mst = Factory.getMaster(type, name, side)
@@ -39,36 +53,42 @@ class Scene(object):
         self._spaceSwitchBuilders.append(ssb)
         return ssb
 
-    def addCustomScript(self, name='', code=''):
+    def addPostCustomScript(self, name='', code=''):
         cs = CustomScript(name, code)
-        self._customScripts.append(cs)
+        self._postCustomScripts.append(cs)
         return cs
 
     def saveToFile(self, filename):
         with open(filename, "w") as f:
             f.write(json.dumps(self.serialize(), indent=4))
-        logger.info("Saving file to '{}' was successful.".format(filename))
+        logger.info("Saving file to '{}' is done successfully.".format(filename))
 
     def buildFromFile(self, filename):
         with open(filename, "r") as f:
             data = json.load(f)
             globalMst = self.deserialize(data)
-        logger.info("Building a rig from '{}' was successful.".format(filename))
+        logger.info("Building a rig from '{}' is done successfully".format(filename))
         return globalMst
 
     def serialize(self):
         return OrderedDict([
-            ("globalMaster", self._globalMaster.serialize()),
+            ("preCustomScripts", [preCustomScript.serialize() for preCustomScript in self._preCustomScripts]),
+            ("globalMaster", self._globalMaster.serialize() if self._globalMaster else {}),
             ("modules", [module.serialize() for module in self._modules]),
             ("masters", [master.serialize() for master in self._masters]),
             ("spaceSwitchBuilders", [spaceSwitchBuilders.serialize() for spaceSwitchBuilders in self._spaceSwitchBuilders]),
-            ("customScripts", [CustomScript.serialize() for CustomScript in self._customScripts]),
+            ("postCustomScripts", [postCustomScript.serialize() for postCustomScript in self._postCustomScripts]),
         ])
 
     def deserialize(self, data, hashmap={}):
+        for preCustomScriptData in data["preCustomScripts"]:
+            cs = CustomScript(preCustomScriptData.get('name'))
+            cs.deserialize(preCustomScriptData, hashmap)
+
         globalMasterData = data['globalMaster']
-        self._globalMaster = GlobalMaster(globalMasterData.get('rootJoint'), globalMasterData.get('buildRootController'))
-        self._globalMaster.build()
+        if globalMasterData:
+            self._globalMaster = GlobalMaster(globalMasterData.get('rootJoint'), globalMasterData.get('buildRootController'))
+            self._globalMaster.deserialize(globalMasterData, hashmap)
 
         for moduleData in data["modules"]:
             mod = self.addModule(
@@ -94,10 +114,6 @@ class Scene(object):
             ssb.deserialize(spaceSwitchBuildersData, hashmap)
             self._globalMaster.addSpaceSwitchBuilder(ssb)
 
-        for customScriptData in data["customScripts"]:
-            cs = CustomScript(customScriptData.get('name'))
-            cs.deserialize(customScriptData, hashmap)
-            self._globalMaster.addCustomScripts(cs)
-
-        logger.info("Deserialization was complete.")
-        return self._globalMaster
+        for postCustomScriptData in data["postCustomScripts"]:
+            cs = CustomScript(postCustomScriptData.get('name'))
+            cs.deserialize(postCustomScriptData, hashmap)

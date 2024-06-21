@@ -10,10 +10,10 @@ class GlobalMaster(Master):
         super().__init__(name='controlRig')
 
         self._spaceSwitchBuilders = []
-        self._customScripts =[]
         self._rootJoint = rootJoint
         self._globalController = None
         self._mainController = None
+        self._rootController = None
         self._buildRootController = buildRootController
 
     @property
@@ -38,10 +38,6 @@ class GlobalMaster(Master):
     def addSpaceSwitchBuilder(self, *args):
         spaceSwitchBuilders = sum([spaceSwitchBuilder if isinstance(spaceSwitchBuilder, list) else [spaceSwitchBuilder] for spaceSwitchBuilder in args], [])
         self._spaceSwitchBuilders.extend(spaceSwitchBuilders)
-
-    def addCustomScripts(self, *args):
-        customScripts = sum([customScript if isinstance(customScript, list) else [customScript] for customScript in args], [])
-        self._customScripts.extend(customScripts)
 
     def build(self):
         super().build()
@@ -79,10 +75,10 @@ class GlobalMaster(Master):
         self.addMembers(self._globalController.allNodes, self._mainController.allNodes)
 
         if self._buildRootController:
-            rootCtrl = Controller(name='root', color=Controller.COLOR.GREEN, shape=Controller.SHAPE.TRIANGLE, size=20, direction=Controller.DIRECTION.Y)
-            cmds.parentConstraint(rootCtrl, self._rootJoint, mo=True)
-            cmds.parent(rootCtrl.zeroGrp, self._globalController)
-            self.addMembers(rootCtrl.allNodes)
+            self._rootController = Controller(name='root', color=Controller.COLOR.GREEN, shape=Controller.SHAPE.TRIANGLE, size=20, direction=Controller.DIRECTION.Y)
+            cmds.parentConstraint(self._rootController, self._rootJoint, mo=True)
+            cmds.parent(self._rootController.zeroGrp, self._globalController)
+            self.addMembers(self._rootController.allNodes)
         else:
             cmds.parentConstraint(self._globalController, self._rootJoint, mo=True)
         cmds.connectAttr('{}.scale'.format(self._globalController), '{}.scale'.format(self._rootJoint))
@@ -102,6 +98,18 @@ class GlobalMaster(Master):
 
     def serialize(self):
         return OrderedDict([
+            ('id', self._id),
             ('rootJoint', self._rootJoint),
             ('buildRootController', self._buildRootController),
+            ('controllers', [ctrl.serialize() for ctrl in [self._globalController, self._mainController, self._rootController]])
         ])
+
+    def deserialize(self, data, hashmap={}):
+        hashmap[data.get('id')] = self
+        self._id = data.get('id')
+
+        self.build()
+
+        # Set controllers shapes
+        for ctrl, ctrlData in zip([self._globalController, self._mainController, self._rootController], data.get('controllers')):
+            ctrl.deserialize(ctrlData, hashmap)

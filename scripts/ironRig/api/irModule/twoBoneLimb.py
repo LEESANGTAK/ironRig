@@ -298,8 +298,8 @@ class TwoBoneLimb(Module):
         utils.parentKeepHierarchy(self._outJoints, self._outGrp)
 
     def _connectSkeleton(self):
-        for outJnt in self._outJoints:
-            skelJnt = outJnt.replace(self.shortName+'_out_', '')
+        for outJnt, skelJnt in zip(self._outJoints, self._skelJoints):
+            # skelJnt = outJnt.replace(self.shortName+'_out_', '')
             utils.removeConnections(skelJnt)
             cmds.parentConstraint(outJnt, skelJnt, mo=True)
             # cmds.scaleConstraint(outJnt, skelJnt, mo=True)

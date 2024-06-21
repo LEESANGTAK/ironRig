@@ -145,9 +145,11 @@ class Module(Container):
         cmds.select(self._oriPlaneLocators[1], r=True)
 
     def _buildInitSkelLocators(self):
+        nsRmvSkelJoints = [jnt.split(':')[-1] for jnt in self._skelJoints]
+
         initSkelLocs = []
-        for skelJnt in self._skelJoints:
-            initSkelLoc = cmds.spaceLocator(n='{}_init_{}_loc'.format(self.shortName, skelJnt))[0]
+        for skelJnt, nsRmvSkelJnt in zip(self._skelJoints, nsRmvSkelJoints):
+            initSkelLoc = cmds.spaceLocator(n='{}_init_{}_loc'.format(self.shortName, nsRmvSkelJnt))[0]
             cmds.matchTransform(initSkelLoc, skelJnt, position=True, rotation=True)
             cmds.hide(initSkelLoc)
             initSkelLocs.append(initSkelLoc)

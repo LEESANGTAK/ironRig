@@ -92,10 +92,13 @@ def buildNewJointChain(joints, name='', searchStr='', replaceStr=''):
 
 
 def buildNewJoints(joints, name='', searchStr='', replaceStr=''):
+    # Remove namespace
+    nsRmvJoints = [jnt.split(':')[-1] for jnt in joints]
+
     newJoints = []
-    for jnt in joints:
-        newJnt = cmds.createNode('joint', n='{}{}'.format(name, jnt.replace(searchStr, replaceStr)))
-        cmds.matchTransform(newJnt, jnt)
+    for oriJnt, nsRmvJnt in zip(joints, nsRmvJoints):
+        newJnt = cmds.createNode('joint', n='{}{}'.format(name, nsRmvJnt.replace(searchStr, replaceStr)))
+        cmds.matchTransform(newJnt, oriJnt)
         newJoints.append(newJnt)
 
     cmds.makeIdentity(newJoints, apply=True)

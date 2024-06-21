@@ -11,6 +11,7 @@ from .module import Module
 class Foot(Module):
     def __init__(self, name='new', side=Module.SIDE.CENTER, skeletonJoints=[], vertices=[]):
         self._vertices = vertices
+        self._pivotLocators = []
 
         self._ikSystem = None
         self._fkSystem = None
@@ -152,3 +153,41 @@ class Foot(Module):
             oppPivotLoc = pivotLoc.replace('_{}_'.format(self._side), '_{}_'.format(oppSideChar))
             oppPivotLocPos = cmds.xform(oppPivotLoc, q=True, t=True, ws=True)
             cmds.xform(pivotLoc, t=[-oppPivotLocPos[0], oppPivotLocPos[1], oppPivotLocPos[2]], ws=True)
+
+    def serialize(self):
+        moduleData = super().serialize()
+        moduleData['pivotLocatorsPosition'] = [cmds.xform(loc, q=True, t=True, ws=True) for loc in self._pivotLocators]
+        return moduleData
+
+    def deserialize(self, data, hashmap={}):
+        hashmap[data.get('id')] = self
+        self._id = data.get('id')
+
+        # Set porperties before build
+        self.mirrorTranslate = data.get('mirrorTranslate')
+
+        self.preBuild()
+
+        # Set mid locator position and attributes for the joint axis
+        midLocator = self._oriPlaneLocators[1]
+        cmds.xform(midLocator, t=data.get('midLocatorPosition'), ws=True)
+        for attr, val in zip(['negateXAxis', 'negateZAxis', 'swapYZAxis'], data.get('midLocatorAxisAttributes')):
+            cmds.setAttr('{}.{}'.format(midLocator, attr), val)
+
+        # Set pivot locators position
+        for pivotLoc, pivotLocPos in zip(self._pivotLocators, data.get('pivotLocatorsPosition')):
+            cmds.xform(pivotLoc, t=pivotLocPos, ws=True)
+
+        self.build()
+
+        # Set controllers shapes
+        self.controllerSize = data.get('controllerSize')
+        self.controllerColor = data.get('controllerColor')
+        for ctrl, ctrlData in zip(self._allControllers(), data.get('allControllers')):
+            ctrl.deserialize(ctrlData, hashmap)
+
+        # Attach to parent module
+        parentID = data.get('parentID')
+        if parentID:
+            parent = hashmap.get(parentID)
+            self.attachTo(parent, data.get('parentOutJointIndex'))

@@ -105,7 +105,6 @@ class SpaceSwitchBuilder(Serializable):
 
     def deserialize(self, data, hashmap={}):
         super().deserialize(data, hashmap)
-        print(hashmap)
         self._drivenController = hashmap.get(data.get('drivenControllerID'))
         self._driverControllers = [hashmap.get(ctrlID) for ctrlID in data.get('driverControllersID')]
         self._defaultDriverController = hashmap.get(data.get('defaultDriverControllerID'))
