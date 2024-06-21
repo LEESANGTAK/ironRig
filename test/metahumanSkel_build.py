@@ -18,6 +18,7 @@ code = '''
 from maya import cmds
 cmds.file(new=True, f=True)
 cmds.file(r"D:\Projects\SourceAssets\Characters\Zombie\Z_M_Mu_builder\SkeletalMesh\Z_M_Mu_builder_skeletalMesh.mb", reference=True, namespace='SK')
+cmds.dagPose('SK:rigPose', restore=True)
 '''
 preCS = irScene.addPreCustomScript(name, code)
 preCS.run()
@@ -29,6 +30,9 @@ from maya import cmds
 toeL = cmds.duplicate('SK:ball_l', n='toe_l')[0]
 cmds.parent(toeL, 'SK:ball_l')
 cmds.xform(toeL, t=[9.4958, 0.0, 0.0], os=True)
+toeR = cmds.duplicate('SK:ball_r', n='toe_r')[0]
+cmds.parent(toeR, 'SK:ball_r')
+cmds.xform(toeR, t=[-9.4958, 0.0, 0.0], os=True)
 '''
 preCS = irScene.addPreCustomScript(name, code)
 preCS.run()
@@ -44,14 +48,14 @@ joints = ['SK:pelvis', 'SK:spine_01', 'SK:spine_02', 'SK:spine_03', 'SK:spine_04
 spineMod = irScene.addModule('Spine', name, irm.module.Module.SIDE.CENTER, skeletonJoints=joints)
 spineMod.preBuild()
 spineMod.build()
-spineMod.controllerSize = 15
+spineMod.controllerSize = 20
 globalMst.addModules(spineMod)
 #spineMod.delete()
 
 name = 'neck'
 joints = ['SK:neck_01', 'SK:neck_02', 'SK:head']
 neckMod = irScene.addModule('Neck', name, irm.module.Module.SIDE.CENTER, skeletonJoints=joints)
-neckMod.numberOfControllers = 3
+neckMod.numberOfControllers = 2
 neckMod.preBuild()
 neckMod.build()
 neckMod.controllerSize = 10
@@ -84,21 +88,20 @@ footLMod.preBuild()
 footLMod.build()
 footLMod.controllerColor = irg.controller.Controller.COLOR.BLUE
 footLMod.controllerSize = 10
-legLMod = irScene.getModule('leg')
 footLMod.attachTo(legLMod)
 globalMst.addModules(footLMod)
 #footLMod.delete()
 
-legRMod = legLMod.mirror('_l', '_r', False)
+legRMod = irScene.mirrorModule('leg', 'l', '_l', '_r', False)
 legRMod.attachTo(spineMod)
 globalMst.addModules(legRMod)
 #legRMod.delete()
-footRIkhCtrlSSBuilder = irg.spaceSwitchBuilder.spaceSwitchBuilder.spaceSwitchBuilder.SpaceSwitchBuilder(legRMod.ikController, [globalMst.mainController, spineMod.pelvisController], globalMst.mainController)
-footRIkhCtrlSSBuilder.build(parent=True)
-legRPvCtrlSSBuilder = irg.spaceSwitchBuilder.spaceSwitchBuilder.spaceSwitchBuilder.SpaceSwitchBuilder(legRMod.poleVectorController, [globalMst.mainController, legRMod.ikController], globalMst.mainController)
-legRPvCtrlSSBuilder.build(parent=True)
+footRIkhCtrlSSBuilder = irScene.addSpaceSwitchBuilder(legRMod.ikController, [globalMst.mainController, spineMod.pelvisController], globalMst.mainController)
+footRIkhCtrlSSBuilder.build(isParentType=True)
+legRPvCtrlSSBuilder = irScene.addSpaceSwitchBuilder(legRMod.poleVectorController, [globalMst.mainController, legRMod.ikController], globalMst.mainController)
+legRPvCtrlSSBuilder.build(isParentType=True)
 
-footRMod = footLMod.mirror('_l', '_r')
+footRMod = irScene.mirrorModule('foot', 'l', '_l', '_r')
 footRMod.attachTo(legRMod)
 globalMst.addModules(footRMod)
 #footRMod.delete()

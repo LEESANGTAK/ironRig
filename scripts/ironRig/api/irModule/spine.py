@@ -86,6 +86,7 @@ class Spine(Module):
     def _buildControls(self):
         pelvisCtrl = Controller('pelvis', Controller.SHAPE.CUBE)
         cmds.matchTransform(pelvisCtrl.zeroGrp, self._ikSystem.joints[1], position=True, rotation=True)
+        cmds.xform(pelvisCtrl.zeroGrp, m=utils.matrixAlignedToWorldAxis(pelvisCtrl), ws=True)
         cmds.parentConstraint(pelvisCtrl, self._ikSystem.controllers[0], mo=True)
         cmds.parent(pelvisCtrl.zeroGrp, self._controllerGrp)
         pelvisCtrl.lockHideChannels(['scale', 'visibility'])
@@ -94,6 +95,7 @@ class Spine(Module):
 
         upBodyCtrl = Controller('upBody', Controller.SHAPE.ARROW_QUAD, direction=Controller.DIRECTION.Y)
         cmds.matchTransform(upBodyCtrl.zeroGrp, self._initJoints[0], position=True)
+        cmds.xform(upBodyCtrl.zeroGrp, m=utils.matrixAlignedToWorldAxis(upBodyCtrl), ws=True)
         cmds.parent(cmds.listRelatives(self._topGrp, children=True), upBodyCtrl)
         cmds.parent(upBodyCtrl.zeroGrp, self._topGrp)
         self._controllers.append(upBodyCtrl)

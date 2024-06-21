@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict
+from .container import Container
 from ..irMaster.globalMaster import GlobalMaster
 from .spaceSwitchBuilder import SpaceSwitchBuilder
 from .customScript import CustomScript
@@ -30,20 +31,27 @@ class Scene(object):
         self._globalMaster = GlobalMaster(rootJoint, buildRootController)
         return self._globalMaster
 
-    def addModule(self, type='', name='', side='', skeletonJoints=[], vertices=[]):
+    def addModule(self, type='', name='', side=Container.SIDE.LEFT, skeletonJoints=[], vertices=[]):
         mod = Factory.getModule(type, name, side, skeletonJoints)
         self._modules.append(mod)
         return mod
 
-    def removeModule(self, name, side):
+    def mirrorModule(self, name='', side=Container.SIDE.LEFT, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
+        mod = self.getModule(name, side)
+        oppMod = mod.mirror(skeletonSearchStr, skeletonReplaceStr, mirrorTranslate)
+        self._modules.append(oppMod)
+        return oppMod
+
+    def removeModule(self, name='', side=Container.SIDE.LEFT):
         self._modules.remove(self.getModule(name, side))
 
-    def getModule(self, name, side):
+    def getModule(self, name='', side=Container.SIDE.LEFT):
         for mod in self._modules:
             if name == mod.name and side == mod.side:
                 return mod
+        return None
 
-    def addMaster(self, type='', name='', side=''):
+    def addMaster(self, type='', name='', side=Container.SIDE.LEFT):
         mst = Factory.getMaster(type, name, side)
         self._masters.append(mst)
         return mst
