@@ -311,10 +311,13 @@ class Controller(Serializable):
             cmds.parent(child.zeroGrp, parent)
 
     def serialize(self):
+        # Store current state
         self.storeCVsPosition()
         self.storeCurvesRGB()
 
         return {
+            'id': self._id,
+            'name': self._name,
             'cvsPosition': self._cvsPosition,
             'curvesRGB': self._crvsRGB,
         }
@@ -322,5 +325,6 @@ class Controller(Serializable):
     def deserialize(self, data, hashmap={}):
         super().deserialize(data, hashmap)
 
+        self.name = data.get('name')
         self.restoreCVsPosition(data.get('cvsPosition'))
         self.restoreCurvesRGB(data.get('curvesRGB'))

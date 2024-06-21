@@ -230,22 +230,22 @@ def axisStrToEnum(axis):
 
 
 def getMeshesFromJoints(joints):
-    meshes = []
     skinClusters = []
-
     for jnt in joints:
         jntSkinClusters = cmds.listConnections('{}.worldMatrix'.format(jnt), source=False, type='skinCluster')
         if jntSkinClusters:
             skinClusters.extend(jntSkinClusters)
     skinClusters = list(set(skinClusters))
+
     if not skinClusters:
-        return meshes
+        return []
 
-    for skinCluster in skinClusters:
-        meshes.extend(cmds.listConnections('{}.outputGeometry'.format(skinCluster), source=False))
-    meshes = list(set(meshes))
+    meshes = []
+    for skinClst in skinClusters:
+        geos = cmds.skinCluster(skinClst, query=True, geometry=True)
+        meshes.extend(geos)
 
-    return meshes
+    return list(set(meshes))
 
 
 def getAffectedVertices(joints, minWeight=0.1):

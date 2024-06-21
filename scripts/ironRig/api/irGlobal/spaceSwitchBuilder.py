@@ -12,6 +12,8 @@ class SpaceSwitchBuilder(Serializable):
         self._drivenController = drivenController
         self._driverControllers = driverControllers
         self._defaultDriverController = defaultDriverController
+        self._isParentType = False
+        self._isOrientType = False
 
     @property
     def drivenController(self):
@@ -30,7 +32,7 @@ class SpaceSwitchBuilder(Serializable):
         assert isinstance(controllers, list), 'property driverControllers needs a list of controllers'
         self._driverControllers = controllers
 
-    def build(self, parent=False, orient=False):
+    def build(self, isParentType=False, isOrientType=False):
         topGrpName = '{}_spaceSwitch_grp'.format(self._drivenController)
         if cmds.objExists(topGrpName):
             cmds.delete(topGrpName)
@@ -48,17 +50,17 @@ class SpaceSwitchBuilder(Serializable):
             cmds.matchTransform(spaceLoc, self._drivenController)
             spaceLocZeroGrp = utils.makeGroup(spaceLoc, '{}_zero'.format(spaceLoc))
             cmds.parent(spaceLocZeroGrp, topGrp)
-            if parent:
+            if isParentType:
                 cmds.parentConstraint(driverCtrl, spaceLocZeroGrp, mo=True)
-            elif orient:
+            elif isOrientType:
                 cmds.orientConstraint(driverCtrl, spaceLocZeroGrp, mo=True)
         cmds.parent(topGrp, SpaceSwitchBuilder.SPACE_SWITCH_GRP)
 
         # Constraint driven controller sapce group
         spaceGrp = utils.makeGroup(self._drivenController.extraGrp, '{}_space'.format(self._drivenController))
-        if parent:
+        if isParentType:
             cnst = cmds.parentConstraint(spaceLocs, spaceGrp, mo=True)[0]
-        elif orient:
+        elif isOrientType:
             cnst = cmds.orientConstraint(spaceLocs, spaceGrp, mo=True)[0]
 
         # Add attributes and connect to constraint weights
@@ -88,16 +90,23 @@ class SpaceSwitchBuilder(Serializable):
         # defaultSpaceAttr.delete()
         cmds.deleteAttr(defaultSpaceAttr)
 
+        self._isParentType = isParentType
+        self._isOrientType = isOrientType
+
     def serialize(self):
         return {
-            'drivenController': self._drivenController,
-            'driverControllers': self._driverControllers,
-            'defaultDriverController': self._defaultDriverController
+            'id': self._id,
+            'drivenControllerID': self._drivenController.id,
+            'driverControllersID': [ctrl.id for ctrl in self._driverControllers],
+            'defaultDriverControllerID': self._defaultDriverController.id,
+            'isParentType': self._isParentType,
+            'isOrientType': self._isOrientType
         }
 
     def deserialize(self, data, hashmap={}):
         super().deserialize(data, hashmap)
-        self._drivenController = data.get('drivenController')
-        self._driverControllers = data.get('driverControllers')
-        self._defaultDriverController = data.get('defaultDriverController')
-        self.build()
+        print(hashmap)
+        self._drivenController = hashmap.get(data.get('drivenControllerID'))
+        self._driverControllers = [hashmap.get(ctrlID) for ctrlID in data.get('driverControllersID')]
+        self._defaultDriverController = hashmap.get(data.get('defaultDriverControllerID'))
+        self.build(data.get('isParentType'), data.get('isOrientType'))

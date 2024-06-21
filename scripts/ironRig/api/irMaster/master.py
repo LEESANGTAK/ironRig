@@ -8,7 +8,7 @@ from ..irGlobal.controller import Controller
 class Master(Container):
     """
     Master contains modules, controllers.
-    Master controller controls modules behavior.
+    Master controller controls modules.
     """
     def __init__(self, name='', side=Container.SIDE.CENTER):
         super().__init__(name, side, Container.TYPE.MASTER)
@@ -138,7 +138,7 @@ class Master(Container):
         self.controllerSize = data.get('controllerSize')
         self.controllerColor = data.get('controllerColor')
         for ctrl, ctrlData in zip(self._controllers, data.get('controllers')):
-            ctrl.deserialize(ctrlData)
+            ctrl.deserialize(ctrlData, hashmap)
 
         # Attach to parent module
         parentID = data.get('parentID')

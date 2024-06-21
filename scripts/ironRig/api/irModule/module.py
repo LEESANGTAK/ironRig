@@ -16,14 +16,14 @@ if not cmds.pluginInfo(PLUGIN_NAME, q=True, loaded=True):
 
 class Module(Container):
     """
-    Module contains geometry, initial joints, systems(IK|FK|Spline etc...), controllers, outputs.
+    Module contains geometry, initial joints, systems(IK, FK, Spline, etc...), controllers, outputs(joints, attributes, etc...).
     Module controller controls systems relationship.
     """
     def __init__(self, name='new', side=Container.SIDE.CENTER, skeletonJoints=[]):
         super().__init__(name, side, Container.TYPE.MODULE)
 
         self._parent = None
-        self._parentOutJointID = -1000000
+        self._parentOutJointIndex = -1000000
 
         self._geoGrp = None
         self._outGrp = None
@@ -426,7 +426,7 @@ class Module(Container):
             cmds.connectAttr('{}.scale'.format(parentSpace), '{}.scale'.format(self._topGrp))
 
         self._parent = module
-        self._parentOutJointID = outJointIndex
+        self._parentOutJointIndex = outJointIndex
 
     def delete(self):
         """Remove all nodes realted with a module.
@@ -472,7 +472,7 @@ class Module(Container):
             ('id', self._id),
             ('type', self.__class__.__name__),
             ('parentID', parentId),
-            ('parentOutJointID', self._parentOutJointID),
+            ('parentOutJointIndex', self._parentOutJointIndex),
             ('name', self._name),
             ('side', self._side),
             ('skeletonJoints', self._skelJoints),
@@ -504,10 +504,10 @@ class Module(Container):
         self.controllerSize = data.get('controllerSize')
         self.controllerColor = data.get('controllerColor')
         for ctrl, ctrlData in zip(self._allControllers(), data.get('allControllers')):
-            ctrl.deserialize(ctrlData)
+            ctrl.deserialize(ctrlData, hashmap)
 
         # Attach to parent module
         parentID = data.get('parentID')
         if parentID:
             parent = hashmap.get(parentID)
-            self.attachTo(parent, data.get('parentOutJointID'))
+            self.attachTo(parent, data.get('parentOutJointIndex'))

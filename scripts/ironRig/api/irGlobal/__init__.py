@@ -1,8 +1,8 @@
 from imp import reload
 
+from . import obb
 from . import scene
 from . import serializable
-from . import obb
 from . import plane
 from . import aligner
 from . import container
@@ -12,9 +12,9 @@ from . import factory
 from . import customScript
 
 
-reload(serializable)
-reload(scene)
 reload(obb)
+reload(scene)
+reload(serializable)
 reload(plane)
 reload(aligner)
 reload(container)

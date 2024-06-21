@@ -20,9 +20,9 @@ class Scene(object):
     def globalMaster(self):
         return self._globalMaster
 
-    @globalMaster.setter
-    def globalMaster(self, globalMaster):
-        self._globalMaster = globalMaster
+    def addGlobalMaster(self, rootJoint, buildRootController=False):
+        self._globalMaster = GlobalMaster(rootJoint, buildRootController)
+        return self._globalMaster
 
     def addModule(self, type='', name='', side='', skeletonJoints=[], vertices=[]):
         mod = Factory.getModule(type, name, side, skeletonJoints)
@@ -34,8 +34,8 @@ class Scene(object):
         self._masters.append(mst)
         return mst
 
-    def addSpaceSwitchBuilder(self, name='', drivenController='', driverControllers='', defaultDriverController=''):
-        ssb = SpaceSwitchBuilder(name, drivenController, driverControllers, defaultDriverController)
+    def addSpaceSwitchBuilder(self, drivenController='', driverControllers='', defaultDriverController=''):
+        ssb = SpaceSwitchBuilder(drivenController, driverControllers, defaultDriverController)
         self._spaceSwitchBuilders.append(ssb)
         return ssb
 
@@ -90,7 +90,7 @@ class Scene(object):
             self._globalMaster.addMasters(mst)
 
         for spaceSwitchBuildersData in data["spaceSwitchBuilders"]:
-            ssb = self.addSpaceSwitchBuilder(spaceSwitchBuildersData.get('name'))
+            ssb = self.addSpaceSwitchBuilder()
             ssb.deserialize(spaceSwitchBuildersData, hashmap)
             self._globalMaster.addSpaceSwitchBuilder(ssb)
 
