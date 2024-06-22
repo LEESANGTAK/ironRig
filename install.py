@@ -1,5 +1,5 @@
 """
-Author: TAK
+Author: Tak
 Website: https://ta-note.com
 Description:
     Drag and drop install.py file in maya viewport.
@@ -16,8 +16,9 @@ import maya.mel as mel
 
 MAYA_VERSION = int(cmds.about(version=True))
 MODULE_NAME = os.path.dirname(__file__).rsplit('/', 1)[-1]
-MODULE_PATH = os.path.dirname(__file__)
+MODULE_PATH = os.path.dirname(__file__).replace('\\', '/')
 # Need to modify below depend on module
+AVAILABLE_VERSIONS = [2022, 2023, 2024]
 MODULE_VERSION = 'any'
 SHELF_ICON_FILE = 'pythonFamily.png'
 SHELF_BUTTON_COMMAND = '''
@@ -89,10 +90,12 @@ def addEnvPaths():
 def createModuleFile():
     moduleFileName = '{}.mod'.format(MODULE_NAME)
 
-    contents = '''+ MAYAVERSION:2023 {0} {1} {2}
+    contentsBlock = '''+ MAYAVERSION:{0} {1} {2} {3}
 
-+ MAYAVERSION:2024 {0} {1} {2}
-'''.format(MODULE_NAME, MODULE_VERSION, MODULE_PATH)
+'''
+    contents = ''
+    for availVersion in AVAILABLE_VERSIONS:
+        contents += contentsBlock.format(availVersion, MODULE_NAME, MODULE_VERSION, MODULE_PATH)
 
     with open(os.path.join(getModulesDirectory(), moduleFileName), 'w') as f:
         f.write(contents)
