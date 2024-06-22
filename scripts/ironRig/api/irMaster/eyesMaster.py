@@ -15,7 +15,7 @@ class EyesMaster(Master):
         return self._controller
 
     def _buildControls(self):
-        self._controller = Controller('{}'.format(self.shortName), Controller.SHAPE.LOCATOR, Controller.COLOR.GREEN, self._modules[0].controllerSize*2)
+        self._controller = Controller(self.shortName, Controller.SHAPE.LOCATOR, Controller.COLOR.GREEN, self._modules[0].controllerSize*2)
         self._controller.lockHideChannels(['visibility'])
         modulesAimCtrlZeroGrps = [eyeModule.aimSystem.controllers[0].zeroGrp for eyeModule in self._modules]
         aimCtrlsCenterPnt = utils.getCenterVector(modulesAimCtrlZeroGrps)

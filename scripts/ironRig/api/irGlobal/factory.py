@@ -1,5 +1,6 @@
 from ..irModule.spine import Spine
 from ..irModule.neck import Neck
+from ..irModule.limbBase import LimbBase
 from ..irModule.twoBoneLimb import TwoBoneLimb
 from ..irModule.threeBoneLimb import ThreeBoneLimb
 from ..irModule.foot import Foot
@@ -12,6 +13,7 @@ from ..irMaster.eyesMaster import EyesMaster
 MODULE_TABLE = {
     Spine.__name__: Spine,
     Neck.__name__: Neck,
+    LimbBase.__name__: LimbBase,
     TwoBoneLimb.__name__: TwoBoneLimb,
     ThreeBoneLimb.__name__: ThreeBoneLimb,
     Foot.__name__: Foot,

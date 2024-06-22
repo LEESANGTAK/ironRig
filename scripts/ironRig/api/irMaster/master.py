@@ -131,18 +131,18 @@ class Master(Container):
         for modData in data.get('modules'):
             modID = modData.get('id')
             mods.append(hashmap.get(modID))
-        self._modules = mods
+        self.addModules(mods)
 
         self.build()
-
-        # Set controllers shapes
-        self.controllerSize = data.get('controllerSize')
-        self.controllerColor = data.get('controllerColor')
-        for ctrl, ctrlData in zip(self._controllers, data.get('controllers')):
-            ctrl.deserialize(ctrlData, hashmap)
 
         # Attach to parent module
         parentID = data.get('parentID')
         if parentID:
             parent = hashmap.get(parentID)
             self.attachTo(parent, data.get('parentOutJointID'))
+
+        # Set controllers shapes
+        self.controllerSize = data.get('controllerSize')
+        self.controllerColor = data.get('controllerColor')
+        for ctrl, ctrlData in zip(self._controllers, data.get('controllers')):
+            ctrl.deserialize(ctrlData, hashmap)

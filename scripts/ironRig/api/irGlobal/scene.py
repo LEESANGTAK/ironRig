@@ -66,6 +66,12 @@ class Scene(object):
         self._postCustomScripts.append(cs)
         return cs
 
+    def getCustomScript(self, name):
+        for cs in self._preCustomScripts + self._postCustomScripts:
+            if name == cs.name:
+                return cs
+        return None
+
     def saveToFile(self, filename):
         with open(filename, "w") as f:
             f.write(json.dumps(self.serialize(), indent=4))
