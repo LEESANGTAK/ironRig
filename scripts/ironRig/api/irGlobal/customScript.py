@@ -3,7 +3,7 @@ from ...common import logger
 
 
 class CustomScript(Serializable):
-    def __init__(self, name=None, code=None):
+    def __init__(self, name='', code=''):
         self._name = name
         self._code = code
 

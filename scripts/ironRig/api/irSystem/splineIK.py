@@ -13,10 +13,16 @@ class DynLock:
     BASE = 1
     BOTH = 3
 
+class AlignControllerToWorld:
+    NONE = 0
+    END = 1
+    ALL = 2
+
 
 class SplineIK(System):
     CURVE_DEGREE = CurveDegree
     DYNAMIC_LOCK = DynLock
+    ALIGN_CONTROLLER_TO_WORLD = AlignControllerToWorld
 
     def __init__(self, name='new', side=System.SIDE.CENTER, joints=[], numberOfControllers=2):
         super().__init__(name, side, System.TYPE.SPLINE_SYSTEM, joints)
@@ -27,7 +33,7 @@ class SplineIK(System):
         self._curveJoints = None
         self._ikHandle = None
         self._follicle = None
-        self._alignEndControllerToWorld = False
+        self._alignControllerToWorld = SplineIK.ALIGN_CONTROLLER_TO_WORLD.NONE
 
     @property
     def numberOfControllers(self):
@@ -66,12 +72,12 @@ class SplineIK(System):
         return self._ikHandle
 
     @property
-    def alignEndControllerToWorld(self):
-        return self._alignEndControllerToWorld
+    def alignControllerToWorld(self):
+        return self._alignControllerToWorld
 
-    @alignEndControllerToWorld.setter
-    def alignEndControllerToWorld(self, val):
-        self._alignEndControllerToWorld = val
+    @alignControllerToWorld.setter
+    def alignControllerToWorld(self, val):
+        self._alignControllerToWorld = val
 
     def _buildSystems(self):
         super()._buildSystems()
@@ -122,8 +128,12 @@ class SplineIK(System):
             self.addMembers(ctrl.allNodes)
             ctrls.append(ctrl)
 
-        if self._alignEndControllerToWorld:
+        # Align controllers to the world axis
+        if self._alignControllerToWorld == SplineIK.ALIGN_CONTROLLER_TO_WORLD.END:
             cmds.xform(ctrls[-1].zeroGrp, m=utils.matrixAlignedToWorldAxis(ctrls[-1]), ws=True)
+        elif self._alignControllerToWorld == SplineIK.ALIGN_CONTROLLER_TO_WORLD.ALL:
+            for ctrl in ctrls:
+                cmds.xform(ctrl.zeroGrp, m=utils.matrixAlignedToWorldAxis(ctrl), ws=True)
 
         for ctrl, crvJnt in zip(ctrls, self._curveJoints):
             cmds.parentConstraint(ctrl, crvJnt, mo=True)

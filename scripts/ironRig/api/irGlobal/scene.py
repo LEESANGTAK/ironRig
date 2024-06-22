@@ -72,11 +72,21 @@ class Scene(object):
         logger.info("Saving file to '{}' is done successfully.".format(filename))
 
     def buildFromFile(self, filename):
+        self.clear()
+
         with open(filename, "r") as f:
             data = json.load(f)
             globalMst = self.deserialize(data)
         logger.info("Building a rig from '{}' is done successfully".format(filename))
         return globalMst
+
+    def clear(self):
+        self._preCustomScripts.clear()
+        self._globalMaster = None
+        self._modules.clear()
+        self._masters.clear()
+        self._spaceSwitchBuilders.clear()
+        self._postCustomScripts.clear()
 
     def serialize(self):
         return OrderedDict([
@@ -89,15 +99,18 @@ class Scene(object):
         ])
 
     def deserialize(self, data, hashmap={}):
+        # Process pre-build custom scripts
         for preCustomScriptData in data["preCustomScripts"]:
-            cs = CustomScript(preCustomScriptData.get('name'))
+            cs = self.addPreCustomScript(preCustomScriptData.get('name'))
             cs.deserialize(preCustomScriptData, hashmap)
 
+        # Add global master and build
         globalMasterData = data['globalMaster']
         if globalMasterData:
-            self._globalMaster = GlobalMaster(globalMasterData.get('rootJoint'), globalMasterData.get('buildRootController'))
-            self._globalMaster.deserialize(globalMasterData, hashmap)
+            globalMaster = self.addGlobalMaster(globalMasterData.get('rootJoint'), globalMasterData.get('buildRootController'))
+            globalMaster.deserialize(globalMasterData, hashmap)
 
+        # Add modules, masters and build
         for moduleData in data["modules"]:
             mod = self.addModule(
                 moduleData.get('type'),
@@ -106,7 +119,7 @@ class Scene(object):
                 moduleData.get('skeletonJoints')
             )
             mod.deserialize(moduleData, hashmap)
-            self._globalMaster.addModules(mod)
+            globalMaster.addModules(mod)
 
         for masterData in data["masters"]:
             mst = self.addMaster(
@@ -115,13 +128,15 @@ class Scene(object):
                 masterData.get('side')
             )
             mst.deserialize(masterData, hashmap)
-            self._globalMaster.addMasters(mst)
+            globalMaster.addMasters(mst)
 
+        # Add space switch builder
         for spaceSwitchBuildersData in data["spaceSwitchBuilders"]:
             ssb = self.addSpaceSwitchBuilder()
             ssb.deserialize(spaceSwitchBuildersData, hashmap)
-            self._globalMaster.addSpaceSwitchBuilder(ssb)
+            globalMaster.addSpaceSwitchBuilder(ssb)
 
+        # Process post-build custom scripts
         for postCustomScriptData in data["postCustomScripts"]:
-            cs = CustomScript(postCustomScriptData.get('name'))
+            cs = self.addPostCustomScript(postCustomScriptData.get('name'))
             cs.deserialize(postCustomScriptData, hashmap)

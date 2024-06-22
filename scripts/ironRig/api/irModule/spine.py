@@ -31,6 +31,7 @@ class Spine(Module):
 
     def _addSystems(self):
         self._ikSystem = SplineIK(self._name, self._side, numberOfControllers=4)
+        self._ikSystem.alignControllerToWorld = SplineIK.ALIGN_CONTROLLER_TO_WORLD.ALL
         self._systems.append(self._ikSystem)
         super()._addSystems()
 

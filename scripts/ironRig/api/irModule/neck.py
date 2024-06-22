@@ -37,7 +37,7 @@ class Neck(Module):
     def _addSystems(self):
         self._ikSystem = SplineIK(self._name, self._side)
         self._ikSystem.numberOfControllers = self._numberOfControllers
-        self._ikSystem.alignEndControllerToWorld = True
+        self._ikSystem.alignControllerToWorld = SplineIK.ALIGN_CONTROLLER_TO_WORLD.END
         self._systems.append(self._ikSystem)
 
         super()._addSystems()
@@ -113,3 +113,38 @@ class Neck(Module):
         oppMod.symmetrizeControllerShapes()
         oppMod.controllerColor = common.SYMMETRY_COLOR_TABLE.get(self._controllerColor)
         return oppMod
+
+    def serialize(self):
+        data = super().serialize()
+        data['numberOfControllers'] = self._numberOfControllers
+        return data
+    
+    def deserialize(self, data, hashmap={}):
+        hashmap[data.get('id')] = self
+        self._id = data.get('id')
+
+        # Set porperties before build
+        self.mirrorTranslate = data.get('mirrorTranslate')
+        self.numberOfControllers = data.get('numberOfControllers')
+
+        self.preBuild()
+
+        # Set mid locator position and attributes for the joint axis
+        midLocator = self._oriPlaneLocators[1]
+        cmds.xform(midLocator, t=data.get('midLocatorPosition'), ws=True)
+        for attr, val in zip(['negateXAxis', 'negateZAxis', 'swapYZAxis'], data.get('midLocatorAxisAttributes')):
+            cmds.setAttr('{}.{}'.format(midLocator, attr), val)
+
+        self.build()
+
+        # Set controllers shapes
+        self.controllerSize = data.get('controllerSize')
+        self.controllerColor = data.get('controllerColor')
+        for ctrl, ctrlData in zip(self._allControllers(), data.get('allControllers')):
+            ctrl.deserialize(ctrlData, hashmap)
+
+        # Attach to parent module
+        parentID = data.get('parentID')
+        if parentID:
+            parent = hashmap.get(parentID)
+            self.attachTo(parent, data.get('parentOutJointIndex'))

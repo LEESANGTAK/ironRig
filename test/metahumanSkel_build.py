@@ -11,15 +11,15 @@ filePath = 'C:/users/stakl/downloads/test.json'
 #irScene.saveToFile(filePath)
 irScene.buildFromFile(filePath)
 
+skPath = r"C:\Users\Administrator\Downloads\ironRig\test\metahumanSkel.mb"
 
 # -------------- Pre-Custom Scripts Build ---------------------
 name = 'reference_skeletalMesh'
 code = '''
 from maya import cmds
 cmds.file(new=True, f=True)
-cmds.file(r"D:\Projects\SourceAssets\Characters\Zombie\Z_M_Mu_builder\SkeletalMesh\Z_M_Mu_builder_skeletalMesh.mb", reference=True, namespace='SK')
-cmds.dagPose('SK:rigPose', restore=True)
-'''
+cmds.file(r"{}", reference=True, namespace='SK')
+'''.format(skPath)
 preCS = irScene.addPreCustomScript(name, code)
 preCS.run()
 

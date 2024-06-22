@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+from pprint import pprint
 from math import sqrt
 from maya.api import OpenMaya as om
 from maya.api import OpenMayaAnim as oma
@@ -905,3 +906,17 @@ def symmetrizeCurve(curve, oppositeCurve):
         for i in range(cvs):
             oppCVPos = cmds.xform('{}.cv[{}]'.format(oppositeCurve, i), q=True, t=True, ws=True)
             cmds.xform('{}.cv[{}]'.format(curve, i), t=(-oppCVPos[0], oppCVPos[1], oppCVPos[2]), ws=True)
+
+
+def printCurveInfo(crv):
+    crvInfo = {}
+    shapes = cmds.listRelatives(crv, s=True)
+    for shp in shapes:
+        form = cmds.getAttr('{}.f'.format(shp))
+        spans = cmds.getAttr('{}.spans'.format(crv))
+        degree = cmds.getAttr('{}.degree'.format(shp))
+        cvPos = []
+        for cv in range(spans + degree):
+            cvPos.append(cmds.xform('{}.cv[{}]'.format(crv, cv), q=True, t=True, ws=True))
+        crvInfo[shp] = {'form': form, 'degree': degree, 'cvPos': cvPos}
+    pprint(crvInfo)

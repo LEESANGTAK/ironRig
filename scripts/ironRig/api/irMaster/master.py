@@ -129,7 +129,8 @@ class Master(Container):
 
         mods = []
         for modData in data.get('modules'):
-            mods.append(hashmap.get(modData.get('id')))
+            modID = modData.get('id')
+            mods.append(hashmap.get(modID))
         self._modules = mods
 
         self.build()
