@@ -90,8 +90,8 @@ class Master(Container):
 
         # Connect scale of parent sapce out joint to out jotins in modules
         outJnts = []
-        for module in self._modules:
-            outJnts.extend(module.outJoints)
+        for mod in self._modules:
+            outJnts.extend(mod.outJoints)
         for outJnt in outJnts:
             scaleMult = cmds.listConnections(outJnt, destination=False, type='multiplyDivide')[0]
             cmds.connectAttr('{}.scale'.format(parentSpace), '{}.input2'.format(scaleMult), f=True)

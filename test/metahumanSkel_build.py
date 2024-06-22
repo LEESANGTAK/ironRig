@@ -7,7 +7,7 @@ import ironRig.api.irGlobal as irg
 
 
 irScene = irg.scene.Scene()
-filePath = r'C:\Users\Administrator\Downloads/test.json'
+filePath = r'C:\Users\chst2\Downloads/test.json'
 #irScene.saveToFile(filePath)
 irScene.buildFromFile(filePath)
 
@@ -37,66 +37,66 @@ preCS.run()
 name = 'addJoints'
 code = '''
 from maya import cmds
-toeL = cmds.duplicate('SK:ball_l', n='toe_l', po=True)[0]
-cmds.parent(toeL, 'SK:ball_l')
+toeL = cmds.duplicate('ball_l', n='toe_l', po=True)[0]
+cmds.parent(toeL, 'ball_l')
 cmds.xform(toeL, t=[5.4958, 0.0, 0.0], os=True)
 
-toeR = cmds.duplicate('SK:ball_r', n='toe_r', po=True)[0]
-cmds.parent(toeR, 'SK:ball_r')
+toeR = cmds.duplicate('ball_r', n='toe_r', po=True)[0]
+cmds.parent(toeR, 'ball_r')
 cmds.xform(toeR, t=[-5.4958, 0.0, 0.0], os=True)
 
-thumbL = cmds.duplicate('SK:thumb_03_l', n='thumb_04_l', po=True)[0]
-cmds.parent(thumbL, 'SK:thumb_03_l')
+thumbL = cmds.duplicate('thumb_03_l', n='thumb_04_l', po=True)[0]
+cmds.parent(thumbL, 'thumb_03_l')
 cmds.xform(thumbL, t=[2.347, 0.0, 0.0], os=True)
 
-indexL = cmds.duplicate('SK:index_03_l', n='index_04_l', po=True)[0]
-cmds.parent(indexL, 'SK:index_03_l')
+indexL = cmds.duplicate('index_03_l', n='index_04_l', po=True)[0]
+cmds.parent(indexL, 'index_03_l')
 cmds.xform(indexL, t=[2.347, 0.0, 0.0], os=True)
 
-middleL = cmds.duplicate('SK:middle_03_l', n='middle_04_l', po=True)[0]
-cmds.parent(middleL, 'SK:middle_03_l')
+middleL = cmds.duplicate('middle_03_l', n='middle_04_l', po=True)[0]
+cmds.parent(middleL, 'middle_03_l')
 cmds.xform(middleL, t=[2.347, 0.0, 0.0], os=True)
 
-ringL = cmds.duplicate('SK:ring_03_l', n='ring_04_l', po=True)[0]
-cmds.parent(ringL, 'SK:ring_03_l')
+ringL = cmds.duplicate('ring_03_l', n='ring_04_l', po=True)[0]
+cmds.parent(ringL, 'ring_03_l')
 cmds.xform(ringL, t=[2.347, 0.0, 0.0], os=True)
 
-pinkyL = cmds.duplicate('SK:pinky_03_l', n='pinky_04_l', po=True)[0]
-cmds.parent(pinkyL, 'SK:pinky_03_l')
+pinkyL = cmds.duplicate('pinky_03_l', n='pinky_04_l', po=True)[0]
+cmds.parent(pinkyL, 'pinky_03_l')
 cmds.xform(pinkyL, t=[2.347, 0.0, 0.0], os=True)
 
 
-thumbR = cmds.duplicate('SK:thumb_03_r', n='thumb_04_r', po=True)[0]
-cmds.parent(thumbR, 'SK:thumb_03_r')
+thumbR = cmds.duplicate('thumb_03_r', n='thumb_04_r', po=True)[0]
+cmds.parent(thumbR, 'thumb_03_r')
 cmds.xform(thumbR, t=[-2.347, 0.0, 0.0], os=True)
 
-indexR = cmds.duplicate('SK:index_03_r', n='index_04_r', po=True)[0]
-cmds.parent(indexR, 'SK:index_03_r')
+indexR = cmds.duplicate('index_03_r', n='index_04_r', po=True)[0]
+cmds.parent(indexR, 'index_03_r')
 cmds.xform(indexR, t=[-2.347, 0.0, 0.0], os=True)
 
-middleR = cmds.duplicate('SK:middle_03_r', n='middle_04_r', po=True)[0]
-cmds.parent(middleR, 'SK:middle_03_r')
+middleR = cmds.duplicate('middle_03_r', n='middle_04_r', po=True)[0]
+cmds.parent(middleR, 'middle_03_r')
 cmds.xform(middleR, t=[-2.347, 0.0, 0.0], os=True)
 
-ringR = cmds.duplicate('SK:ring_03_r', n='ring_04_r', po=True)[0]
-cmds.parent(ringR, 'SK:ring_03_r')
+ringR = cmds.duplicate('ring_03_r', n='ring_04_r', po=True)[0]
+cmds.parent(ringR, 'ring_03_r')
 cmds.xform(ringR, t=[-2.347, 0.0, 0.0], os=True)
 
-pinkyR = cmds.duplicate('SK:pinky_03_r', n='pinky_04_r', po=True)[0]
-cmds.parent(pinkyR, 'SK:pinky_03_r')
+pinkyR = cmds.duplicate('pinky_03_r', n='pinky_04_r', po=True)[0]
+cmds.parent(pinkyR, 'pinky_03_r')
 cmds.xform(pinkyR, t=[-2.347, 0.0, 0.0], os=True)
 '''
 preCS = irScene.addPreCustomScript(name, code)
 preCS.run()
 
 # -------------- Module Build ---------------------
-globalMst = irScene.addGlobalMaster('SK:root', True)
+globalMst = irScene.addGlobalMaster('root', True)
 globalMst.build()
 #globalMst.delete()
 
 
 name = 'spine'
-joints = ['SK:pelvis', 'SK:spine_01', 'SK:spine_02', 'SK:spine_03', 'SK:spine_04']
+joints = ['pelvis', 'spine_01', 'spine_02', 'spine_03', 'spine_04']
 spineMod = irScene.addModule('Spine', name, irm.module.Module.SIDE.CENTER, skeletonJoints=joints)
 spineMod.preBuild()
 spineMod.build()
@@ -105,7 +105,7 @@ globalMst.addModules(spineMod)
 #spineMod.delete()
 
 name = 'neck'
-joints = ['SK:neck_01', 'SK:neck_02', 'SK:head']
+joints = ['neck_01', 'neck_02', 'head']
 neckMod = irScene.addModule('Neck', name, irm.module.Module.SIDE.CENTER, skeletonJoints=joints)
 neckMod.numberOfControllers = 2
 neckMod.preBuild()
@@ -119,7 +119,7 @@ headCtrlSSBuilder.build(isOrientType=True)
 
 # ---------------------------------------------------------------------------
 name = 'leg'
-joints = ['SK:thigh_l', 'SK:calf_l', 'SK:foot_l']
+joints = ['thigh_l', 'calf_l', 'foot_l']
 legLMod = irScene.addModule('TwoBoneLimb', name, irm.module.Module.SIDE.LEFT, skeletonJoints=joints)
 legLMod.preBuild()
 legLMod.build()
@@ -134,7 +134,7 @@ legLPvCtrlSSBuilder = irScene.addSpaceSwitchBuilder(legLMod.poleVectorController
 legLPvCtrlSSBuilder.build(isParentType=True)
 
 name = 'foot'
-joints = ['SK:foot_l', 'SK:ball_l', 'toe_l']
+joints = ['foot_l', 'ball_l', 'toe_l']
 footLMod = irScene.addModule('Foot', name, irm.module.Module.SIDE.LEFT, skeletonJoints=joints)
 footLMod.preBuild()
 footLMod.build()
@@ -160,7 +160,7 @@ globalMst.addModules(footRMod)
 
 # ---------------------------------------------------------------------------
 name = 'clavicle'
-joints = ['SK:clavicle_l', 'SK:upperarm_l']
+joints = ['clavicle_l', 'upperarm_l']
 claLMod = irScene.addModule('LimbBase', name, irm.module.Module.SIDE.LEFT, skeletonJoints=joints)
 claLMod.preBuild()
 claLMod.build()
@@ -176,7 +176,7 @@ globalMst.addModules(claRMod)
 #claRMod.delete()
 
 name = 'arm'
-joints = ['SK:upperarm_l', 'SK:lowerarm_l', 'SK:hand_l']
+joints = ['upperarm_l', 'lowerarm_l', 'hand_l']
 armLMod = irScene.addModule('TwoBoneLimb', name, irm.module.Module.SIDE.LEFT, skeletonJoints=joints)
 armLMod.preBuild()
 armLMod.build()
@@ -206,7 +206,7 @@ armRPvCtrlSSBuilder.build(isParentType=True)
 # ---------------------------------------------------------------------------
 # Fingers L Build
 name = 'thumbFinger'
-joints = ['SK:thumb_01_l', 'SK:thumb_02_l', 'SK:thumb_03_l', 'thumb_04_l']
+joints = ['thumb_01_l', 'thumb_02_l', 'thumb_03_l', 'thumb_04_l']
 thumbLMod = irScene.addModule('Finger', name, irm.module.Module.SIDE.LEFT, skeletonJoints=joints)
 thumbLMod.curlStartIndex = 1
 thumbLMod.preBuild()
@@ -216,7 +216,7 @@ thumbLMod.controllerSize = 4
 #thumbLMod.delete()
 
 name = 'indexFinger'
-joints = ['SK:index_metacarpal_l', 'SK:index_01_l', 'SK:index_02_l', 'SK:index_03_l', 'index_04_l']
+joints = ['index_metacarpal_l', 'index_01_l', 'index_02_l', 'index_03_l', 'index_04_l']
 indexLMod = irScene.addModule('Finger', name, irm.module.Module.SIDE.LEFT, skeletonJoints=joints)
 indexLMod.preBuild()
 indexLMod.build()
@@ -225,7 +225,7 @@ indexLMod.controllerSize = 4
 #indexLMod.delete()
 
 name = 'middleFinger'
-joints = ['SK:middle_metacarpal_l', 'SK:middle_01_l', 'SK:middle_02_l', 'SK:middle_03_l', 'middle_04_l']
+joints = ['middle_metacarpal_l', 'middle_01_l', 'middle_02_l', 'middle_03_l', 'middle_04_l']
 middleLMod = irScene.addModule('Finger', name, irm.module.Module.SIDE.LEFT, skeletonJoints=joints)
 middleLMod.preBuild()
 middleLMod.build()
@@ -234,7 +234,7 @@ middleLMod.controllerSize = 4
 #middleLMod.delete()
 
 name = 'ringFinger'
-joints = ['SK:ring_metacarpal_l', 'SK:ring_01_l', 'SK:ring_02_l', 'SK:ring_03_l', 'ring_04_l']
+joints = ['ring_metacarpal_l', 'ring_01_l', 'ring_02_l', 'ring_03_l', 'ring_04_l']
 ringLMod = irScene.addModule('Finger', name, irm.module.Module.SIDE.LEFT, skeletonJoints=joints)
 ringLMod.preBuild()
 ringLMod.build()
@@ -243,7 +243,7 @@ ringLMod.controllerSize = 4
 #ringLMod.delete()
 
 name = 'pinkyFinger'
-joints = ['SK:pinky_metacarpal_l', 'SK:pinky_01_l', 'SK:pinky_02_l', 'SK:pinky_03_l', 'pinky_04_l']
+joints = ['pinky_metacarpal_l', 'pinky_01_l', 'pinky_02_l', 'pinky_03_l', 'pinky_04_l']
 pinkyLMod = irScene.addModule('Finger', name, irm.module.Module.SIDE.LEFT, skeletonJoints=joints)
 pinkyLMod.preBuild()
 pinkyLMod.build()
@@ -258,22 +258,23 @@ fingersLMaster.build()
 fingersLMaster.attachTo(armLMod)
 globalMst.addMasters(fingersLMaster)
 #fingersLMaster.delete()
+fingersLMaster._parent
 
 # ---------------------------------------------------------------------------
 # Fingers R Build
-thumbRMod = thumbLMod.mirror('_l', '_r')
+thumbRMod = irScene.mirrorModule('thumbFinger', 'l', '_l', '_r')
 #thumbRMod.delete()
 
-indexRMod = indexLMod.mirror('_l', '_r')
+indexRMod = irScene.mirrorModule('indexFinger', 'l', '_l', '_r')
 #indexRMod.delete()
 
-middleRMod = middleLMod.mirror('_l', '_r')
+middleRMod = irScene.mirrorModule('middleFinger', 'l', '_l', '_r')
 #middleRMod.delete()
 
-ringRMod = ringLMod.mirror('_l', '_r')
+ringRMod = irScene.mirrorModule('ringFinger', 'l', '_l', '_r')
 #ringRMod.delete()
 
-pinkyRMod = pinkyLMod.mirror('_l', '_r')
+pinkyRMod = irScene.mirrorModule('pinkyFinger', 'l', '_l', '_r')
 #pinkyRMod.delete()
 
 name = 'fingers'
@@ -289,9 +290,9 @@ globalMst.addMasters(fingersRMaster)
 name = 'connectMetahuman'
 code = '''
 from maya import cmds
-cmds.parentConstraint('head_ctrl', 'SK:facial_rig_grp', mo=True)
-cmds.setAttr('SK:L_lookDirection.inheritsTransform', 0)
-cmds.setAttr('SK:R_lookDirection.inheritsTransform', 0)
+cmds.parentConstraint('head_ctrl', 'facial_rig_grp', mo=True)
+cmds.setAttr('L_lookDirection.inheritsTransform', 0)
+cmds.setAttr('R_lookDirection.inheritsTransform', 0)
 '''
 postCS = irScene.addPostCustomScript(name, code)
 postCS.run()

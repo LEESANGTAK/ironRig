@@ -2,7 +2,7 @@
     "preCustomScripts": [
         {
             "name": "reference_skeletalMesh",
-            "code": "\nfrom maya import cmds\ncmds.file(new=True, f=True)\ncmds.file(r\"C:\\Users\\Administrator\\Downloads\\ironRig\\test\\metahumanSkel.mb\", reference=True, namespace='SK')\n"
+            "code": "\nfrom maya import cmds\ncmds.file(new=True, f=True)\ncmds.file(r\"D:\\tools\\maya\\ironRig\\test\\metahumanSkel.mb\", reference=True, namespace='SK')\n"
         },
         {
             "name": "addJoints",
