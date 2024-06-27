@@ -10,6 +10,7 @@ from . import controller
 from . import spaceSwitchBuilder
 from . import factory
 from . import customScript
+from . import attribute
 
 
 reload(obb)
@@ -22,3 +23,4 @@ reload(controller)
 reload(spaceSwitchBuilder)
 reload(factory)
 reload(customScript)
+reload(attribute)

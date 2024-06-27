@@ -1,11 +1,15 @@
+import re
 from .serializable import Serializable
+from .attribute import Attribute
 from ...common import logger
 
 
 class CustomScript(Serializable):
-    def __init__(self, name='', code=''):
+    def __init__(self, name='none', code=''):
+        super().__init__()
         self._name = name
         self._code = code
+        self._attributes = []
 
     @property
     def name(self):
@@ -23,17 +27,42 @@ class CustomScript(Serializable):
     def code(self, code):
         self._code = code
 
+    def addAttribute(self, name='', type=None, value=None):
+        self._attributes.append(Attribute(name, type, value))
+
+    def _getAttribute(self, name):
+        for attr in self._attributes:
+            if attr.name == name:
+                return attr
+
     def run(self):
         logger.info('execute "{}" script.'.format(self._name))
-        return exec(self._code)
+        code = self._processCode()
+        return exec(code)
+
+    def _processCode(self):
+        """Replace attributes used in the code to actual value.
+        """
+        code = self._code
+        attrStrs = re.findall('(@.+?)[^a-zA-Z0-9]', self._code)
+        for attrStr in attrStrs:
+            attr = self._getAttribute(attrStr.strip('@'))
+            attrVal = '"{}"'.format(attr.value) if attr.type == Attribute.TYPE.STRING else str(attr.value)
+            code = code.replace(attrStr, attrVal, 1)
+        return code
 
     def serialize(self):
         return {
             'name': self._name,
             'code': self._code,
+            'attributes': [attr.serialize() for attr in self._attributes]
         }
 
     def deserialize(self, data, hashmap={}):
         super().deserialize(data, hashmap)
         self._code = data.get('code')
+        for attrData in data.get('attributes'):
+            attr = Attribute()
+            attr.deserialize(attrData, hashmap)
+            self._attributes.append(attr)
         self.run()

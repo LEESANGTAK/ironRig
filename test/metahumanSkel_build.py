@@ -7,7 +7,7 @@ import ironRig.api.irGlobal as irg
 
 
 irScene = irg.scene.Scene()
-filePath = r'C:\Users\chst2\Downloads/test.json'
+filePath = r'C:\Users\stakl\Downloads\test.json'
 #irScene.saveToFile(filePath)
 irScene.buildFromFile(filePath)
 
@@ -21,16 +21,19 @@ armLMod = irScene.getModule('arm', 'l')
 armRMod = irScene.getModule('arm', 'r')
 
 
-skPath = r"C:\Users\Administrator\Downloads\ironRig\test\metahumanSkel.mb"
-
 # -------------- Pre-Custom Scripts Build ---------------------
-name = 'reference_skeletalMesh'
-code = '''
+name = 'referSkelMesh'
+preCS = irScene.addPreCustomScript(name)
+preCS.addAttribute(
+    'skelPath',
+    irg.attribute.Attribute.TYPE.STRING,
+    "D:\Projects\SourceAssets\Characters\Zombie\Z_M_Mu_builder\SkeletalMesh\Z_M_Mu_builder_skeletalMesh.mb"
+)
+preCS.code = '''
 from maya import cmds
 cmds.file(new=True, f=True)
-cmds.file(r"{}", reference=True, namespace='SK')
-'''.format(skPath)
-preCS = irScene.addPreCustomScript(name, code)
+cmds.file(@skelPath, reference=True, namespace='SK')
+'''
 preCS.run()
 
 
