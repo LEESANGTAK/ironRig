@@ -53,7 +53,19 @@ class Foot(Module):
         super().preBuild()
         for pivotLoc in self._pivotLocators:
             cmds.spaceLocator(n=pivotLoc)[0]
+            Foot.addAnnotation(pivotLoc, pivotLoc.split('_')[-2], [0.0, 1.0, 0.0])
         cmds.parent(self._pivotLocators, self._initGrp)
+
+    @staticmethod
+    def addAnnotation(transform, text, rgb):
+        annShp = cmds.createNode('annotationShape')
+        annTrsf = cmds.listRelatives(annShp, p=True)[0]
+        cmds.setAttr('{}.text'.format(annShp), text, type='string')
+        cmds.setAttr('{}.overrideEnabled'.format(annShp), True)
+        cmds.setAttr('{}.overrideRGBColors'.format(annShp), True)
+        cmds.setAttr('{}.overrideColorRGB'.format(annShp), *rgb)
+        cmds.parent(annShp, transform, s=True, r=True)
+        cmds.delete(annTrsf)
 
     def build(self):
         super().build()
