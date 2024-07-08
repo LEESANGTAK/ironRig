@@ -15,6 +15,10 @@ class SpaceSwitchBuilder(Serializable):
         self._isParentType = False
         self._isOrientType = False
 
+        self._topGroup = None
+        self._spaceGroup = None
+        self._spaceAttributes = []
+
     @property
     def drivenController(self):
         return self._drivenController
@@ -33,11 +37,11 @@ class SpaceSwitchBuilder(Serializable):
         self._driverControllers = controllers
 
     def build(self, isParentType=False, isOrientType=False):
-        topGrpName = '{}_spaceSwitch_grp'.format(self._drivenController)
-        if cmds.objExists(topGrpName):
-            cmds.delete(topGrpName)
+        self._topGroup = '{}_spaceSwitch_grp'.format(self._drivenController)
+        if cmds.objExists(self._topGroup):
+            cmds.delete(self._topGroup)
 
-        topGrp = cmds.createNode('transform', n=topGrpName)
+        topGrp = cmds.createNode('transform', n=self._topGroup)
 
         allDriverCtrls = list((set(self._driverControllers) - set([self._defaultDriverController])))
         allDriverCtrls.insert(0, self._defaultDriverController)
@@ -57,15 +61,14 @@ class SpaceSwitchBuilder(Serializable):
         cmds.parent(topGrp, SpaceSwitchBuilder.SPACE_SWITCH_GRP)
 
         # Constraint driven controller sapce group
-        spaceGrp = utils.makeGroup(self._drivenController.extraGrp, '{}_space'.format(self._drivenController))
+        self._spaceGroup = utils.makeGroup(self._drivenController.extraGrp, '{}_space'.format(self._drivenController))
         if isParentType:
-            cnst = cmds.parentConstraint(spaceLocs, spaceGrp, mo=True)[0]
+            cnst = cmds.parentConstraint(spaceLocs, self._spaceGroup, mo=True)[0]
         elif isOrientType:
-            cnst = cmds.orientConstraint(spaceLocs, spaceGrp, mo=True)[0]
+            cnst = cmds.orientConstraint(spaceLocs, self._spaceGroup, mo=True)[0]
 
         # Add attributes and connect to constraint weights
         defaultSpaceAttr = None
-        otherSpaceAttrs = []
         for index, driverCtrl in enumerate(allDriverCtrls):
             attrName = driverCtrl.split('_')[0] + '_space'
             cmds.addAttr(self._drivenController, ln=attrName, at='float', min=0.0, max=1.0, dv=0.0, keyable=True)
@@ -74,24 +77,30 @@ class SpaceSwitchBuilder(Serializable):
             if driverCtrl == self._defaultDriverController:
                 defaultSpaceAttr = ctrlAttr
             else:
-                otherSpaceAttrs.append(ctrlAttr)
+                self._spaceAttributes.append(ctrlAttr)
 
-        # Extra connection setup
+        # Set up for default space attribute
         SpaceAttrsSum = cmds.createNode('plusMinusAverage', n='{}_spaces_sum'.format(self._drivenController))
         spaceAttrsClamp = cmds.createNode('clamp', n='{}_spaces_clamp'.format(self._drivenController))
         cmds.setAttr('{}.maxR'.format(spaceAttrsClamp), 1)
         spaceAttrsRev = cmds.createNode('reverse', n='{}_spaces_rev'.format(self._drivenController))
-        for index, spaceAttr in enumerate(otherSpaceAttrs):
+        for index, spaceAttr in enumerate(self._spaceAttributes):
             cmds.connectAttr(spaceAttr, '{}.input1D[{}]'.format(SpaceAttrsSum, index))
         cmds.connectAttr('{}.output1D'.format(SpaceAttrsSum), '{}.inputR'.format(spaceAttrsClamp))
         cmds.connectAttr('{}.outputR'.format(spaceAttrsClamp), '{}.inputX'.format(spaceAttrsRev))
-        # spaceAttrsRev.outputX >> defaultSpaceAttr.outputs(plugs=True)[0]
         cmds.connectAttr('{}.outputX'.format(spaceAttrsRev), cmds.listConnections(defaultSpaceAttr, source=False, plugs=True)[0], f=True)
-        # defaultSpaceAttr.delete()
         cmds.deleteAttr(defaultSpaceAttr)
 
         self._isParentType = isParentType
         self._isOrientType = isOrientType
+
+        self._drivenController.spaceSwitchBuilder = self
+
+    def delete(self):
+        cmds.parent(self._drivenController.extraGrp, self._drivenController.zeroGrp)
+        cmds.delete(self._spaceGroup, self._topGroup)
+        for attr in self._spaceAttributes:
+            cmds.deleteAttr(attr)
 
     def serialize(self):
         return {

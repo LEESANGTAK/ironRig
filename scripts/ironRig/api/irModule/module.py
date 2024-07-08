@@ -435,6 +435,7 @@ class Module(Container):
         """
         common.logger.debug('{}.delete()'.format(self.longName))
 
+        # Clean up joint connections
         if self._outJoints:
             for outJnt in self._outJoints:
                 for attrStr in 'trs':
@@ -448,6 +449,14 @@ class Module(Container):
             for skelJnt in self._skelJoints:
                 cmds.setAttr('{}.scale'.format(skelJnt), 1.0, 1.0, 1.0)
 
+        # Delete space switch builders assigned to controllers
+        spaceSwitchBuilders = []
+        for ctrl in self._allControllers():
+            if ctrl.spaceSwitchBuilder:
+                ctrl.spaceSwitchBuilder.delete()
+                spaceSwitchBuilders.append(ctrl.spaceSwitchBuilder)
+
+        # Delete systems
         if self._systems:
             for system in self._systems:
                 system.delete()
@@ -458,6 +467,8 @@ class Module(Container):
 
         if self._master:
             self._master.removeModules(self)
+
+        return spaceSwitchBuilders
 
     def _allControllers(self):
         allCtrls = []

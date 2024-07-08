@@ -11,15 +11,21 @@ filePath = r'C:\Users\stakl\Downloads\test.json'
 #irScene.saveToFile(filePath)
 irScene.buildFromFile(filePath)
 
+irScene._preCustomScripts
+len(irScene._modules)
+for mod in irScene._modules:
+    print(mod.name, mod.side)
+irScene._masters
+len(irScene._spaceSwitchBuilders)
+irScene._postCustomScripts
 
 globalMst = irScene.globalMaster
-spineMod = irScene.getModule('spine', 'c')
-neckMod = irScene.getModule('neck', 'c')
-claLMod = irScene.getModule('clavicle', 'l')
-claRMod = irScene.getModule('clavicle', 'r')
-armLMod = irScene.getModule('arm', 'l')
-armRMod = irScene.getModule('arm', 'r')
-
+spineMod = irScene.findModule('spine', 'c')
+neckMod = irScene.findModule('neck', 'c')
+claLMod = irScene.findModule('clavicle', 'l')
+claRMod = irScene.findModule('clavicle', 'r')
+armLMod = irScene.findModule('arm', 'l')
+armRMod = irScene.findModule('arm', 'r')
 
 # -------------- Pre-Custom Scripts Build ---------------------
 name = 'referSkelMesh'
@@ -118,7 +124,7 @@ neckMod.build()
 neckMod.controllerSize = 10
 neckMod.attachTo(spineMod)
 globalMst.addModules(neckMod)
-#neckMod.delete()
+#irScene.removeModule('neck', 'c')
 headCtrlSSBuilder = irScene.addSpaceSwitchBuilder(neckMod.headController, [neckMod.neckController, globalMst.mainController], neckMod.neckController)
 headCtrlSSBuilder.build(isOrientType=True)
 
@@ -132,7 +138,7 @@ legLMod.controllerColor = irg.controller.Controller.COLOR.BLUE
 legLMod.controllerSize = 10
 legLMod.attachTo(spineMod)
 globalMst.addModules(legLMod)
-#legLMod.delete()
+#irScene.removeModule('leg', 'l')
 footLIkhCtrlSSBuilder = irScene.addSpaceSwitchBuilder(legLMod.ikController, [globalMst.mainController, spineMod.pelvisController], globalMst.mainController)
 footLIkhCtrlSSBuilder.build(isParentType=True)
 legLPvCtrlSSBuilder = irScene.addSpaceSwitchBuilder(legLMod.poleVectorController, [globalMst.mainController, legLMod.ikController], globalMst.mainController)
@@ -178,7 +184,7 @@ globalMst.addModules(claLMod)
 claRMod = irScene.mirrorModule('clavicle', 'l', '_l', '_r')
 claRMod.attachTo(spineMod)
 globalMst.addModules(claRMod)
-#claRMod.delete()
+#irScene.removeModule('clavicle', 'r')
 
 name = 'arm'
 joints = ['SK:upperarm_l', 'SK:lowerarm_l', 'SK:hand_l']
@@ -197,10 +203,10 @@ shoulderLIkhCtrlSSBuilder.build(isOrientType=True)
 armLPvCtrlSSBuilder = irScene.addSpaceSwitchBuilder(armLMod.poleVectorController, [globalMst.mainController, spineMod.chestController, armLMod.ikController], globalMst.mainController)
 armLPvCtrlSSBuilder.build(isParentType=True)
 
-armRMod = irScene.mirrorModule('arm', 'l', '_l', '_r')
+armRMod = irScene.mirrorModule('arm', 'l', '_l', '_r', True)
 armRMod.attachTo(claRMod)
 globalMst.addModules(armRMod)
-#armRMod.delete()
+#irScene.removeModule('arm', 'r')
 handRIkhCtrlSSBuilder = irScene.addSpaceSwitchBuilder(armRMod.ikController, [globalMst.mainController, spineMod.pelvisController, spineMod.chestController, neckMod.headController], globalMst.mainController)
 handRIkhCtrlSSBuilder.build(isParentType=True)
 shoulderRIkhCtrlSSBuilder = irScene.addSpaceSwitchBuilder(armRMod.fkRootController, [globalMst.mainController, claRMod.fkRootController], claRMod.fkRootController)
@@ -263,24 +269,23 @@ fingersLMaster.build()
 fingersLMaster.attachTo(armLMod)
 globalMst.addMasters(fingersLMaster)
 #fingersLMaster.delete()
-fingersLMaster._parent
 
 # ---------------------------------------------------------------------------
 # Fingers R Build
 thumbRMod = irScene.mirrorModule('thumbFinger', 'l', '_l', '_r')
-#thumbRMod.delete()
+#irScene.removeModule('thumbFinger', 'r')
 
 indexRMod = irScene.mirrorModule('indexFinger', 'l', '_l', '_r')
-#indexRMod.delete()
+#irScene.removeModule('indexFinger', 'r')
 
 middleRMod = irScene.mirrorModule('middleFinger', 'l', '_l', '_r')
-#middleRMod.delete()
+#irScene.removeModule('middleFinger', 'r')
 
 ringRMod = irScene.mirrorModule('ringFinger', 'l', '_l', '_r')
-#ringRMod.delete()
+#irScene.removeModule('ringFinger', 'r')
 
 pinkyRMod = irScene.mirrorModule('pinkyFinger', 'l', '_l', '_r')
-#pinkyRMod.delete()
+#irScene.removeModule('pinkyFinger', 'r')
 
 name = 'fingers'
 fingersRMaster = irScene.addMaster('FingersMaster', name, irm.module.Module.SIDE.RIGHT)

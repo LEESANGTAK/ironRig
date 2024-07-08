@@ -36,20 +36,25 @@ class Scene(object):
         self._modules.append(mod)
         return mod
 
-    def mirrorModule(self, name='', side=Container.SIDE.LEFT, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
-        mod = self.getModule(name, side)
-        oppMod = mod.mirror(skeletonSearchStr, skeletonReplaceStr, mirrorTranslate)
-        self._modules.append(oppMod)
-        return oppMod
-
     def removeModule(self, name='', side=Container.SIDE.LEFT):
-        self._modules.remove(self.getModule(name, side))
+        mod = self.findModule(name, side)
+        spaceSwitchBuilders = mod.delete()
+        if spaceSwitchBuilders:
+            for ssb in spaceSwitchBuilders:
+                self._spaceSwitchBuilders.remove(ssb)
+        self._modules.remove(mod)
 
-    def getModule(self, name='', side=Container.SIDE.LEFT):
+    def findModule(self, name='', side=Container.SIDE.LEFT):
         for mod in self._modules:
             if name == mod.name and side == mod.side:
                 return mod
         return None
+
+    def mirrorModule(self, name='', side=Container.SIDE.LEFT, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
+        mod = self.findModule(name, side)
+        oppMod = mod.mirror(skeletonSearchStr, skeletonReplaceStr, mirrorTranslate)
+        self._modules.append(oppMod)
+        return oppMod
 
     def addMaster(self, type='', name='', side=Container.SIDE.LEFT):
         mst = Factory.getMaster(type, name, side)
@@ -61,12 +66,18 @@ class Scene(object):
         self._spaceSwitchBuilders.append(ssb)
         return ssb
 
+    def findSpaceSwitchBuilder(self, drivenControllerName=''):
+        for ssb in self._spaceSwitchBuilders:
+            if drivenControllerName == ssb.drivenController.name:
+                return ssb
+        return None
+
     def addPostCustomScript(self, name='', code=''):
         cs = CustomScript(name, code)
         self._postCustomScripts.append(cs)
         return cs
 
-    def getCustomScript(self, name):
+    def findCustomScript(self, name):
         for cs in self._preCustomScripts + self._postCustomScripts:
             if name == cs.name:
                 return cs

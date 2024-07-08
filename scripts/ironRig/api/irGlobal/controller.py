@@ -111,6 +111,8 @@ class Controller(Serializable):
         self._extraGrp = None
         self._controllerNode = None
 
+        self._spaceSwitchBuilder = None
+
         self._initCVsPos = []
         self._cvsPosition = []
         self._crvsRGB = []
@@ -205,6 +207,14 @@ class Controller(Serializable):
     @property
     def allNodes(self):
         return [self._transform, self._extraGrp, self._zeroGrp, self._controllerNode]
+
+    @property
+    def spaceSwitchBuilder(self):
+        return self._spaceSwitchBuilder
+
+    @spaceSwitchBuilder.setter
+    def spaceSwitchBuilder(self, spaceSwitchBuilder):
+        self._spaceSwitchBuilder = spaceSwitchBuilder
 
     def updateNames(self, searchStr, replaceStr):
         self._name = self._name.replace(searchStr, replaceStr)
