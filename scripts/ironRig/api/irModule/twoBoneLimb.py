@@ -33,6 +33,7 @@ class TwoBoneLimb(Module):
         self._blendConstraints = []
 
         self._ikRootController = False
+        self._nonroll = True
 
         super().__init__(name, side, skeletonJoints)
 
@@ -63,6 +64,14 @@ class TwoBoneLimb(Module):
     @property
     def poleVectorController(self):
         return self._ikSystem.poleVectorController
+
+    @property
+    def nonroll(self):
+        return self._nonroll
+
+    @nonroll.setter
+    def nonroll(self, value):
+        self._nonroll = value
 
     def _addSystems(self):
         self._ikSystem = TwoBoneIK(self._name, self._side)
@@ -210,51 +219,55 @@ class TwoBoneLimb(Module):
             cmds.setAttr('{}.interpType'.format(blendCnst), 2)
             self._blendConstraints.append(blendCnst)
 
-        self._setupNonroll(self._blendJoints[0])
+        self._sysJoints = self._blendJoints
 
-        # Connect twist systems
-        if self._upperTwistSystem:
-            self._setupNonroll(self._blendJoints[1])
-            blendJnt1LocalMtx = cmds.createNode('multMatrix', n='{}_local_multMtx'.format(self._blendJoints[1]))
-            blendJnt1LocalDecMtx = cmds.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self._blendJoints[1]))
-            cmds.setAttr('{}.inputRotateOrder'.format(blendJnt1LocalDecMtx), 3)  # Set rotate order to xzy since the primary axis of rotation is the Y.
-            cmds.connectAttr('{}.worldMatrix'.format(self._blendJoints[0]), '{}.matrixIn[0]'.format(blendJnt1LocalMtx))
-            cmds.connectAttr('{}.worldInverseMatrix'.format(self._nonrollJoints[0]), '{}.matrixIn[1]'.format(blendJnt1LocalMtx))
-            cmds.connectAttr('{}.matrixSum'.format(blendJnt1LocalMtx), '{}.inputMatrix'.format(blendJnt1LocalDecMtx))
-            cmds.connectAttr('{}.outputRotateX'.format(blendJnt1LocalDecMtx), '{}.twist'.format(self._upperTwistSystem.controllers[-1]))
-            upTwistUnitConversion = cmds.listConnections('{}.twist'.format(self._upperTwistSystem.controllers[-1]), destination=False)[0]
-            cmds.setAttr('{}.conversionFactor'.format(upTwistUnitConversion), self._aimSign*cmds.getAttr('{}.conversionFactor'.format(upTwistUnitConversion)))
-            cmds.parentConstraint(self._nonrollJoints[0], self._upperTwistSystem.topGrp, mo=True)
-            self.addMembers(blendJnt1LocalMtx, blendJnt1LocalDecMtx)
-            cmds.parentConstraint(self._blendJoints[0], self._upperTwistSystem.controllers[0], mo=True)
-            cmds.pointConstraint(self._upperTwistSystem.controllers[0],
-                               self._upperTwistSystem.controllers[2],
-                               self._upperTwistSystem.controllers[1].zeroGrp,
-                               mo=True)
-            self._upperTwistSystem.controllers[0].hide()
+        if self._nonroll:
+            self._setupNonroll(self._blendJoints[0])
 
-        if self._lowerTwistSystem:
-            blendJnt2NonrollGrp = self._setupNonroll(self._blendJoints[2])
-            blendJnt2LocalMtx = cmds.createNode('multMatrix', n='{}_local_multMtx'.format(self._blendJoints[2]))
-            blendJnt2LocalDecMtx = cmds.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self._blendJoints[2]))
-            cmds.setAttr('{}.inputRotateOrder'.format(blendJnt2LocalDecMtx), 3)
-            cmds.connectAttr('{}.worldMatrix'.format(self._blendJoints[-1]), '{}.matrixIn[0]'.format(blendJnt2LocalMtx))
-            cmds.connectAttr('{}.worldInverseMatrix'.format(self._nonrollJoints[-1]), '{}.matrixIn[1]'.format(blendJnt2LocalMtx))
-            cmds.connectAttr('{}.matrixSum'.format(blendJnt2LocalMtx), '{}.inputMatrix'.format(blendJnt2LocalDecMtx))
-            cmds.connectAttr('{}.outputRotateX'.format(blendJnt2LocalDecMtx), '{}.twist'.format(self._lowerTwistSystem.controllers[-1]))
-            lowTwistUnitConversion = cmds.listConnections('{}.twist'.format(self._lowerTwistSystem.controllers[-1]), destination=False)[0]
-            cmds.setAttr('{}.conversionFactor'.format(lowTwistUnitConversion), self._aimSign*cmds.getAttr('{}.conversionFactor'.format(lowTwistUnitConversion)))
-            cmds.parentConstraint(self._blendJoints[1], self._lowerTwistSystem.topGrp, mo=True)
-            cmds.parentConstraint(self._blendJoints[1], blendJnt2NonrollGrp, mo=True)
-            self.addMembers(blendJnt2LocalMtx, blendJnt2LocalDecMtx)
-            cmds.parentConstraint(self._blendJoints[-1], self._lowerTwistSystem.controllers[-1], mo=True)
-            cmds.pointConstraint(self._lowerTwistSystem.controllers[0],
-                               self._lowerTwistSystem.controllers[2],
-                               self._lowerTwistSystem.controllers[1].zeroGrp,
-                               mo=True)
-            self._lowerTwistSystem.controllers[-1].hide()
+            # Connect twist systems
+            if self._upperTwistSystem:
+                self._setupNonroll(self._blendJoints[1])
+                blendJnt1LocalMtx = cmds.createNode('multMatrix', n='{}_local_multMtx'.format(self._blendJoints[1]))
+                blendJnt1LocalDecMtx = cmds.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self._blendJoints[1]))
+                cmds.setAttr('{}.inputRotateOrder'.format(blendJnt1LocalDecMtx), 3)  # Set rotate order to xzy since the primary axis of rotation is the Y.
+                cmds.connectAttr('{}.worldMatrix'.format(self._blendJoints[0]), '{}.matrixIn[0]'.format(blendJnt1LocalMtx))
+                cmds.connectAttr('{}.worldInverseMatrix'.format(self._nonrollJoints[0]), '{}.matrixIn[1]'.format(blendJnt1LocalMtx))
+                cmds.connectAttr('{}.matrixSum'.format(blendJnt1LocalMtx), '{}.inputMatrix'.format(blendJnt1LocalDecMtx))
+                cmds.connectAttr('{}.outputRotateX'.format(blendJnt1LocalDecMtx), '{}.twist'.format(self._upperTwistSystem.controllers[-1]))
+                upTwistUnitConversion = cmds.listConnections('{}.twist'.format(self._upperTwistSystem.controllers[-1]), destination=False)[0]
+                cmds.setAttr('{}.conversionFactor'.format(upTwistUnitConversion), self._aimSign*cmds.getAttr('{}.conversionFactor'.format(upTwistUnitConversion)))
+                cmds.parentConstraint(self._nonrollJoints[0], self._upperTwistSystem.topGrp, mo=True)
+                self.addMembers(blendJnt1LocalMtx, blendJnt1LocalDecMtx)
+                cmds.parentConstraint(self._blendJoints[0], self._upperTwistSystem.controllers[0], mo=True)
+                cmds.pointConstraint(self._upperTwistSystem.controllers[0],
+                                self._upperTwistSystem.controllers[2],
+                                self._upperTwistSystem.controllers[1].zeroGrp,
+                                mo=True)
+                self._upperTwistSystem.controllers[0].hide()
 
-        self._sysJoints = [self._nonrollJoints[0]] + self._blendJoints[1:]
+            if self._lowerTwistSystem:
+                blendJnt2NonrollGrp = self._setupNonroll(self._blendJoints[2])
+                blendJnt2LocalMtx = cmds.createNode('multMatrix', n='{}_local_multMtx'.format(self._blendJoints[2]))
+                blendJnt2LocalDecMtx = cmds.createNode('decomposeMatrix', n='{}_local_decMtx'.format(self._blendJoints[2]))
+                cmds.setAttr('{}.inputRotateOrder'.format(blendJnt2LocalDecMtx), 3)
+                cmds.connectAttr('{}.worldMatrix'.format(self._blendJoints[-1]), '{}.matrixIn[0]'.format(blendJnt2LocalMtx))
+                cmds.connectAttr('{}.worldInverseMatrix'.format(self._nonrollJoints[-1]), '{}.matrixIn[1]'.format(blendJnt2LocalMtx))
+                cmds.connectAttr('{}.matrixSum'.format(blendJnt2LocalMtx), '{}.inputMatrix'.format(blendJnt2LocalDecMtx))
+                cmds.connectAttr('{}.outputRotateX'.format(blendJnt2LocalDecMtx), '{}.twist'.format(self._lowerTwistSystem.controllers[-1]))
+                lowTwistUnitConversion = cmds.listConnections('{}.twist'.format(self._lowerTwistSystem.controllers[-1]), destination=False)[0]
+                cmds.setAttr('{}.conversionFactor'.format(lowTwistUnitConversion), self._aimSign*cmds.getAttr('{}.conversionFactor'.format(lowTwistUnitConversion)))
+                cmds.parentConstraint(self._blendJoints[1], self._lowerTwistSystem.topGrp, mo=True)
+                cmds.parentConstraint(self._blendJoints[1], blendJnt2NonrollGrp, mo=True)
+                self.addMembers(blendJnt2LocalMtx, blendJnt2LocalDecMtx)
+                cmds.parentConstraint(self._blendJoints[-1], self._lowerTwistSystem.controllers[-1], mo=True)
+                cmds.pointConstraint(self._lowerTwistSystem.controllers[0],
+                                self._lowerTwistSystem.controllers[2],
+                                self._lowerTwistSystem.controllers[1].zeroGrp,
+                                mo=True)
+                self._lowerTwistSystem.controllers[-1].hide()
+
+            self._sysJoints = [self._nonrollJoints[0]] + self._blendJoints[1:]
+
         if self._upperTwistSystem:
             self._sysJoints = self._upperTwistSystem.joints[:-1] + self._blendJoints[1:]
         if self._lowerTwistSystem:
