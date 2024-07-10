@@ -78,6 +78,8 @@ class Rope(Module):
 
         self._sysJoints = self._sgSystem.joints
 
+        super()._buildSystems()
+
     def _connectSystems(self):
         for sgCtrl in self._sgSystem.controllers:
             closestIkJnt = utils.findClosestObject(utils.getWorldPoint(sgCtrl), self._ikSystem.joints)

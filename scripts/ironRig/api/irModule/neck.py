@@ -40,8 +40,6 @@ class Neck(Module):
         self._ikSystem.alignControllerToWorld = SplineIK.ALIGN_CONTROLLER_TO_WORLD.END
         self._systems.append(self._ikSystem)
 
-        super()._addSystems()
-
     def _buildSystems(self):
         ikJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='ik')
         self._ikSystem.joints = ikJoints
@@ -63,6 +61,8 @@ class Neck(Module):
         self._ikSystem.controllers[-1].name = 'head'
 
         self._sysJoints = self._ikSystem.joints
+
+        super()._buildSystems()
 
     def _setupTwist(self):
         self._setupNonroll()
@@ -118,16 +118,16 @@ class Neck(Module):
         data = super().serialize()
         data['numberOfControllers'] = self._numberOfControllers
         return data
-    
+
     def deserialize(self, data, hashmap={}):
         hashmap[data.get('id')] = self
         self._id = data.get('id')
 
+        self.preBuild()
+
         # Set porperties before build
         self.mirrorTranslate = data.get('mirrorTranslate')
         self.numberOfControllers = data.get('numberOfControllers')
-
-        self.preBuild()
 
         # Set mid locator position and attributes for the joint axis
         midLocator = self._oriPlaneLocators[1]
@@ -137,6 +137,10 @@ class Neck(Module):
 
         self.build()
 
+        # Add to master
+        if self._master:
+            self._master.addModules(self)
+
         # Set controllers shapes
         self.controllerSize = data.get('controllerSize')
         self.controllerColor = data.get('controllerColor')
@@ -144,7 +148,7 @@ class Neck(Module):
             ctrl.deserialize(ctrlData, hashmap)
 
         # Attach to parent module
-        parentID = data.get('parentID')
-        if parentID:
-            parent = hashmap.get(parentID)
-            self.attachTo(parent, data.get('parentOutJointIndex'))
+        parentModuleID = data.get('parentModuleID')
+        if parentModuleID:
+            parentModule = hashmap.get(parentModuleID)
+            self.attachTo(parentModule, data.get('parentModuleOutJointIndex'))

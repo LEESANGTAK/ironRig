@@ -61,7 +61,7 @@ class Squash(System):
         self._controllers.append(ctrl)
         self.addMembers(squashScalerMult, ctrl.allNodes)
 
-    def delete(self):
+    def clear(self):
         self._controllers = []
         try:
             cmds.delete(self.members)

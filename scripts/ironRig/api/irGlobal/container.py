@@ -31,9 +31,18 @@ class Container(Serializable):
         self._name = name
         self._side = side
         self._type = type
-        self._set = cmds.createNode('objectSet', n='{}_set'.format(self.longName))
-        self._topGrp = cmds.createNode('transform', n='{}_grp'.format(self.longName))
-        self.addMembers(self._topGrp)
+
+        self._set = None
+        self._topGrp = None
+
+        self._children = []
+        self._parentModule = None
+        self._parentModuleOutJointIndex = -1000000
+        self._attachInfo = {
+            'nodes': [],
+            'attributes': [],
+            'connections': [],
+        }
 
     @property
     def name(self):
@@ -82,11 +91,19 @@ class Container(Serializable):
     def topGrp(self):
         return self._topGrp
 
+    @property
+    def parentModule(self):
+        return self._parentModule
+
+    @property
+    def parentModuleOutJointIndex(self):
+        return self._parentModuleOutJointIndex
+
     def addMembers(self, *args):
         nodes = sum([node if isinstance(node, list) else [node] for node in args], [])
         cmds.sets(nodes, add=self._set)
 
-    def delete(self):
+    def clear(self):
         cmds.delete(self.members)
 
     def _updateMembersName(self, oldStr, newStr):
@@ -97,3 +114,39 @@ class Container(Serializable):
         newSetName = self._set.replace(oldStr, newStr)
         self._set = cmds.rename(self._set, newSetName)
         self._topGrp = self._topGrp.replace(oldStr, newStr)
+
+    def attachTo(self, parentModule, parentModuleOutJointIndex=-1000000):
+        self._parentModule = parentModule
+        self._parentModuleOutJointIndex = parentModuleOutJointIndex
+        self._parentModule.addChildren(self)
+
+    def addChildren(self, container):
+        if not container in self._children:
+            self._children.append(container)
+
+    def detach(self):
+        """Detach from the parent sapce. And remove created nodes, attributes when attached.
+        """
+        for driver, driven in self._attachInfo.get('connections'):
+            cmds.disconnectAttr(driver, driven)
+        for attr in self._attachInfo.get('attributes'):
+            cmds.deleteAttr(attr)
+        for node in self._attachInfo.get('nodes'):
+            if cmds.objExists(node):
+                cmds.delete(node)
+
+        if self._parentModule:
+            self._parentModule.removeChildren(self)
+
+        # Initialize parent module data
+        self._parentModule = None
+        self._parentModuleOutJointIndex = -1000000
+        self._attachInfo = {
+            'nodes': [],
+            'attributes': [],
+            'connections': [],
+        }
+
+    def removeChildren(self, container):
+        if container in self._children:
+            self._children.remove(container)

@@ -24,6 +24,8 @@ class Jaw(Module):
 
         self._sysJoints = self._fkSystem.joints
 
+        super()._buildSystems()
+
     def _connectSystems(self):
         pass
 

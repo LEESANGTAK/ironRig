@@ -22,8 +22,7 @@ class Module(Container):
     def __init__(self, name='new', side=Container.SIDE.CENTER, skeletonJoints=[]):
         super().__init__(name, side, Container.TYPE.MODULE)
 
-        self._parent = None
-        self._parentOutJointIndex = -1000000
+        self._master = None
 
         self._geoGrp = None
         self._outGrp = None
@@ -48,10 +47,10 @@ class Module(Container):
         self._controllerSize = 1
         self._controllerColor = Controller.COLOR.YELLOW
 
-        self._master = None
+        self._isBuilt = False
 
-        self._buildGroups()
-        self._addSystems()
+    def __repr__(self):
+        return "irModule.{}('{}')".format(self.__class__.__name__, self.longName)
 
     @property
     def skelJoints(self):
@@ -115,34 +114,38 @@ class Module(Container):
     def master(self, master):
         self._master = master
 
-    def _buildGroups(self):
-        """Build groups that module's child groups.
-        """
-        self._geoGrp = cmds.group(n='{}_geo_grp'.format(self.shortName), empty=True)
-        self._initGrp = cmds.group(n='{}_init_grp'.format(self.shortName), empty=True)
-        self._outGrp = cmds.group(n='{}_out_grp'.format(self.shortName), empty=True)
-        self._systemGrp = cmds.group(n='{}_sys_grp'.format(self.shortName), empty=True)
-        cmds.parent([self._geoGrp, self._initGrp, self._outGrp, self._systemGrp], self._topGrp)
-
-    def _addSystems(self):
-        """Add systems and set properties.
-        """
-        common.logger.debug('{}._addSystems()'.format(self.longName))
-
-        for system in self._systems:
-            cmds.sets(system.set, forceElement=self.set)
-            cmds.parent(system.topGrp, self._systemGrp)
-
     def preBuild(self):
         """Build initialize objects.
         """
         self._skelJoints.sort(key=lambda jnt: len(utils.getAllParents(jnt)))
+        self._set = cmds.createNode('objectSet', n='{}_set'.format(self.longName))
+        self._buildGroups()
+        self._addSystems()
         self._buildInitSkelLocators()
         self._buildOrientPlane()
         self._buildInitJoints()
 
         # cmds.matchTransform(self._oriPlaneLocators[1], self._initJoints[0], rotation=True)
         cmds.select(self._oriPlaneLocators[1], r=True)
+
+    def _buildGroups(self):
+        """Build groups that module's child groups.
+        """
+        self._topGrp = cmds.group(n='{}_grp'.format(self.longName), empty=True)
+        self._geoGrp = cmds.group(n='{}_geo_grp'.format(self.shortName), empty=True)
+        self._initGrp = cmds.group(n='{}_init_grp'.format(self.shortName), empty=True)
+        self._outGrp = cmds.group(n='{}_out_grp'.format(self.shortName), empty=True)
+        self._systemGrp = cmds.group(n='{}_sys_grp'.format(self.shortName), empty=True)
+
+        cmds.parent([self._geoGrp, self._initGrp, self._outGrp, self._systemGrp], self._topGrp)
+
+        self.addMembers(self._topGrp, self._geoGrp, self._initGrp, self._outGrp, self._systemGrp)
+
+    def _addSystems(self):
+        """Add systems and set properties.
+        """
+        common.logger.debug('{}._addSystems()'.format(self.longName))
+        return NotImplementedError()
 
     def _buildInitSkelLocators(self):
         nsRmvSkelJoints = [jnt.split(':')[-1] for jnt in self._skelJoints]
@@ -306,6 +309,39 @@ class Module(Container):
         cmds.hide(self._geoGrp)
         cmds.hide(self._outGrp)
 
+        self._isBuilt = True
+
+    def rebuild(self):
+        common.logger.debug('{}._reBuild()'.format(self.longName))
+
+        # Store data of the module
+        hashmap = {}
+        if self._parentModule:
+            hashmap[self._parentModule.id] = self._parentModule
+        moduleInfo = self.serialize()
+
+        # Detach children
+        children = self._children[:]  # Copy children because detach() modify _children attribute by remove child from the list
+        childrenParentModulesOutjointIndex = []
+        for child in children:
+            childrenParentModulesOutjointIndex.append(child.parentModuleOutJointIndex)
+            child.detach()
+
+        # Clear
+        self.detach()
+        spaceSwitchBuilders = self.clear()
+
+        # Build from data
+        self.deserialize(moduleInfo, hashmap)
+
+        # Setup space switch
+        for ssb in spaceSwitchBuilders:
+            ssb.build()
+
+        # Attach children
+        for child, parentModuleOutJointIndex in zip(children, childrenParentModulesOutjointIndex):
+            child.attachTo(self, parentModuleOutJointIndex)
+
     def _cleanupSkelJoints(self):
         # Disalbe transform limits
         for skelJnt in self._skelJoints:
@@ -343,8 +379,9 @@ class Module(Container):
         """Create systems and set systems state.
         """
         common.logger.debug('{}._buildSystems()'.format(self.longName))
-
-        raise NotImplementedError()
+        for system in self._systems:
+            cmds.sets(system.set, forceElement=self.set)
+            cmds.parent(system.topGrp, self._systemGrp)
 
     def _connectSystems(self):
         """Connects systems of a module.
@@ -410,28 +447,33 @@ class Module(Container):
         common.logger.debug('{}.postBuild()'.format(self.longName))
         raise NotImplementedError()
 
-    def attachTo(self, module, outJointIndex=-1000000):
+    def attachTo(self, parentModule, parentModuleOutJointIndex=-1000000):
         """Attach a module to the other module.
         """
         common.logger.debug('{}.attachTo()'.format(self.longName))
 
+        # Find parent space from the parent module
         parentSpace = None
-        if outJointIndex > -1000000:
-            parentSpace = module.outJoints[outJointIndex]
+        if parentModuleOutJointIndex > -1000000:
+            parentSpace = parentModule.outJoints[parentModuleOutJointIndex]
         else:
-            parentSpace = utils.findClosestObject(utils.getWorldPoint(self._topGrp), module.outJoints)
+            parentSpace = utils.findClosestObject(utils.getWorldPoint(self._topGrp), parentModule.outJoints)
 
-        cmds.matchTransform(self._topGrp, parentSpace, pivots=True)
+        # Connect top group to the parent space
         utils.removeConnections(self._topGrp)
-        cmds.parentConstraint(parentSpace, self._topGrp, mo=True)
-        if module.__class__.__name__ != 'Spine':
+        cmds.matchTransform(self._topGrp, parentSpace, pivots=True)
+        cnst = cmds.parentConstraint(parentSpace, self._topGrp, mo=True)[0]
+
+        if parentModule.__class__.__name__ != 'Spine':
             cmds.connectAttr('{}.scale'.format(parentSpace), '{}.scale'.format(self._topGrp))
+            self._attachInfo['connections'] = [('{}.scale'.format(parentSpace), '{}.scale'.format(self._topGrp))]
 
-        self._parent = module
-        self._parentOutJointIndex = outJointIndex
+        self._attachInfo['nodes'] = [cnst]
 
-    def delete(self):
-        """Remove all nodes realted with a module.
+        super().attachTo(parentModule, parentModuleOutJointIndex)
+
+    def clear(self):
+        """Delete all nodes realted with a module.
         """
         common.logger.debug('{}.delete()'.format(self.longName))
 
@@ -449,24 +491,23 @@ class Module(Container):
             for skelJnt in self._skelJoints:
                 cmds.setAttr('{}.scale'.format(skelJnt), 1.0, 1.0, 1.0)
 
-        # Delete space switch builders assigned to controllers
+        # Clear space switch builders assigned to controllers
         spaceSwitchBuilders = []
         for ctrl in self._allControllers():
             if ctrl.spaceSwitchBuilder:
-                ctrl.spaceSwitchBuilder.delete()
+                ctrl.spaceSwitchBuilder.clear()
                 spaceSwitchBuilders.append(ctrl.spaceSwitchBuilder)
 
-        # Delete systems
+        # Clear systems
         if self._systems:
             for system in self._systems:
-                system.delete()
+                system.clear()
 
         self._systems = []
         self._controllers = []
-        super().delete()
+        super().clear()
 
-        if self._master:
-            self._master.removeModules(self)
+        self._isBuilt = False
 
         return spaceSwitchBuilders
 
@@ -480,12 +521,12 @@ class Module(Container):
 
     def serialize(self):
         midLocator = self._oriPlaneLocators[1]
-        parentId = self._parent.id if self._parent else 0
+        parentModuleID = self._parentModule.id if self._parentModule else 0
         return OrderedDict([
             ('id', self._id),
             ('type', self.__class__.__name__),
-            ('parentID', parentId),
-            ('parentOutJointIndex', self._parentOutJointIndex),
+            ('parentModuleID', parentModuleID),
+            ('parentModuleOutJointIndex', self._parentModuleOutJointIndex),
             ('name', self._name),
             ('side', self._side),
             ('skeletonJoints', self._skelJoints),
@@ -500,10 +541,10 @@ class Module(Container):
     def deserialize(self, data, hashmap={}):
         super().deserialize(data, hashmap)
 
+        self.preBuild()
+
         # Set porperties before build
         self.mirrorTranslate = data.get('mirrorTranslate')
-
-        self.preBuild()
 
         # Set mid locator position and attributes for the joint axis
         midLocator = self._oriPlaneLocators[1]
@@ -513,6 +554,10 @@ class Module(Container):
 
         self.build()
 
+        # Add to master
+        if self._master:
+            self._master.addModules(self)
+
         # Set controllers shapes
         self.controllerSize = data.get('controllerSize')
         self.controllerColor = data.get('controllerColor')
@@ -520,7 +565,7 @@ class Module(Container):
             ctrl.deserialize(ctrlData, hashmap)
 
         # Attach to parent module
-        parentID = data.get('parentID')
-        if parentID:
-            parent = hashmap.get(parentID)
-            self.attachTo(parent, data.get('parentOutJointIndex'))
+        parentModuleID = data.get('parentModuleID')
+        if parentModuleID:
+            parentModule = hashmap.get(parentModuleID)
+            self.attachTo(parentModule, data.get('parentModuleOutJointIndex'))

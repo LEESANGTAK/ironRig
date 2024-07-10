@@ -33,7 +33,6 @@ class Spine(Module):
         self._ikSystem = SplineIK(self._name, self._side, numberOfControllers=4)
         self._ikSystem.alignControllerToWorld = SplineIK.ALIGN_CONTROLLER_TO_WORLD.ALL
         self._systems.append(self._ikSystem)
-        super()._addSystems()
 
     def _buildGroups(self):
         super()._buildGroups()
@@ -59,6 +58,8 @@ class Spine(Module):
             ctrl.shape = Controller.SHAPE.CIRCLE
 
         self._sysJoints = self._ikSystem.joints
+
+        super()._buildSystems()
 
     @staticmethod
     def buildFKJoints(prefix, joints, numFKJoints):

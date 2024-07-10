@@ -222,6 +222,8 @@ class ThreeBoneLimb(Module):
             self._thirdLimbTwistSystem.controllerShape = Controller.SHAPE.CIRCLE
             self._thirdLimbTwistSystem.controllerSize = self._controllerSize * 0.9
 
+        super()._buildSystems()
+
     def _connectSystems(self):
         self._blendJoints = utils.buildNewJointChain(self._limbInitJoints, searchStr='init', replaceStr='blend')
         utils.parentKeepHierarchy(self._blendJoints, self._systemGrp)
@@ -439,15 +441,15 @@ class ThreeBoneLimb(Module):
             self._controllers[1].size = self._controllerSize * 0.9
             self._controllers[2].size = self._controllerSize * 0.9
 
-    def attachTo(self, module, outJointIndex=-1000000):
-        if module.__class__.__name__ == 'LimbBase':
-            limbBaseCtrl = module.fkSystem.controllers[0]
+    def attachTo(self, parentModule, parentModuleOutJointIndex=-1000000):
+        if parentModule.__class__.__name__ == 'LimbBase':
+            limbBaseCtrl = parentModule.fkSystem.controllers[0]
 
             aimLoc = cmds.spaceLocator(n='{}_aim_loc'.format(limbBaseCtrl))[0]
             staticLoc = cmds.spaceLocator(n='{}_static_loc'.format(limbBaseCtrl))[0]
             for loc in [staticLoc, aimLoc]:
                 cmds.matchTransform(loc, limbBaseCtrl.zeroGrp)
-            cmds.parent([staticLoc, aimLoc], module.fkSystem.blackboxGrp)
+            cmds.parent([staticLoc, aimLoc], parentModule.fkSystem.blackboxGrp)
             cnst = cmds.orientConstraint([aimLoc, staticLoc], limbBaseCtrl.zeroGrp, mo=True)[0]
             cmds.setAttr('{}.interpType'.format(cnst), 2)
 
@@ -482,14 +484,15 @@ class ThreeBoneLimb(Module):
                 ikStartObject = self._ikSystem.controllers[-1].zeroGrp
             else:
                 ikStartObject = cmds.listRelatives(self._ikSystem.joints[0], parent=True)[0]
-            cmds.parentConstraint(module.outJoints[-1], ikStartObject, mo=True)
+            cmds.parentConstraint(parentModule.outJoints[-1], ikStartObject, mo=True)
 
-            cmds.parentConstraint(module.outJoints[-1], self._fkSystem.controllers[0].zeroGrp, mo=True)
+            cmds.parentConstraint(parentModule.outJoints[-1], self._fkSystem.controllers[0].zeroGrp, mo=True)
 
-            self._parent = module
-            self._parentOutJointID = outJointIndex
+            self._parentModule = parentModule
+            self._parentModuleOutJointIndex = parentModuleOutJointIndex
+            self._parentModule.addChildren(self)
         else:
-            super().attachTo(module, outJointIndex)
+            super().attachTo(parentModule, parentModuleOutJointIndex)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
         oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)

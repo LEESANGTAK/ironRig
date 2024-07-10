@@ -25,7 +25,6 @@ class LimbBase(Module):
     def _addSystems(self):
         self._fkSystem = FK(self._name, self._side)
         self._systems.append(self._fkSystem)
-        super()._addSystems()
 
     def _buildSystems(self):
         fkJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='fk')
@@ -33,6 +32,8 @@ class LimbBase(Module):
         self._fkSystem.build()
 
         self._sysJoints = self._fkSystem.joints
+
+        super()._buildSystems()
 
     def _connectSystems(self):
         pass

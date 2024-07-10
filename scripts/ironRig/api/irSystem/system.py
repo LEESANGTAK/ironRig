@@ -26,20 +26,6 @@ class System(Container):
         self._controllerShape = Controller.SHAPE.CIRCLE
         self._controllerSize = 10
 
-        self._createGroups()
-
-    def _createGroups(self):
-        self._blbxGrp = cmds.createNode('transform', n='{}_blbx_grp'.format(self.longName))
-        cmds.setAttr('{}.visibility'.format(self._blbxGrp), False)
-        self._noTrsfGrp = cmds.createNode('transform', n='{}_noTrsf_grp'.format(self.longName))
-        cmds.setAttr('{}.inheritsTransform'.format(self._noTrsfGrp), False)
-        self._controllerGrp = cmds.createNode('transform', n='{}_ctrl_grp'.format(self.longName))
-
-        cmds.parent(self._noTrsfGrp, self._blbxGrp)
-        cmds.parent(self._blbxGrp, self._controllerGrp, self._topGrp)
-
-        self.addMembers(self._blbxGrp, self._noTrsfGrp, self._controllerGrp)
-
     @property
     def aimSign(self):
         return self._aimSign
@@ -103,9 +89,24 @@ class System(Container):
             ctrl.color = self._controllerColor
 
     def build(self):
+        self._set = cmds.createNode('objectSet', n='{}_set'.format(self.longName))
+        self._buildGroups()
         self._getAimAxisInfo()
         self._buildSystems()
         self._buildControls()
+
+    def _buildGroups(self):
+        self._topGrp = cmds.createNode('transform', n='{}_grp'.format(self.longName))
+        self._blbxGrp = cmds.createNode('transform', n='{}_blbx_grp'.format(self.longName))
+        cmds.setAttr('{}.visibility'.format(self._blbxGrp), False)
+        self._noTrsfGrp = cmds.createNode('transform', n='{}_noTrsf_grp'.format(self.longName))
+        cmds.setAttr('{}.inheritsTransform'.format(self._noTrsfGrp), False)
+        self._controllerGrp = cmds.createNode('transform', n='{}_ctrl_grp'.format(self.longName))
+
+        cmds.parent(self._noTrsfGrp, self._blbxGrp)
+        cmds.parent(self._blbxGrp, self._controllerGrp, self._topGrp)
+
+        self.addMembers(self._topGrp, self._blbxGrp, self._noTrsfGrp, self._controllerGrp)
 
     def _getAimAxisInfo(self):
         if len(self._joints) == 1:
@@ -124,13 +125,13 @@ class System(Container):
     def _buildControls(self):
         raise NotImplementedError()
 
-    def delete(self):
+    def clear(self):
         attrs = [ch + axis for ch in 'trs' for axis in 'xyz']
         for jnt in self._joints:
             for attrStr in attrs:
                 utils.disconnectAttr('{}.{}'.format(jnt, attrStr))
         self._controllers = []
-        super().delete()
+        super().clear()
 
     def _updateMembersName(self, oldStr, newStr):
         super()._updateMembersName(oldStr, newStr)

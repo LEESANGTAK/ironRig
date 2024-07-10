@@ -95,8 +95,6 @@ class TwoBoneLimb(Module):
                 self._lowerTwistSystem.curveSpans = 1
                 self._systems.append(self._lowerTwistSystem)
 
-        super()._addSystems()
-
     def _buildInitSkelLocators(self):
         if self._detectInbetweenJoints:
             initSkelLocs = []
@@ -209,6 +207,8 @@ class TwoBoneLimb(Module):
             self._lowerTwistSystem.setupStretch()
             self._lowerTwistSystem.controllerShape = Controller.SHAPE.CIRCLE
             self._lowerTwistSystem.controllerSize = self._controllerSize * 0.9
+
+        super()._buildSystems()
 
     def _connectSystems(self):
         self._blendJoints = utils.buildNewJointChain(self._initLimbJoints, searchStr='init', replaceStr='blend')
@@ -381,19 +381,19 @@ class TwoBoneLimb(Module):
         if self._upperTwistSystem or self._lowerTwistSystem:
             self._controllers[1].size = self._controllerSize * 0.9
 
-    def attachTo(self, module, outJointIndex=-1000000):
-        if module.__class__.__name__ == 'LimbBase':
-            limbBaseCtrl = module.fkRootController
+    def attachTo(self, parentModule, parentModuleOutJointIndex=-1000000):
+        if parentModule.__class__.__name__ == 'LimbBase':
+            limbBaseCtrl = parentModule.fkRootController
 
             aimLoc = cmds.spaceLocator(n='{}_aim_loc'.format(limbBaseCtrl))[0]
             staticLoc = cmds.spaceLocator(n='{}_static_loc'.format(limbBaseCtrl))[0]
             for loc in [staticLoc, aimLoc]:
                 cmds.matchTransform(loc, limbBaseCtrl.zeroGrp)
-            cmds.parent([staticLoc, aimLoc], module.fkSystem.blackboxGrp)
+            cmds.parent([staticLoc, aimLoc], parentModule.fkSystem.blackboxGrp)
             cnst = cmds.orientConstraint([aimLoc, staticLoc], limbBaseCtrl.zeroGrp, mo=True)[0]
             cmds.setAttr('{}.interpType'.format(cnst), 2)
 
-            cmds.addAttr(limbBaseCtrl, ln='aim', at='float', min=0.0, max=1.0, dv=0.5, keyable=True)
+            cmds.addAttr(limbBaseCtrl, ln='aim', at='float', min=0.0, max=1.0, dv=0.0, keyable=True)
             revNode = cmds.createNode('reverse', n='{}_aim_rev'.format(limbBaseCtrl))
             cmds.connectAttr('{}.aim'.format(limbBaseCtrl), '{}.target[0].targetWeight'.format(cnst), f=True)
             cmds.connectAttr('{}.aim'.format(limbBaseCtrl), '{}.inputX'.format(revNode))
@@ -419,14 +419,17 @@ class TwoBoneLimb(Module):
                 ikStartObject = self._ikSystem.controllers[-1].zeroGrp
             else:
                 ikStartObject = cmds.listRelatives(self._ikSystem.joints[0], parent=True)[0]
-            cmds.parentConstraint(module.outJoints[-1], ikStartObject, mo=True)
+            cmds.parentConstraint(parentModule.outJoints[-1], ikStartObject, mo=True)
+            cmds.parentConstraint(parentModule.outJoints[-1], self._fkSystem.controllers[0].zeroGrp, mo=True)
 
-            cmds.parentConstraint(module.outJoints[-1], self._fkSystem.controllers[0].zeroGrp, mo=True)
+            self._attachInfo['nodes'] = [revNode, cnst, staticLoc, aimLoc]
+            self._attachInfo['attributes'] = ['{}.aim'.format(limbBaseCtrl)]
 
-            self._parent = module
-            self._parentOutJointID = outJointIndex
+            self._parentModule = parentModule
+            self._parentModuleOutJointIndex = parentModuleOutJointIndex
+            self._parentModule.addChildren(self)
         else:
-            super().attachTo(module, outJointIndex)
+            super().attachTo(parentModule, parentModuleOutJointIndex)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
         oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)

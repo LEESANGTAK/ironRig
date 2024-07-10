@@ -70,6 +70,8 @@ class Eye(Module):
 
         self._sysJoints = self._fkSystem.joints
 
+        super()._buildSystems()
+
     def _connectSystems(self):
         cmds.parentConstraint(self._aimSystem.joints[0], self._fkSystem.controllers[0].zeroGrp)
 

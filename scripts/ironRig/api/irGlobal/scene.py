@@ -33,12 +33,18 @@ class Scene(object):
 
     def addModule(self, type='', name='', side=Container.SIDE.LEFT, skeletonJoints=[], vertices=[]):
         mod = Factory.getModule(type, name, side, skeletonJoints)
+        mod.master = self._globalMaster
         self._modules.append(mod)
         return mod
 
     def removeModule(self, name='', side=Container.SIDE.LEFT):
+        """Rmove a module from the scene completely.
+
+        :param name: name of a module to remove, defaults to ''
+        :param side: side character of a module to remove, defaults to Container.SIDE.LEFT
+        """
         mod = self.findModule(name, side)
-        spaceSwitchBuilders = mod.delete()
+        spaceSwitchBuilders = mod.clear()
         if spaceSwitchBuilders:
             for ssb in spaceSwitchBuilders:
                 self._spaceSwitchBuilders.remove(ssb)
@@ -124,8 +130,8 @@ class Scene(object):
         # Add global master and build
         globalMasterData = data['globalMaster']
         if globalMasterData:
-            globalMaster = self.addGlobalMaster(globalMasterData.get('rootJoint'), globalMasterData.get('buildRootController'))
-            globalMaster.deserialize(globalMasterData, hashmap)
+            self._globalMaster = self.addGlobalMaster(globalMasterData.get('rootJoint'), globalMasterData.get('buildRootController'))
+            self._globalMaster.deserialize(globalMasterData, hashmap)
 
         # Add modules, masters and build
         for moduleData in data["modules"]:
@@ -136,7 +142,6 @@ class Scene(object):
                 moduleData.get('skeletonJoints')
             )
             mod.deserialize(moduleData, hashmap)
-            globalMaster.addModules(mod)
 
         for masterData in data["masters"]:
             mst = self.addMaster(
@@ -145,13 +150,13 @@ class Scene(object):
                 masterData.get('side')
             )
             mst.deserialize(masterData, hashmap)
-            globalMaster.addMasters(mst)
+            self._globalMaster.addMasters(mst)
 
         # Add space switch builder
         for spaceSwitchBuildersData in data["spaceSwitchBuilders"]:
             ssb = self.addSpaceSwitchBuilder()
             ssb.deserialize(spaceSwitchBuildersData, hashmap)
-            globalMaster.addSpaceSwitchBuilder(ssb)
+            self._globalMaster.addSpaceSwitchBuilder(ssb)
 
         # Process post-build custom scripts
         for postCustomScriptData in data["postCustomScripts"]:

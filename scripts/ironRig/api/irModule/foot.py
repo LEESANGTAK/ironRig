@@ -85,6 +85,8 @@ class Foot(Module):
         self._fkSystem.joints = fkJoints
         self._fkSystem.build()
 
+        super()._buildSystems()
+
     def _connectSystems(self):
         self._blendJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='blend')
         utils.parentKeepHierarchy(self._blendJoints, self._systemGrp)
@@ -119,33 +121,34 @@ class Foot(Module):
         self._ikSystem.controllers[0].size = self._controllerSize * 2
         self._controllers[0].size = self._controllerSize * 0.2
 
-    def attachTo(self, module, outJointIndex=-1000000):
-        if module.__class__.__name__ in ['TwoBoneLimb', 'ThreeBoneLimb']:
+    def attachTo(self, parentModule, parentModuleOutJointIndex=-1000000):
+        if parentModule.__class__.__name__ in ['TwoBoneLimb', 'ThreeBoneLimb']:
             # Connect ik joints
             utils.removeConnections(self._ikSystem.joints[0])
-            cmds.parentConstraint(module.ikSystem.joints[-1], self._ikSystem.joints[0], mo=True)
+            cmds.parentConstraint(parentModule.ikSystem.joints[-1], self._ikSystem.joints[0], mo=True)
             # Connect skel joints
-            utils.removeConnections(module.skelJoints[-1])
-            cmds.parentConstraint(self._outJoints[0], module.skelJoints[-1], mo=True)
+            utils.removeConnections(parentModule.skelJoints[-1])
+            cmds.parentConstraint(self._outJoints[0], parentModule.skelJoints[-1], mo=True)
             # Connect ik handle
-            moduleIkHandleLoc = module.ikSystem.ikHandleLocator
+            moduleIkHandleLoc = parentModule.ikSystem.ikHandleLocator
             utils.removeConnections(moduleIkHandleLoc)
             cmds.pointConstraint(self._ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
             # Connect ik controllers
-            cmds.parentConstraint(module.ikSystem.controllers[0], self._ikSystem.controllers[0], mo=True)
-            utils.cloneUserDefinedAttrs(self._ikSystem.controllers[0], module.ikSystem.controllers[0])
+            cmds.parentConstraint(parentModule.ikSystem.controllers[0], self._ikSystem.controllers[0], mo=True)
+            utils.cloneUserDefinedAttrs(self._ikSystem.controllers[0], parentModule.ikSystem.controllers[0])
             self._ikSystem.controllers[0].hide()
             # Connect fk controllers
-            cmds.parentConstraint(module.fkSystem.controllers[-1], self._fkSystem.controllers[0], mo=True)
+            cmds.parentConstraint(parentModule.fkSystem.controllers[-1], self._fkSystem.controllers[0], mo=True)
             self._fkSystem.controllers[0].hide()
             # Connect module controllers
-            cmds.connectAttr('{}.ik'.format(module.controllers[0]), '{}.ik'.format(self._controllers[0]))
+            cmds.connectAttr('{}.ik'.format(parentModule.controllers[0]), '{}.ik'.format(self._controllers[0]))
             self._controllers[0].hide()
 
-            self._parent = module
-            self._parentOutJointID = outJointIndex
+            self._parentModule = parentModule
+            self._parentModuleOutJointIndex = parentModuleOutJointIndex
+            self._parentModule.addChildren(self)
         else:
-            super().attachTo(module, outJointIndex)
+            super().attachTo(parentModule, parentModuleOutJointIndex)
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
         oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
@@ -175,10 +178,10 @@ class Foot(Module):
         hashmap[data.get('id')] = self
         self._id = data.get('id')
 
+        self.preBuild()
+
         # Set porperties before build
         self.mirrorTranslate = data.get('mirrorTranslate')
-
-        self.preBuild()
 
         # Set mid locator position and attributes for the joint axis
         midLocator = self._oriPlaneLocators[1]
@@ -192,6 +195,10 @@ class Foot(Module):
 
         self.build()
 
+        # Add to master
+        if self._master:
+            self._master.addModules(self)
+
         # Set controllers shapes
         self.controllerSize = data.get('controllerSize')
         self.controllerColor = data.get('controllerColor')
@@ -199,7 +206,7 @@ class Foot(Module):
             ctrl.deserialize(ctrlData, hashmap)
 
         # Attach to parent module
-        parentID = data.get('parentID')
-        if parentID:
-            parent = hashmap.get(parentID)
-            self.attachTo(parent, data.get('parentOutJointIndex'))
+        parentModuleID = data.get('parentModuleID')
+        if parentModuleID:
+            parentModule = hashmap.get(parentModuleID)
+            self.attachTo(parentModule, data.get('parentModuleOutJointIndex'))

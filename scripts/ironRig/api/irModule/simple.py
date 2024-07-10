@@ -85,6 +85,8 @@ class Simple(Module):
         for ctrl in self._system.controllers:
             ctrl.shape = self._controllerShape
 
+        super()._buildSystems()
+
     def _connectSystems(self):
         pass
 

@@ -41,6 +41,8 @@ class Finger(Module):
 
         self._sysJoints = self._fkSystem.joints
 
+        super()._buildSystems()
+
     def _connectSystems(self):
         pass
 
@@ -60,7 +62,7 @@ class Finger(Module):
         data = super().serialize()
         data['curlStartIndex'] = self._curlStartIndex
         return data
-    
+
     def deserialize(self, data, hashmap={}):
         hashmap[data.get('id')] = self
         self._id = data.get('id')
@@ -86,7 +88,7 @@ class Finger(Module):
             ctrl.deserialize(ctrlData, hashmap)
 
         # Attach to parent module
-        parentID = data.get('parentID')
-        if parentID:
-            parent = hashmap.get(parentID)
-            self.attachTo(parent, data.get('parentOutJointIndex'))
+        parentModuleID = data.get('parentModuleID')
+        if parentModuleID:
+            parentModule = hashmap.get(parentModuleID)
+            self.attachTo(parentModule, data.get('parentModuleOutJointIndex'))

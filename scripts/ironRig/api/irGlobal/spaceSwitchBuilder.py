@@ -36,7 +36,23 @@ class SpaceSwitchBuilder(Serializable):
         assert isinstance(controllers, list), 'property driverControllers needs a list of controllers'
         self._driverControllers = controllers
 
-    def build(self, isParentType=False, isOrientType=False):
+    @property
+    def isParentType(self):
+        return self._isParentType
+
+    @isParentType.setter
+    def isParentType(self, val):
+        self._isParentType = val
+
+    @property
+    def isOrientType(self):
+        return self._isOrientType
+
+    @isOrientType.setter
+    def isOrientType(self, val):
+        self._isOrientType = val
+
+    def build(self):
         self._topGroup = '{}_spaceSwitch_grp'.format(self._drivenController)
         if cmds.objExists(self._topGroup):
             cmds.delete(self._topGroup)
@@ -54,17 +70,17 @@ class SpaceSwitchBuilder(Serializable):
             cmds.matchTransform(spaceLoc, self._drivenController)
             spaceLocZeroGrp = utils.makeGroup(spaceLoc, '{}_zero'.format(spaceLoc))
             cmds.parent(spaceLocZeroGrp, topGrp)
-            if isParentType:
+            if self._isParentType:
                 cmds.parentConstraint(driverCtrl, spaceLocZeroGrp, mo=True)
-            elif isOrientType:
+            elif self._isOrientType:
                 cmds.orientConstraint(driverCtrl, spaceLocZeroGrp, mo=True)
         cmds.parent(topGrp, SpaceSwitchBuilder.SPACE_SWITCH_GRP)
 
         # Constraint driven controller sapce group
         self._spaceGroup = utils.makeGroup(self._drivenController.extraGrp, '{}_space'.format(self._drivenController))
-        if isParentType:
+        if self._isParentType:
             cnst = cmds.parentConstraint(spaceLocs, self._spaceGroup, mo=True)[0]
-        elif isOrientType:
+        elif self._isOrientType:
             cnst = cmds.orientConstraint(spaceLocs, self._spaceGroup, mo=True)[0]
 
         # Add attributes and connect to constraint weights
@@ -91,12 +107,9 @@ class SpaceSwitchBuilder(Serializable):
         cmds.connectAttr('{}.outputX'.format(spaceAttrsRev), cmds.listConnections(defaultSpaceAttr, source=False, plugs=True)[0], f=True)
         cmds.deleteAttr(defaultSpaceAttr)
 
-        self._isParentType = isParentType
-        self._isOrientType = isOrientType
-
         self._drivenController.spaceSwitchBuilder = self
 
-    def delete(self):
+    def clear(self):
         cmds.parent(self._drivenController.extraGrp, self._drivenController.zeroGrp)
         cmds.delete(self._spaceGroup, self._topGroup)
         for attr in self._spaceAttributes:
@@ -117,4 +130,6 @@ class SpaceSwitchBuilder(Serializable):
         self._drivenController = hashmap.get(data.get('drivenControllerID'))
         self._driverControllers = [hashmap.get(ctrlID) for ctrlID in data.get('driverControllersID')]
         self._defaultDriverController = hashmap.get(data.get('defaultDriverControllerID'))
-        self.build(data.get('isParentType'), data.get('isOrientType'))
+        self._isParentType = data.get('isParentType')
+        self._isOrientType = data.get('isOrientType')
+        self.build()

@@ -46,8 +46,8 @@ class GlobalMaster(Master):
         for jnt in cmds.listRelatives(self._rootJoint, children=True, type='joint'):
             cmds.setAttr('{}.segmentScaleCompensate'.format(jnt), False)
 
-    def _createGroups(self):
-        super()._createGroups()
+    def _buildGroups(self):
+        super()._buildGroups()
         self._spaceSwtichGrp = cmds.createNode('transform', n='spaceSwitches_grp')
         cmds.hide(self._spaceSwtichGrp)
         self._mastersGrp = cmds.createNode('transform', n='{}_masters'.format(self._name))

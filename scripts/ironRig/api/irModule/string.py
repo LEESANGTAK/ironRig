@@ -139,6 +139,8 @@ class String(Module):
             self._fkSystem.build()
             self._systems.append(self._fkSystem)
 
+        super()._buildSystems()
+
     def _connectSystems(self):
         if self._fk:
             self._blendJoints = utils.buildNewJointChain(self._initJoints, searchStr='init', replaceStr='blend')
