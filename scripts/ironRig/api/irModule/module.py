@@ -48,6 +48,7 @@ class Module(Container):
         self._controllerColor = Controller.COLOR.YELLOW
 
         self._isBuilt = False
+        self._isGuideMode = False
 
     def __repr__(self):
         return "irModule.{}('{}')".format(self.__class__.__name__, self.longName)
@@ -127,6 +128,8 @@ class Module(Container):
 
         # cmds.matchTransform(self._oriPlaneLocators[1], self._initJoints[0], rotation=True)
         cmds.select(self._oriPlaneLocators[1], r=True)
+
+        self._isGuideMode = True
 
     def _buildGroups(self):
         """Build groups that module's child groups.
@@ -263,6 +266,21 @@ class Module(Container):
 
         self._initJoints = initJoints
 
+    def toggleGuideMode(self):
+        if self._isGuideMode:
+            cmds.setAttr('{}.v'.format(self._initGrp), False)
+            cmds.setAttr('{}.v'.format(self._systemGrp), True)
+            for modCtrl in self._controllers:
+                cmds.setAttr('{}.v'.format(modCtrl.zeroGrp), True)
+            self._isGuideMode = False
+        else:
+            cmds.setAttr('{}.v'.format(self._initGrp), True)
+            cmds.select(self._oriPlaneLocators[1], r=True)
+            cmds.setAttr('{}.v'.format(self._systemGrp), False)
+            for modCtrl in self._controllers:
+                cmds.setAttr('{}.v'.format(modCtrl.zeroGrp), False)
+            self._isGuideMode = True
+
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r'):
         oppSideChar = common.SYMMETRY_CHAR_TABLE.get(self._side)
         oppSkelJoints = [jnt.replace(skeletonSearchStr, skeletonReplaceStr) for jnt in self._skelJoints]
@@ -310,6 +328,7 @@ class Module(Container):
         cmds.hide(self._outGrp)
 
         self._isBuilt = True
+        self._isGuideMode = False
 
     def rebuild(self):
         common.logger.debug('{}._reBuild()'.format(self.longName))

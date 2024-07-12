@@ -51,6 +51,8 @@ class Scene(object):
         :param side: side character of a module to remove, defaults to Container.SIDE.LEFT
         """
         mod = self.findModule(name, side)
+        mod.detach()
+        mod.detachChildren()
         spaceSwitchBuilders = mod.clear()
         if spaceSwitchBuilders:
             for ssb in spaceSwitchBuilders:
@@ -74,6 +76,12 @@ class Scene(object):
         mst.scene = self
         self._masters.append(mst)
         return mst
+
+    def findMaster(self, name='', side=Container.SIDE.LEFT):
+        for mst in self._masters:
+            if name == mst.name and side == mst.side:
+                return mst
+        return None
 
     def addSpaceSwitchBuilder(self, drivenController='', driverControllers='', defaultDriverController=''):
         ssb = SpaceSwitchBuilder(drivenController, driverControllers, defaultDriverController)

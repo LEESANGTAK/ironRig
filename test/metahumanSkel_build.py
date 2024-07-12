@@ -7,17 +7,9 @@ import ironRig.api.irGlobal as irg
 
 
 irScene = irg.scene.Scene()
-filePath = r'C:\Users\stakl\Downloads\test.json'
+filePath = r'C:\Users\stakl\Downloads\metahumanSkel_build.json'
 #irScene.saveToFile(filePath)
 irScene.buildFromFile(filePath)
-
-irScene._preCustomScripts
-len(irScene._modules)
-for mod in irScene._modules:
-    print(mod.name, mod.side)
-irScene._masters
-len(irScene._spaceSwitchBuilders)
-irScene._postCustomScripts
 
 globalMst = irScene.globalMaster
 spineMod = irScene.findModule('spine', 'c')
@@ -26,6 +18,40 @@ claLMod = irScene.findModule('clavicle', 'l')
 claRMod = irScene.findModule('clavicle', 'r')
 armLMod = irScene.findModule('arm', 'l')
 armRMod = irScene.findModule('arm', 'r')
+legLMod = irScene.findModule('leg', 'l')
+legRMod = irScene.findModule('leg', 'r')
+footLMod = irScene.findModule('foot', 'l')
+footRMod = irScene.findModule('foot', 'r')
+headSSB = irScene.findSpaceSwitchBuilder('head')
+thumbRMod = irScene.findModule('thumbFinger', 'r')
+pinkyLMod = irScene.findModule('pinkyFinger', 'l')
+fingersLMaster = irScene.findMaster('fingers', 'l')
+fingersRMaster = irScene.findMaster('fingers', 'r')
+
+irScene.removeModule('leg', 'r')
+irScene.removeModule('foot', 'r')
+irScene.removeModule('arm', 'r')
+
+fingersLMaster.attachTo(armLMod)
+fingersRMaster.attachTo(armRMod)
+
+armLMod.toggleGuideMode()
+
+spineMod.rebuild()
+neckMod.numberOfControllers = 2
+neckMod.rebuild()
+claLMod.rebuild()
+armLMod.nonroll = False
+armLMod.rebuild()
+armRMod.nonroll = False
+armRMod.rebuild()
+legLMod.rebuild()
+legRMod.ikRootController = True
+legRMod.rebuild()
+footLMod.rebuild()
+footRMod.rebuild()
+thumbRMod.rebuild()
+pinkyLMod.rebuild()
 
 # -------------- Pre-Custom Scripts Build ---------------------
 name = 'referSkelMesh'
@@ -118,15 +144,16 @@ globalMst.addModules(spineMod)
 name = 'neck'
 joints = ['SK:neck_01', 'SK:neck_02', 'SK:head']
 neckMod = irScene.addModule('Neck', name, irm.module.Module.SIDE.CENTER, skeletonJoints=joints)
-neckMod.numberOfControllers = 2
 neckMod.preBuild()
+neckMod.numberOfControllers = 2
 neckMod.build()
 neckMod.controllerSize = 10
 neckMod.attachTo(spineMod)
 globalMst.addModules(neckMod)
 #irScene.removeModule('neck', 'c')
 headCtrlSSBuilder = irScene.addSpaceSwitchBuilder(neckMod.headController, [neckMod.neckController, globalMst.mainController], neckMod.neckController)
-headCtrlSSBuilder.build(isOrientType=True)
+headCtrlSSBuilder.isOrientType=True
+headCtrlSSBuilder.build()
 
 # ---------------------------------------------------------------------------
 name = 'leg'
@@ -140,9 +167,11 @@ legLMod.attachTo(spineMod)
 globalMst.addModules(legLMod)
 #irScene.removeModule('leg', 'l')
 footLIkhCtrlSSBuilder = irScene.addSpaceSwitchBuilder(legLMod.ikController, [globalMst.mainController, spineMod.pelvisController], globalMst.mainController)
-footLIkhCtrlSSBuilder.build(isParentType=True)
+footLIkhCtrlSSBuilder.isParentType = True
+footLIkhCtrlSSBuilder.build()
 legLPvCtrlSSBuilder = irScene.addSpaceSwitchBuilder(legLMod.poleVectorController, [globalMst.mainController, legLMod.ikController], globalMst.mainController)
-legLPvCtrlSSBuilder.build(isParentType=True)
+legLPvCtrlSSBuilder.isParentType = True
+legLPvCtrlSSBuilder.build()
 
 name = 'foot'
 joints = ['SK:foot_l', 'SK:ball_l', 'toe_l']
@@ -153,16 +182,18 @@ footLMod.controllerColor = irg.controller.Controller.COLOR.BLUE
 footLMod.controllerSize = 10
 footLMod.attachTo(legLMod)
 globalMst.addModules(footLMod)
-#footLMod.delete()
+#irScene.removeModule('foot', 'l')
 
 legRMod = irScene.mirrorModule('leg', 'l', '_l', '_r', False)
 legRMod.attachTo(spineMod)
 globalMst.addModules(legRMod)
 #legRMod.delete()
 footRIkhCtrlSSBuilder = irScene.addSpaceSwitchBuilder(legRMod.ikController, [globalMst.mainController, spineMod.pelvisController], globalMst.mainController)
-footRIkhCtrlSSBuilder.build(isParentType=True)
+footRIkhCtrlSSBuilder.isParentType = True
+footRIkhCtrlSSBuilder.build()
 legRPvCtrlSSBuilder = irScene.addSpaceSwitchBuilder(legRMod.poleVectorController, [globalMst.mainController, legRMod.ikController], globalMst.mainController)
-legRPvCtrlSSBuilder.build(isParentType=True)
+legRPvCtrlSSBuilder.isParentType = True
+legRPvCtrlSSBuilder.build()
 
 footRMod = irScene.mirrorModule('foot', 'l', '_l', '_r')
 footRMod.attachTo(legRMod)
@@ -195,32 +226,38 @@ armLMod.controllerColor = irg.controller.Controller.COLOR.BLUE
 armLMod.controllerSize = 10
 armLMod.attachTo(claLMod)
 globalMst.addModules(armLMod)
-#armLMod.delete()
+#irScene.removeModule('arm', 'l')
 handLIkhCtrlSSBuilder = irScene.addSpaceSwitchBuilder(armLMod.ikController, [globalMst.mainController, spineMod.pelvisController, spineMod.chestController, neckMod.headController], globalMst.mainController)
-handLIkhCtrlSSBuilder.build(isParentType=True)
+handLIkhCtrlSSBuilder.isParentType = True
+handLIkhCtrlSSBuilder.build()
 shoulderLIkhCtrlSSBuilder = irScene.addSpaceSwitchBuilder(armLMod.fkRootController, [globalMst.mainController, claLMod.fkRootController], claLMod.fkRootController)
-shoulderLIkhCtrlSSBuilder.build(isOrientType=True)
+shoulderLIkhCtrlSSBuilder.isOrientType = True
+shoulderLIkhCtrlSSBuilder.build()
 armLPvCtrlSSBuilder = irScene.addSpaceSwitchBuilder(armLMod.poleVectorController, [globalMst.mainController, spineMod.chestController, armLMod.ikController], globalMst.mainController)
-armLPvCtrlSSBuilder.build(isParentType=True)
+armLPvCtrlSSBuilder.isParentType = True
+armLPvCtrlSSBuilder.build()
 
 armRMod = irScene.mirrorModule('arm', 'l', '_l', '_r', True)
 armRMod.attachTo(claRMod)
 globalMst.addModules(armRMod)
 #irScene.removeModule('arm', 'r')
 handRIkhCtrlSSBuilder = irScene.addSpaceSwitchBuilder(armRMod.ikController, [globalMst.mainController, spineMod.pelvisController, spineMod.chestController, neckMod.headController], globalMst.mainController)
-handRIkhCtrlSSBuilder.build(isParentType=True)
+handRIkhCtrlSSBuilder.isParentType = True
+handRIkhCtrlSSBuilder.build()
 shoulderRIkhCtrlSSBuilder = irScene.addSpaceSwitchBuilder(armRMod.fkRootController, [globalMst.mainController, claRMod.fkRootController], claRMod.fkRootController)
-shoulderRIkhCtrlSSBuilder.build(isOrientType=True)
+shoulderRIkhCtrlSSBuilder.isOrientType = True
+shoulderRIkhCtrlSSBuilder.build()
 armRPvCtrlSSBuilder = irScene.addSpaceSwitchBuilder(armRMod.poleVectorController, [globalMst.mainController, spineMod.chestController, armRMod.ikController], globalMst.mainController)
-armRPvCtrlSSBuilder.build(isParentType=True)
+armRPvCtrlSSBuilder.isParentType = True
+armRPvCtrlSSBuilder.build()
 
 # ---------------------------------------------------------------------------
 # Fingers L Build
 name = 'thumbFinger'
 joints = ['SK:thumb_01_l', 'SK:thumb_02_l', 'SK:thumb_03_l', 'thumb_04_l']
 thumbLMod = irScene.addModule('Finger', name, irm.module.Module.SIDE.LEFT, skeletonJoints=joints)
-thumbLMod.curlStartIndex = 1
 thumbLMod.preBuild()
+thumbLMod.curlStartIndex = 1
 thumbLMod.build()
 thumbLMod.controllerColor = irg.controller.Controller.COLOR.BLUE
 thumbLMod.controllerSize = 4
@@ -300,9 +337,9 @@ globalMst.addMasters(fingersRMaster)
 name = 'connectMetahuman'
 code = '''
 from maya import cmds
-cmds.parentConstraint('head_ctrl', 'facial_rig_grp', mo=True)
-cmds.setAttr('L_lookDirection.inheritsTransform', 0)
-cmds.setAttr('R_lookDirection.inheritsTransform', 0)
+cmds.parentConstraint('head_ctrl', 'SK:facial_rig_grp', mo=True)
+cmds.setAttr('SK:L_lookDirection.inheritsTransform', 0)
+cmds.setAttr('SK:R_lookDirection.inheritsTransform', 0)
 '''
 postCS = irScene.addPostCustomScript(name, code)
 postCS.run()

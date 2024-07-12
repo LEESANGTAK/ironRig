@@ -118,7 +118,7 @@ class Master(Container):
         super().clear()
 
     def serialize(self):
-        parentModuleID = self._parentModule.id if self._parentModule else -1
+        parentModuleID = self._parentModule.id if self._parentModule else 0
         return OrderedDict([
             ('id', self._id),
             ('type', self.__class__.__name__),

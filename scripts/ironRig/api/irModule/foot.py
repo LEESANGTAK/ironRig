@@ -158,6 +158,9 @@ class Foot(Module):
     def detach(self):
         """Detach from the parent sapce. And remove created nodes, attributes when attached.
         """
+        if not self._parentModule:
+            return
+
         for node in self._attachInfo.get('nodes'):
             if cmds.objExists(node):
                 cmds.delete(node)
@@ -177,8 +180,7 @@ class Foot(Module):
             self._fkSystem.controllers[0].hide(False)
             self._controllers[0].hide(False)
 
-        if self._parentModule:
-            self._parentModule.removeChildren(self)
+        self._parentModule.removeChildren(self)
 
         # Initialize parent module data
         self._parentModule = None

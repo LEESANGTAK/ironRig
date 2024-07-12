@@ -178,8 +178,9 @@
         {
             "id": 2855278328512,
             "type": "Spine",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 2855278329808,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "spine",
             "side": "c",
             "skeletonJoints": [
@@ -743,8 +744,9 @@
         {
             "id": 2857413799472,
             "type": "Neck",
-            "parentID": 2855278328512,
-            "parentOutJointIndex": -1000000,
+            "masterID": 2855278329808,
+            "parentModuleID": 2855278328512,
+            "parentModuleOutJointIndex": -1000000,
             "name": "neck",
             "side": "c",
             "skeletonJoints": [
@@ -753,8 +755,8 @@
                 "SK:head"
             ],
             "midLocatorPosition": [
-                -0.009658119148325777,
-                200.8650484602482,
+                -0.009658119148325824,
+                200.8650484602483,
                 -29.48786241178529
             ],
             "midLocatorAxisAttributes": [
@@ -810,6 +812,61 @@
                                 1.8015256664688002,
                                 -16.8578245560196,
                                 4.972254416845861e-16
+                            ]
+                        ]
+                    ],
+                    "curvesRGB": [
+                        [
+                            1.0,
+                            1.0,
+                            0.0
+                        ]
+                    ]
+                },
+                {
+                    "id": 1658938652080,
+                    "name": "neck_c_01",
+                    "cvsPosition": [
+                        [
+                            [
+                                4.798237340988473e-16,
+                                -7.836116248912245,
+                                -7.836116248912246
+                            ],
+                            [
+                                6.785732323110912e-16,
+                                -6.785732323110912e-16,
+                                -11.081941875543876
+                            ],
+                            [
+                                4.798237340988472e-16,
+                                7.836116248912245,
+                                -7.836116248912244
+                            ],
+                            [
+                                3.517735619006027e-32,
+                                11.081941875543883,
+                                -5.744898237524831e-16
+                            ],
+                            [
+                                -4.798237340988472e-16,
+                                7.836116248912245,
+                                7.836116248912245
+                            ],
+                            [
+                                -6.785732323110917e-16,
+                                1.1100856969603225e-15,
+                                11.081941875543883
+                            ],
+                            [
+                                -4.798237340988472e-16,
+                                -7.836116248912245,
+                                7.836116248912244
+                            ],
+                            [
+                                -9.253679210110099e-32,
+                                -11.081941875543883,
+                                1.511240500779959e-15
                             ]
                         ]
                     ],
@@ -922,8 +979,9 @@
         {
             "id": 2855277961776,
             "type": "TwoBoneLimb",
-            "parentID": 2855278328512,
-            "parentOutJointIndex": -1000000,
+            "masterID": 2855278329808,
+            "parentModuleID": 2855278328512,
+            "parentModuleOutJointIndex": -1000000,
             "name": "leg",
             "side": "l",
             "skeletonJoints": [
@@ -1454,13 +1512,16 @@
                         ]
                     ]
                 }
-            ]
+            ],
+            "ikRootController": null,
+            "nonroll": null
         },
         {
             "id": 2855277963600,
             "type": "TwoBoneLimb",
-            "parentID": 2855278328512,
-            "parentOutJointIndex": -1000000,
+            "masterID": 2855278329808,
+            "parentModuleID": 2855278328512,
+            "parentModuleOutJointIndex": -1000000,
             "name": "leg",
             "side": "r",
             "skeletonJoints": [
@@ -1991,13 +2052,16 @@
                         ]
                     ]
                 }
-            ]
+            ],
+            "ikRootController": null,
+            "nonroll": null
         },
         {
             "id": 2857413798560,
             "type": "Foot",
-            "parentID": 2855277961776,
-            "parentOutJointIndex": -1000000,
+            "masterID": 2855278329808,
+            "parentModuleID": 2855277961776,
+            "parentModuleOutJointIndex": -1000000,
             "name": "foot",
             "side": "l",
             "skeletonJoints": [
@@ -2440,8 +2504,9 @@
         {
             "id": 2857413799040,
             "type": "Foot",
-            "parentID": 2855277963600,
-            "parentOutJointIndex": -1000000,
+            "masterID": 2855278329808,
+            "parentModuleID": 2855277963600,
+            "parentModuleOutJointIndex": -1000000,
             "name": "foot",
             "side": "r",
             "skeletonJoints": [
@@ -2884,8 +2949,9 @@
         {
             "id": 1710193570192,
             "type": "LimbBase",
-            "parentID": 2855278328512,
-            "parentOutJointIndex": -1000000,
+            "masterID": 2855278329808,
+            "parentModuleID": 2855278328512,
+            "parentModuleOutJointIndex": -1000000,
             "name": "clavicle",
             "side": "l",
             "skeletonJoints": [
@@ -2894,7 +2960,7 @@
             ],
             "midLocatorPosition": [
                 1.288385128360074,
-                177.10444691054178,
+                177.10444691054187,
                 -31.688520798552776
             ],
             "midLocatorAxisAttributes": [
@@ -2966,8 +3032,9 @@
         {
             "id": 1710193268416,
             "type": "TwoBoneLimb",
-            "parentID": 1710193570192,
-            "parentOutJointIndex": -1000000,
+            "masterID": 2855278329808,
+            "parentModuleID": 1710193570192,
+            "parentModuleOutJointIndex": -1000000,
             "name": "arm",
             "side": "l",
             "skeletonJoints": [
@@ -2995,92 +3062,92 @@
                     "cvsPosition": [
                         [
                             [
-                                10.0,
-                                10.0,
-                                10.0
+                                5.74657102124843,
+                                5.74657102124843,
+                                5.74657102124843
                             ],
                             [
-                                10.0,
-                                -10.0,
-                                10.0
+                                5.74657102124843,
+                                -5.74657102124843,
+                                5.74657102124843
                             ],
                             [
-                                10.0,
-                                -10.0,
-                                -10.0
+                                5.74657102124843,
+                                -5.74657102124843,
+                                -5.74657102124843
                             ],
                             [
-                                10.0,
-                                10.0,
-                                -10.0
+                                5.74657102124843,
+                                5.74657102124843,
+                                -5.74657102124843
                             ],
                             [
-                                10.0,
-                                10.0,
-                                10.0
+                                5.74657102124843,
+                                5.74657102124843,
+                                5.74657102124843
                             ],
                             [
-                                -10.0,
-                                10.0,
-                                10.0
+                                -5.74657102124843,
+                                5.74657102124843,
+                                5.74657102124843
                             ],
                             [
-                                -10.0,
-                                10.0,
-                                -10.0
+                                -5.74657102124843,
+                                5.74657102124843,
+                                -5.74657102124843
                             ],
                             [
-                                -10.0,
-                                -10.0,
-                                -10.0
+                                -5.74657102124843,
+                                -5.74657102124843,
+                                -5.74657102124843
                             ],
                             [
-                                -10.0,
-                                -10.0,
-                                10.0
+                                -5.74657102124843,
+                                -5.74657102124843,
+                                5.74657102124843
                             ],
                             [
-                                -10.0,
-                                10.0,
-                                10.0
+                                -5.74657102124843,
+                                5.74657102124843,
+                                5.74657102124843
                             ],
                             [
-                                -10.0,
-                                -10.0,
-                                10.0
+                                -5.74657102124843,
+                                -5.74657102124843,
+                                5.74657102124843
                             ],
                             [
-                                10.0,
-                                -10.0,
-                                10.0
+                                5.74657102124843,
+                                -5.74657102124843,
+                                5.74657102124843
                             ],
                             [
-                                10.0,
-                                -10.0,
-                                -10.0
+                                5.74657102124843,
+                                -5.74657102124843,
+                                -5.74657102124843
                             ],
                             [
-                                -10.0,
-                                -10.0,
-                                -10.0
+                                -5.74657102124843,
+                                -5.74657102124843,
+                                -5.74657102124843
                             ],
                             [
-                                -10.0,
-                                10.0,
-                                -10.0
+                                -5.74657102124843,
+                                5.74657102124843,
+                                -5.74657102124843
                             ],
                             [
-                                10.0,
-                                10.0,
-                                -10.0
+                                5.74657102124843,
+                                5.74657102124843,
+                                -5.74657102124843
                             ]
                         ]
                     ],
                     "curvesRGB": [
                         [
                             0.0,
-                            0.0,
-                            1.0
+                            1.0,
+                            0.0
                         ]
                     ]
                 },
@@ -3498,13 +3565,16 @@
                         ]
                     ]
                 }
-            ]
+            ],
+            "ikRootController": null,
+            "nonroll": null
         },
         {
             "id": 1707967449504,
             "type": "LimbBase",
-            "parentID": 2855278328512,
-            "parentOutJointIndex": -1000000,
+            "masterID": 2855278329808,
+            "parentModuleID": 2855278328512,
+            "parentModuleOutJointIndex": -1000000,
             "name": "clavicle",
             "side": "r",
             "skeletonJoints": [
@@ -3513,7 +3583,7 @@
             ],
             "midLocatorPosition": [
                 -1.288385128360074,
-                177.1044469105418,
+                177.1044469105419,
                 -31.688520798552776
             ],
             "midLocatorAxisAttributes": [
@@ -3585,8 +3655,9 @@
         {
             "id": 1710192935504,
             "type": "TwoBoneLimb",
-            "parentID": 1707967449504,
-            "parentOutJointIndex": -1000000,
+            "masterID": 2855278329808,
+            "parentModuleID": 1707967449504,
+            "parentModuleOutJointIndex": -1000000,
             "name": "arm",
             "side": "r",
             "skeletonJoints": [
@@ -3765,7 +3836,7 @@
                         [
                             [
                                 1.7763568394002505e-14,
-                                14.670121992134655,
+                                14.670121992134654,
                                 14.670121992134625
                             ],
                             [
@@ -3775,7 +3846,7 @@
                             ],
                             [
                                 1.7763568394002505e-14,
-                                -14.670121992134577,
+                                -14.670121992134575,
                                 14.670121992134597
                             ],
                             [
@@ -3785,7 +3856,7 @@
                             ],
                             [
                                 2.1316282072803006e-14,
-                                -14.670121992134566,
+                                -14.670121992134565,
                                 -14.670121992134625
                             ],
                             [
@@ -3795,7 +3866,7 @@
                             ],
                             [
                                 2.1316282072803006e-14,
-                                14.67012199213467,
+                                14.670121992134668,
                                 -14.670121992134625
                             ],
                             [
@@ -3875,7 +3946,7 @@
                         [
                             [
                                 2.842170943040401e-14,
-                                7.836116248912292,
+                                7.836116248912291,
                                 7.836116248912249
                             ],
                             [
@@ -3885,8 +3956,8 @@
                             ],
                             [
                                 2.842170943040401e-14,
-                                -7.836116248912202,
-                                7.836116248912248
+                                -7.8361162489122025,
+                                7.836116248912249
                             ],
                             [
                                 2.842170943040401e-14,
@@ -3895,8 +3966,8 @@
                             ],
                             [
                                 2.842170943040401e-14,
-                                -7.8361162489121945,
-                                -7.836116248912276
+                                -7.836116248912195,
+                                -7.836116248912277
                             ],
                             [
                                 2.842170943040401e-14,
@@ -3905,8 +3976,8 @@
                             ],
                             [
                                 2.842170943040401e-14,
-                                7.8361162489122975,
-                                -7.836116248912276
+                                7.836116248912298,
+                                -7.836116248912277
                             ],
                             [
                                 2.842170943040401e-14,
@@ -4117,13 +4188,16 @@
                         ]
                     ]
                 }
-            ]
+            ],
+            "ikRootController": null,
+            "nonroll": null
         },
         {
             "id": 1710191733552,
             "type": "Finger",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 1710192950480,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "thumbFinger",
             "side": "l",
             "skeletonJoints": [
@@ -4133,9 +4207,9 @@
                 "thumb_04_l"
             ],
             "midLocatorPosition": [
-                101.32231458164578,
-                179.59370031636223,
-                22.00520953926508
+                101.32231458164576,
+                179.59370031636217,
+                22.00520953926509
             ],
             "midLocatorAxisAttributes": [
                 false,
@@ -4317,8 +4391,9 @@
         {
             "id": 1710193164096,
             "type": "Finger",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 1710192950480,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "indexFinger",
             "side": "l",
             "skeletonJoints": [
@@ -4329,9 +4404,9 @@
                 "index_04_l"
             ],
             "midLocatorPosition": [
-                120.86661404630748,
-                193.551664520564,
-                -1.1489653722606112
+                120.86661404630745,
+                193.55166452056395,
+                -1.148965372260594
             ],
             "midLocatorAxisAttributes": [
                 false,
@@ -4568,8 +4643,9 @@
         {
             "id": 1710192930496,
             "type": "Finger",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 1710192950480,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "middleFinger",
             "side": "l",
             "skeletonJoints": [
@@ -4580,9 +4656,9 @@
                 "middle_04_l"
             ],
             "midLocatorPosition": [
-                120.26182957736806,
-                193.50501141354934,
-                -9.867390926389547
+                120.26182957736803,
+                193.50501141354928,
+                -9.867390926389533
             ],
             "midLocatorAxisAttributes": [
                 false,
@@ -4819,8 +4895,9 @@
         {
             "id": 1710191816000,
             "type": "Finger",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 1710192950480,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "ringFinger",
             "side": "l",
             "skeletonJoints": [
@@ -4831,9 +4908,9 @@
                 "ring_04_l"
             ],
             "midLocatorPosition": [
-                120.08909024463034,
-                194.45574298329691,
-                -16.075126730012844
+                120.08909024463031,
+                194.45574298329686,
+                -16.07512673001283
             ],
             "midLocatorAxisAttributes": [
                 false,
@@ -5070,8 +5147,9 @@
         {
             "id": 1710192926464,
             "type": "Finger",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 1710192950480,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "pinkyFinger",
             "side": "l",
             "skeletonJoints": [
@@ -5082,9 +5160,9 @@
                 "pinky_04_l"
             ],
             "midLocatorPosition": [
-                116.62427681115571,
-                190.93529458398518,
-                -18.867405261654838
+                116.62427681115568,
+                190.93529458398513,
+                -18.867405261654827
             ],
             "midLocatorAxisAttributes": [
                 false,
@@ -5321,8 +5399,9 @@
         {
             "id": 1710192948032,
             "type": "Finger",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 1710193221088,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "thumbFinger",
             "side": "r",
             "skeletonJoints": [
@@ -5332,9 +5411,9 @@
                 "thumb_04_r"
             ],
             "midLocatorPosition": [
-                -101.32231458164566,
-                179.59370031636223,
-                22.00520953926509
+                -101.3223145816456,
+                179.593700316362,
+                22.00520953926511
             ],
             "midLocatorAxisAttributes": [
                 true,
@@ -5516,8 +5595,9 @@
         {
             "id": 1707967462320,
             "type": "Finger",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 1710193221088,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "indexFinger",
             "side": "r",
             "skeletonJoints": [
@@ -5528,9 +5608,9 @@
                 "index_04_r"
             ],
             "midLocatorPosition": [
-                -120.86661404630735,
-                193.551664520564,
-                -1.1489653722606001
+                -120.86661404630729,
+                193.5516645205638,
+                -1.148965372260546
             ],
             "midLocatorAxisAttributes": [
                 true,
@@ -5767,8 +5847,9 @@
         {
             "id": 1710192926704,
             "type": "Finger",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 1710193221088,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "middleFinger",
             "side": "r",
             "skeletonJoints": [
@@ -5779,9 +5860,9 @@
                 "middle_04_r"
             ],
             "midLocatorPosition": [
-                -120.26182957736795,
-                193.50501141354934,
-                -9.867390926389536
+                -120.26182957736786,
+                193.50501141354917,
+                -9.867390926389485
             ],
             "midLocatorAxisAttributes": [
                 true,
@@ -6018,8 +6099,9 @@
         {
             "id": 1710192928816,
             "type": "Finger",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 1710193221088,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "ringFinger",
             "side": "r",
             "skeletonJoints": [
@@ -6030,9 +6112,9 @@
                 "ring_04_r"
             ],
             "midLocatorPosition": [
-                -120.08909024463017,
-                194.45574298329691,
-                -16.075126730012833
+                -120.08909024463014,
+                194.45574298329674,
+                -16.075126730012776
             ],
             "midLocatorAxisAttributes": [
                 true,
@@ -6269,8 +6351,9 @@
         {
             "id": 1710193217584,
             "type": "Finger",
-            "parentID": 0,
-            "parentOutJointIndex": -1000000,
+            "masterID": 1710193221088,
+            "parentModuleID": 0,
+            "parentModuleOutJointIndex": -1000000,
             "name": "pinkyFinger",
             "side": "r",
             "skeletonJoints": [
@@ -6281,9 +6364,9 @@
                 "pinky_04_r"
             ],
             "midLocatorPosition": [
-                -116.62427681115558,
-                190.93529458398518,
-                -18.867405261654827
+                -116.62427681115553,
+                190.935294583985,
+                -18.867405261654785
             ],
             "midLocatorAxisAttributes": [
                 true,
@@ -6522,16 +6605,17 @@
         {
             "id": 1710192950480,
             "type": "FingersMaster",
-            "parentID": 1710193268416,
-            "parentOutJointID": -1000000,
+            "parentModuleID": 1710193268416,
+            "parentModuleOutJointIndex": -1000000,
             "name": "fingers",
             "side": "l",
             "modules": [
                 {
                     "id": 1710191733552,
                     "type": "Finger",
-                    "parentID": 0,
-                    "parentOutJointIndex": -1000000,
+                    "masterID": 1710192950480,
+                    "parentModuleID": 0,
+                    "parentModuleOutJointIndex": -1000000,
                     "name": "thumbFinger",
                     "side": "l",
                     "skeletonJoints": [
@@ -6541,9 +6625,9 @@
                         "thumb_04_l"
                     ],
                     "midLocatorPosition": [
-                        101.32231458164578,
-                        179.59370031636223,
-                        22.00520953926508
+                        101.32231458164576,
+                        179.59370031636217,
+                        22.00520953926509
                     ],
                     "midLocatorAxisAttributes": [
                         false,
@@ -6725,8 +6809,9 @@
                 {
                     "id": 1710193164096,
                     "type": "Finger",
-                    "parentID": 0,
-                    "parentOutJointIndex": -1000000,
+                    "masterID": 1710192950480,
+                    "parentModuleID": 0,
+                    "parentModuleOutJointIndex": -1000000,
                     "name": "indexFinger",
                     "side": "l",
                     "skeletonJoints": [
@@ -6737,9 +6822,9 @@
                         "index_04_l"
                     ],
                     "midLocatorPosition": [
-                        120.86661404630748,
-                        193.551664520564,
-                        -1.1489653722606112
+                        120.86661404630745,
+                        193.55166452056395,
+                        -1.148965372260594
                     ],
                     "midLocatorAxisAttributes": [
                         false,
@@ -6976,8 +7061,9 @@
                 {
                     "id": 1710192930496,
                     "type": "Finger",
-                    "parentID": 0,
-                    "parentOutJointIndex": -1000000,
+                    "masterID": 1710192950480,
+                    "parentModuleID": 0,
+                    "parentModuleOutJointIndex": -1000000,
                     "name": "middleFinger",
                     "side": "l",
                     "skeletonJoints": [
@@ -6988,9 +7074,9 @@
                         "middle_04_l"
                     ],
                     "midLocatorPosition": [
-                        120.26182957736806,
-                        193.50501141354934,
-                        -9.867390926389547
+                        120.26182957736803,
+                        193.50501141354928,
+                        -9.867390926389533
                     ],
                     "midLocatorAxisAttributes": [
                         false,
@@ -7227,8 +7313,9 @@
                 {
                     "id": 1710191816000,
                     "type": "Finger",
-                    "parentID": 0,
-                    "parentOutJointIndex": -1000000,
+                    "masterID": 1710192950480,
+                    "parentModuleID": 0,
+                    "parentModuleOutJointIndex": -1000000,
                     "name": "ringFinger",
                     "side": "l",
                     "skeletonJoints": [
@@ -7239,9 +7326,9 @@
                         "ring_04_l"
                     ],
                     "midLocatorPosition": [
-                        120.08909024463034,
-                        194.45574298329691,
-                        -16.075126730012844
+                        120.08909024463031,
+                        194.45574298329686,
+                        -16.07512673001283
                     ],
                     "midLocatorAxisAttributes": [
                         false,
@@ -7478,8 +7565,9 @@
                 {
                     "id": 1710192926464,
                     "type": "Finger",
-                    "parentID": 0,
-                    "parentOutJointIndex": -1000000,
+                    "masterID": 1710192950480,
+                    "parentModuleID": 0,
+                    "parentModuleOutJointIndex": -1000000,
                     "name": "pinkyFinger",
                     "side": "l",
                     "skeletonJoints": [
@@ -7490,9 +7578,9 @@
                         "pinky_04_l"
                     ],
                     "midLocatorPosition": [
-                        116.62427681115571,
-                        190.93529458398518,
-                        -18.867405261654838
+                        116.62427681115568,
+                        190.93529458398513,
+                        -18.867405261654827
                     ],
                     "midLocatorAxisAttributes": [
                         false,
@@ -7830,16 +7918,17 @@
         {
             "id": 1710193221088,
             "type": "FingersMaster",
-            "parentID": 1710192935504,
-            "parentOutJointID": -1000000,
+            "parentModuleID": 1710192935504,
+            "parentModuleOutJointIndex": -1000000,
             "name": "fingers",
             "side": "r",
             "modules": [
                 {
                     "id": 1710192948032,
                     "type": "Finger",
-                    "parentID": 0,
-                    "parentOutJointIndex": -1000000,
+                    "masterID": 1710193221088,
+                    "parentModuleID": 0,
+                    "parentModuleOutJointIndex": -1000000,
                     "name": "thumbFinger",
                     "side": "r",
                     "skeletonJoints": [
@@ -7849,9 +7938,9 @@
                         "thumb_04_r"
                     ],
                     "midLocatorPosition": [
-                        -101.32231458164566,
-                        179.59370031636223,
-                        22.00520953926509
+                        -101.3223145816456,
+                        179.593700316362,
+                        22.00520953926511
                     ],
                     "midLocatorAxisAttributes": [
                         true,
@@ -8033,8 +8122,9 @@
                 {
                     "id": 1707967462320,
                     "type": "Finger",
-                    "parentID": 0,
-                    "parentOutJointIndex": -1000000,
+                    "masterID": 1710193221088,
+                    "parentModuleID": 0,
+                    "parentModuleOutJointIndex": -1000000,
                     "name": "indexFinger",
                     "side": "r",
                     "skeletonJoints": [
@@ -8045,9 +8135,9 @@
                         "index_04_r"
                     ],
                     "midLocatorPosition": [
-                        -120.86661404630735,
-                        193.551664520564,
-                        -1.1489653722606001
+                        -120.86661404630729,
+                        193.5516645205638,
+                        -1.148965372260546
                     ],
                     "midLocatorAxisAttributes": [
                         true,
@@ -8284,8 +8374,9 @@
                 {
                     "id": 1710192926704,
                     "type": "Finger",
-                    "parentID": 0,
-                    "parentOutJointIndex": -1000000,
+                    "masterID": 1710193221088,
+                    "parentModuleID": 0,
+                    "parentModuleOutJointIndex": -1000000,
                     "name": "middleFinger",
                     "side": "r",
                     "skeletonJoints": [
@@ -8296,9 +8387,9 @@
                         "middle_04_r"
                     ],
                     "midLocatorPosition": [
-                        -120.26182957736795,
-                        193.50501141354934,
-                        -9.867390926389536
+                        -120.26182957736786,
+                        193.50501141354917,
+                        -9.867390926389485
                     ],
                     "midLocatorAxisAttributes": [
                         true,
@@ -8535,8 +8626,9 @@
                 {
                     "id": 1710192928816,
                     "type": "Finger",
-                    "parentID": 0,
-                    "parentOutJointIndex": -1000000,
+                    "masterID": 1710193221088,
+                    "parentModuleID": 0,
+                    "parentModuleOutJointIndex": -1000000,
                     "name": "ringFinger",
                     "side": "r",
                     "skeletonJoints": [
@@ -8547,9 +8639,9 @@
                         "ring_04_r"
                     ],
                     "midLocatorPosition": [
-                        -120.08909024463017,
-                        194.45574298329691,
-                        -16.075126730012833
+                        -120.08909024463014,
+                        194.45574298329674,
+                        -16.075126730012776
                     ],
                     "midLocatorAxisAttributes": [
                         true,
@@ -8786,8 +8878,9 @@
                 {
                     "id": 1710193217584,
                     "type": "Finger",
-                    "parentID": 0,
-                    "parentOutJointIndex": -1000000,
+                    "masterID": 1710193221088,
+                    "parentModuleID": 0,
+                    "parentModuleOutJointIndex": -1000000,
                     "name": "pinkyFinger",
                     "side": "r",
                     "skeletonJoints": [
@@ -8798,9 +8891,9 @@
                         "pinky_04_r"
                     ],
                     "midLocatorPosition": [
-                        -116.62427681115558,
-                        190.93529458398518,
-                        -18.867405261654827
+                        -116.62427681115553,
+                        190.935294583985,
+                        -18.867405261654785
                     ],
                     "midLocatorAxisAttributes": [
                         true,

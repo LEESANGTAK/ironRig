@@ -44,7 +44,8 @@ class FingersMaster(Master):
             if not cmds.objExists(attr):
                 cmds.addAttr(self._masterCtrl, ln='{}_curl'.format(module.name), at='double', dv=0.0, keyable=True)
             for fkCtrl in module.fkSystem.controllers[module.curlStartIndex:]:
-                cmds.connectAttr('{}.{}'.format(self._masterCtrl, '{}_curl'.format(module.name)), '{}.rotateZ'.format(fkCtrl.extraGrp), f=True)
+                utils.removeConnections(fkCtrl.extraGrp)
+                cmds.connectAttr('{}.{}'.format(self._masterCtrl, '{}_curl'.format(module.name)), '{}.rotateZ'.format(fkCtrl.extraGrp))
 
     def _getModulesCenter(self):
         modulesCenter = om.MVector()

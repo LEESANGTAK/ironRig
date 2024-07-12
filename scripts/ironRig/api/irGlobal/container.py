@@ -137,6 +137,9 @@ class Container(Serializable):
     def detach(self):
         """Detach from the parent sapce. And remove created nodes, attributes when attached.
         """
+        if not self._parentModule:
+            return
+
         for node in self._attachInfo.get('nodes'):
             if cmds.objExists(node):
                 cmds.delete(node)
@@ -145,8 +148,7 @@ class Container(Serializable):
         for attr in self._attachInfo.get('attributes'):
             cmds.deleteAttr(attr)
 
-        if self._parentModule:
-            self._parentModule.removeChildren(self)
+        self._parentModule.removeChildren(self)
 
         # Initialize parent module data
         self._parentModule = None
@@ -156,6 +158,11 @@ class Container(Serializable):
             'attributes': [],
             'connections': [],
         }
+
+    def detachChildren(self):
+        if self._children:
+            for child in self._children:
+                child.detach()
 
     def removeChildren(self, container):
         if container in self._children:
