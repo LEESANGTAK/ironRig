@@ -22,6 +22,9 @@ class Master(Container):
         self._controllerColor = Controller.COLOR.GREEN
         self._controllerSize = 1
 
+        self._set = cmds.createNode('objectSet', n='{}_set'.format(self.longName))
+        self._buildGroups()
+
     def __repr__(self):
         return "irMaster.{}('{}')".format(self.__class__.__name__, self.longName)
 
@@ -41,17 +44,14 @@ class Master(Container):
     def controllerSize(self, size):
         self._controllerSize = size
 
-    def _buildGroups(self):
-        self._topGrp = cmds.createNode('transform', n='{}_master'.format(self.shortName))
-        self._modulesGrp = cmds.createNode('transform', n='{}_modules'.format(self.shortName))
-        cmds.parent(self._modulesGrp, self._topGrp)
-
     def addModules(self, *args):
         modules = sum([module if isinstance(module, list) else [module] for module in args], [])
         for module in modules:
             if not module in self._modules:
-                self._modules.append(module)
+                cmds.sets(module.set, forceElement=self._set)
+                cmds.parent(module.topGrp, self._modulesGrp)
                 module.master = self
+                self._modules.append(module)
 
     def removeModules(self, *args):
         modules = sum([module if isinstance(module, list) else [module] for module in args], [])
@@ -61,15 +61,19 @@ class Master(Container):
                 module.master = None
 
     def build(self):
-        self._set = cmds.createNode('objectSet', n='{}_set'.format(self.longName))
-        self._buildGroups()
         self._buildSystems()
         self._buildControls()
 
+    def _buildGroups(self):
+        self._topGrp = cmds.createNode('transform', n='{}_master'.format(self.shortName))
+        self._modulesGrp = cmds.createNode('transform', n='{}_modules'.format(self.shortName))
+        cmds.parent(self._modulesGrp, self._topGrp)
+
     def _buildSystems(self):
-        for module in self._modules:
-            cmds.sets(module.set, forceElement=self.set)
-            cmds.parent(module.topGrp, self._modulesGrp)
+        pass
+        # for module in self._modules:
+        #     cmds.sets(module.set, forceElement=self._set)
+        #     cmds.parent(module.topGrp, self._modulesGrp)
 
     def _buildControls(self):
         raise NotImplementedError()

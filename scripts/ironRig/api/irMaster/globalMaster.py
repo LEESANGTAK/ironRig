@@ -20,14 +20,6 @@ class GlobalMaster(Master):
     def mainController(self):
         return self._mainController
 
-    def addModules(self, *args):
-        modules = sum([module if isinstance(module, list) else [module] for module in args], [])
-        for module in modules:
-            cmds.sets(module.set, forceElement=self.set)
-            cmds.parent(module.topGrp, self._modulesGrp)
-            module.master = self
-        self._modules.extend(modules)
-
     def addMasters(self, *args):
         masters = sum([master if isinstance(master, list) else [master] for master in args], [])
         for master in masters:

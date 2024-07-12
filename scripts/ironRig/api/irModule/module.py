@@ -503,6 +503,9 @@ class Module(Container):
             for system in self._systems:
                 system.clear()
 
+        if self._master:
+            self._master.removeModules(self)
+
         self._systems = []
         self._controllers = []
         super().clear()
@@ -522,9 +525,11 @@ class Module(Container):
     def serialize(self):
         midLocator = self._oriPlaneLocators[1]
         parentModuleID = self._parentModule.id if self._parentModule else 0
+        masterID = self._master.id if self._master else 0
         return OrderedDict([
             ('id', self._id),
             ('type', self.__class__.__name__),
+            ('masterID', masterID),
             ('parentModuleID', parentModuleID),
             ('parentModuleOutJointIndex', self._parentModuleOutJointIndex),
             ('name', self._name),
@@ -545,13 +550,16 @@ class Module(Container):
         self._setAttributesFromData(data)
         self.build()
 
-        # Add to master
-        if self._master:
-            self._master.addModules(self)
-
         self._setControllersShapeFromData(data, hashmap)
 
-        # Attach to parent module
+        # Add to a master
+        masterID = data.get('masterID')
+        if masterID:
+            master = hashmap.get(masterID)
+            if master:  # Master is may not be exists when build from file. Since master is build after modules built. (e.g. fingers)
+                master.addModules(self)
+
+        # Attach to a parent module
         parentModuleID = data.get('parentModuleID')
         if parentModuleID:
             parentModule = hashmap.get(parentModuleID)

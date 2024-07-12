@@ -8,6 +8,16 @@ class FingersMaster(Master):
     def __init__(self, name='', side=Master.SIDE.CENTER):
         super().__init__(name, side)
 
+        self._masterCtrl = None
+
+    def removeModules(self, *args):
+        modules = sum([module if isinstance(module, list) else [module] for module in args], [])
+        for module in modules:
+            if module in self._modules:
+                cmds.deleteAttr('{}.{}_curl'.format(self._masterCtrl, module.name))
+                self._modules.remove(module)
+                module.master = None
+
     def build(self):
         super().build()
         self._movePivotToModulesCenter()
@@ -19,17 +29,22 @@ class FingersMaster(Master):
         cmds.delete(tempLoc)
 
     def _buildControls(self):
-        masterCtrl = Controller(self.shortName, Controller.SHAPE.CUBE, Controller.COLOR.GREEN)
-        masterCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
-        for module in self._modules:
-            cmds.addAttr(masterCtrl, ln='{}_curl'.format(module.name), at='double', dv=0.0, keyable=True)
-            for fkCtrl in module.fkSystem.controllers[module.curlStartIndex:]:
-                cmds.connectAttr('{}.{}'.format(masterCtrl, '{}_curl'.format(module.name)), '{}.rotateZ'.format(fkCtrl.extraGrp))
+        self._masterCtrl = Controller(self.shortName, Controller.SHAPE.CUBE, Controller.COLOR.GREEN)
+        self._masterCtrl.lockHideChannels(['translate', 'rotate', 'scale', 'visibility'], ['X', 'Y', 'Z'])
+        self.connectFingers()
 
-        cmds.xform(masterCtrl.zeroGrp, t=list(self._getModulesCenter())[:3], ws=True)
-        cmds.parent(masterCtrl.zeroGrp, self._topGrp)
-        self._controllers.append(masterCtrl)
-        self.addMembers(masterCtrl.allNodes)
+        cmds.xform(self._masterCtrl.zeroGrp, t=list(self._getModulesCenter())[:3], ws=True)
+        cmds.parent(self._masterCtrl.zeroGrp, self._topGrp)
+        self._controllers.append(self._masterCtrl)
+        self.addMembers(self._masterCtrl.allNodes)
+
+    def connectFingers(self):
+        for module in self._modules:
+            attr = '{}.{}_curl'.format(self._masterCtrl, module.name)
+            if not cmds.objExists(attr):
+                cmds.addAttr(self._masterCtrl, ln='{}_curl'.format(module.name), at='double', dv=0.0, keyable=True)
+            for fkCtrl in module.fkSystem.controllers[module.curlStartIndex:]:
+                cmds.connectAttr('{}.{}'.format(self._masterCtrl, '{}_curl'.format(module.name)), '{}.rotateZ'.format(fkCtrl.extraGrp), f=True)
 
     def _getModulesCenter(self):
         modulesCenter = om.MVector()

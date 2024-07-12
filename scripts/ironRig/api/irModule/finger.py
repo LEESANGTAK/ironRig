@@ -46,6 +46,11 @@ class Finger(Module):
     def _connectSystems(self):
         pass
 
+    def rebuild(self):
+        super().rebuild()
+        if self._master.__class__.__name__ == 'FingersMaster':
+            self._master.connectFingers()
+
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
         oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
         oppMod = Finger(self._name, oppSideChar, oppSkelJoints)
