@@ -315,9 +315,8 @@ class Module(Container):
         common.logger.debug('{}._reBuild()'.format(self.longName))
 
         # Store data of the module
-        hashmap = {}
         if self._parentModule:
-            hashmap[self._parentModule.id] = self._parentModule
+            self._scene.hashmap[self._parentModule.id] = self._parentModule
         moduleInfo = self.serialize()
 
         # Detach children
@@ -327,16 +326,17 @@ class Module(Container):
             childrenParentModulesOutjointIndex.append(child.parentModuleOutJointIndex)
             child.detach()
 
-        # Clear
+        # Clear module and store space switch builders information
         self.detach()
         spaceSwitchBuilders = self.clear()
+        spaceSwitchBuildersInfo = [ssb.serialize() for ssb in spaceSwitchBuilders]
 
         # Build from data
-        self.deserialize(moduleInfo, hashmap)
+        self.deserialize(moduleInfo, self._scene.hashmap)
 
-        # Setup space switch
-        for ssb in spaceSwitchBuilders:
-            ssb.build()
+        # Restore space switch builder
+        for ssb, ssbInfo in zip(spaceSwitchBuilders, spaceSwitchBuildersInfo):
+            ssb.deserialize(ssbInfo, self._scene.hashmap)
 
         # Attach children
         for child, parentModuleOutJointIndex in zip(children, childrenParentModulesOutjointIndex):
@@ -542,9 +542,23 @@ class Module(Container):
         super().deserialize(data, hashmap)
 
         self.preBuild()
+        self._setAttributesFromData(data)
+        self.build()
 
-        # Set porperties before build
-        self.mirrorTranslate = data.get('mirrorTranslate')
+        # Add to master
+        if self._master:
+            self._master.addModules(self)
+
+        self._setControllersShapeFromData(data, hashmap)
+
+        # Attach to parent module
+        parentModuleID = data.get('parentModuleID')
+        if parentModuleID:
+            parentModule = hashmap.get(parentModuleID)
+            self.attachTo(parentModule, data.get('parentModuleOutJointIndex'))
+
+    def _setAttributesFromData(self, data):
+        self._mirrorTranslate = data.get('mirrorTranslate')
 
         # Set mid locator position and attributes for the joint axis
         midLocator = self._oriPlaneLocators[1]
@@ -552,20 +566,18 @@ class Module(Container):
         for attr, val in zip(['negateXAxis', 'negateZAxis', 'swapYZAxis'], data.get('midLocatorAxisAttributes')):
             cmds.setAttr('{}.{}'.format(midLocator, attr), val)
 
-        self.build()
-
-        # Add to master
-        if self._master:
-            self._master.addModules(self)
-
-        # Set controllers shapes
+    def _setControllersShapeFromData(self, data, hashmap):
         self.controllerSize = data.get('controllerSize')
         self.controllerColor = data.get('controllerColor')
-        for ctrl, ctrlData in zip(self._allControllers(), data.get('allControllers')):
-            ctrl.deserialize(ctrlData, hashmap)
+        ctrlsData = data.get('allControllers')
+        for ctrl in self._allControllers():
+            ctrlData = Module._findControllerData(ctrl.name, ctrlsData)
+            if ctrlData:
+                ctrl.deserialize(ctrlData, hashmap)
 
-        # Attach to parent module
-        parentModuleID = data.get('parentModuleID')
-        if parentModuleID:
-            parentModule = hashmap.get(parentModuleID)
-            self.attachTo(parentModule, data.get('parentModuleOutJointIndex'))
+    @staticmethod
+    def _findControllerData(controllerName, controllersData):
+        for ctrlData in controllersData:
+            if controllerName == ctrlData.get('name'):
+                return ctrlData
+        return None

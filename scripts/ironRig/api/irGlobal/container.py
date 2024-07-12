@@ -28,6 +28,8 @@ class Container(Serializable):
     def __init__(self, name='new', side=Side.CENTER, type=Type.FK_SYSTEM):
         super().__init__()
 
+        self._scene = None
+
         self._name = name
         self._side = side
         self._type = type
@@ -43,6 +45,14 @@ class Container(Serializable):
             'attributes': [],
             'connections': [],
         }
+
+    @property
+    def scene(self):
+        return self._scene
+
+    @scene.setter
+    def scene(self, scene):
+        self._scene = scene
 
     @property
     def name(self):
@@ -127,13 +137,13 @@ class Container(Serializable):
     def detach(self):
         """Detach from the parent sapce. And remove created nodes, attributes when attached.
         """
+        for node in self._attachInfo.get('nodes'):
+            if cmds.objExists(node):
+                cmds.delete(node)
         for driver, driven in self._attachInfo.get('connections'):
             cmds.disconnectAttr(driver, driven)
         for attr in self._attachInfo.get('attributes'):
             cmds.deleteAttr(attr)
-        for node in self._attachInfo.get('nodes'):
-            if cmds.objExists(node):
-                cmds.delete(node)
 
         if self._parentModule:
             self._parentModule.removeChildren(self)

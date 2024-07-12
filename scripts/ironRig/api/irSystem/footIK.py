@@ -52,6 +52,7 @@ class FootIK(System):
     def joints(self, joints):
         self._joints = joints
 
+    @property
     def revFootJoints(self):
         return self._revFootJoints
 

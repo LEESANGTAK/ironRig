@@ -119,36 +119,6 @@ class Neck(Module):
         data['numberOfControllers'] = self._numberOfControllers
         return data
 
-    def deserialize(self, data, hashmap={}):
-        hashmap[data.get('id')] = self
-        self._id = data.get('id')
-
-        self.preBuild()
-
-        # Set porperties before build
-        self.mirrorTranslate = data.get('mirrorTranslate')
-        self.numberOfControllers = data.get('numberOfControllers')
-
-        # Set mid locator position and attributes for the joint axis
-        midLocator = self._oriPlaneLocators[1]
-        cmds.xform(midLocator, t=data.get('midLocatorPosition'), ws=True)
-        for attr, val in zip(['negateXAxis', 'negateZAxis', 'swapYZAxis'], data.get('midLocatorAxisAttributes')):
-            cmds.setAttr('{}.{}'.format(midLocator, attr), val)
-
-        self.build()
-
-        # Add to master
-        if self._master:
-            self._master.addModules(self)
-
-        # Set controllers shapes
-        self.controllerSize = data.get('controllerSize')
-        self.controllerColor = data.get('controllerColor')
-        for ctrl, ctrlData in zip(self._allControllers(), data.get('allControllers')):
-            ctrl.deserialize(ctrlData, hashmap)
-
-        # Attach to parent module
-        parentModuleID = data.get('parentModuleID')
-        if parentModuleID:
-            parentModule = hashmap.get(parentModuleID)
-            self.attachTo(parentModule, data.get('parentModuleOutJointIndex'))
+    def _setAttributesFromData(self, data):
+        super()._setAttributesFromData(data)
+        self._numberOfControllers = data.get('numberOfControllers')

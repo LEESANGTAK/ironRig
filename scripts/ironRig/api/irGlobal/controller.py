@@ -123,7 +123,7 @@ class Controller(Serializable):
         return self._transform
 
     def __repr__(self):
-        return "ironRig.api.irGlobal.Controller('{}')".format(self._name)
+        return "irGlobal.{}('{}')".format(self.__class__.__name__, self._name)
 
     def __or__(self, other):
         cmds.parent(other.zeroGrp, self._transform)
@@ -335,6 +335,5 @@ class Controller(Serializable):
     def deserialize(self, data, hashmap={}):
         super().deserialize(data, hashmap)
 
-        self.name = data.get('name')
         self.restoreCVsPosition(data.get('cvsPosition'))
         self.restoreCurvesRGB(data.get('curvesRGB'))

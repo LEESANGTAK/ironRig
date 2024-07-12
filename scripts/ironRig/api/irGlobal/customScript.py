@@ -11,6 +11,9 @@ class CustomScript(Serializable):
         self._code = code
         self._attributes = []
 
+    def __repr__(self):
+        return "irGlobal.{}('{}')".format(self.__class__.__name__, self._name)
+
     @property
     def name(self):
         return self._name

@@ -19,6 +19,9 @@ class SpaceSwitchBuilder(Serializable):
         self._spaceGroup = None
         self._spaceAttributes = []
 
+    def __repr__(self):
+        return "irGlobal.{}('{}')".format(self.__class__.__name__, self._drivenController)
+
     @property
     def drivenController(self):
         return self._drivenController
@@ -114,6 +117,7 @@ class SpaceSwitchBuilder(Serializable):
         cmds.delete(self._spaceGroup, self._topGroup)
         for attr in self._spaceAttributes:
             cmds.deleteAttr(attr)
+        self._spaceAttributes = []
 
     def serialize(self):
         return {

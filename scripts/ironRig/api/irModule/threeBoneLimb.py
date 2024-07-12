@@ -443,6 +443,8 @@ class ThreeBoneLimb(Module):
 
     def attachTo(self, parentModule, parentModuleOutJointIndex=-1000000):
         if parentModule.__class__.__name__ == 'LimbBase':
+            cnsts = []
+
             limbBaseCtrl = parentModule.fkSystem.controllers[0]
 
             aimLoc = cmds.spaceLocator(n='{}_aim_loc'.format(limbBaseCtrl))[0]
@@ -451,6 +453,7 @@ class ThreeBoneLimb(Module):
                 cmds.matchTransform(loc, limbBaseCtrl.zeroGrp)
             cmds.parent([staticLoc, aimLoc], parentModule.fkSystem.blackboxGrp)
             cnst = cmds.orientConstraint([aimLoc, staticLoc], limbBaseCtrl.zeroGrp, mo=True)[0]
+            cnsts.append(cnst)
             cmds.setAttr('{}.interpType'.format(cnst), 2)
 
             cmds.addAttr(limbBaseCtrl, ln='aim', at='float', min=0.0, max=1.0, dv=0.5, keyable=True)
@@ -469,14 +472,14 @@ class ThreeBoneLimb(Module):
             cmds.xform(tempPoleVectorLoc, t=list(tempPoleVectorLocPos)[:3], ws=True)
             upAxisInfo = utils.getAimAxisInfo(limbBaseCtrl.zeroGrp, tempPoleVectorLoc)
             cmds.delete(tempPoleVectorLoc)
-            cmds.aimConstraint(
+            cnsts.append(cmds.aimConstraint(
                 self._ikSystem.ikHandleController, aimLoc,
                 aimVector=self._aimSign*utils.axisStrToVector(self._aimAxis),
                 upVector=upAxisInfo[0]*utils.axisStrToVector(upAxisInfo[1]),
                 worldUpType='object',
                 worldUpObject=self._ikSystem.poleVectorController,
                 mo=True
-            )
+            )[0])
 
             self.addMembers(revNode)
 
@@ -484,9 +487,11 @@ class ThreeBoneLimb(Module):
                 ikStartObject = self._ikSystem.controllers[-1].zeroGrp
             else:
                 ikStartObject = cmds.listRelatives(self._ikSystem.joints[0], parent=True)[0]
-            cmds.parentConstraint(parentModule.outJoints[-1], ikStartObject, mo=True)
+            cnsts.append(cmds.parentConstraint(parentModule.outJoints[-1], ikStartObject, mo=True)[0])
+            cnsts.append(cmds.parentConstraint(parentModule.outJoints[-1], self._fkSystem.controllers[0].zeroGrp, mo=True)[0])
 
-            cmds.parentConstraint(parentModule.outJoints[-1], self._fkSystem.controllers[0].zeroGrp, mo=True)
+            self._attachInfo['nodes'] = [revNode, staticLoc, aimLoc] + cnsts
+            self._attachInfo['attributes'] = ['{}.aim'.format(limbBaseCtrl)]
 
             self._parentModule = parentModule
             self._parentModuleOutJointIndex = parentModuleOutJointIndex

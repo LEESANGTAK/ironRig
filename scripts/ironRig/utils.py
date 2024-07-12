@@ -545,12 +545,15 @@ def getCleanName(name):
 
 
 def cloneUserDefinedAttrs(sourceNode, targetNode, keyable=True):
+    clonedAttrs = []
     for attr in cmds.listAttr(sourceNode, ud=True, keyable=keyable):
         attrType = cmds.attributeQuery(attr, node=sourceNode, attributeType=True)
         minVal, maxVal = cmds.attributeQuery(attr, node=sourceNode, range=True)
         dftVal = cmds.attributeQuery(attr, node=sourceNode, listDefault=True)[0]
         cmds.addAttr(targetNode, ln=attr, at=attrType, min=minVal, max=maxVal, dv=dftVal, keyable=keyable)
         cmds.connectAttr('{}.{}'.format(targetNode, attr), '{}.{}'.format(sourceNode, attr))
+        clonedAttrs.append('{}.{}'.format(targetNode, attr))
+    return clonedAttrs
 
 
 def getWorldMatrixMirrorX(inMatrix):

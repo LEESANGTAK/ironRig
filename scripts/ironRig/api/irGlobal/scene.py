@@ -18,9 +18,15 @@ class Scene(object):
         self._spaceSwitchBuilders = []
         self._postCustomScripts = []
 
+        self._hashmap = {}
+
     @property
     def globalMaster(self):
         return self._globalMaster
+
+    @property
+    def hashmap(self):
+        return self._hashmap
 
     def addPreCustomScript(self, name='', code=''):
         cs = CustomScript(name, code)
@@ -33,6 +39,7 @@ class Scene(object):
 
     def addModule(self, type='', name='', side=Container.SIDE.LEFT, skeletonJoints=[], vertices=[]):
         mod = Factory.getModule(type, name, side, skeletonJoints)
+        mod.scene = self
         mod.master = self._globalMaster
         self._modules.append(mod)
         return mod
@@ -64,6 +71,7 @@ class Scene(object):
 
     def addMaster(self, type='', name='', side=Container.SIDE.LEFT):
         mst = Factory.getMaster(type, name, side)
+        mst.scene = self
         self._masters.append(mst)
         return mst
 
@@ -110,6 +118,7 @@ class Scene(object):
         self._masters.clear()
         self._spaceSwitchBuilders.clear()
         self._postCustomScripts.clear()
+        self._hashmap.clear()
 
     def serialize(self):
         return OrderedDict([
@@ -121,17 +130,17 @@ class Scene(object):
             ("postCustomScripts", [postCustomScript.serialize() for postCustomScript in self._postCustomScripts]),
         ])
 
-    def deserialize(self, data, hashmap={}):
+    def deserialize(self, data):
         # Process pre-build custom scripts
         for preCustomScriptData in data["preCustomScripts"]:
             cs = self.addPreCustomScript(preCustomScriptData.get('name'))
-            cs.deserialize(preCustomScriptData, hashmap)
+            cs.deserialize(preCustomScriptData, self._hashmap)
 
         # Add global master and build
         globalMasterData = data['globalMaster']
         if globalMasterData:
             self._globalMaster = self.addGlobalMaster(globalMasterData.get('rootJoint'), globalMasterData.get('buildRootController'))
-            self._globalMaster.deserialize(globalMasterData, hashmap)
+            self._globalMaster.deserialize(globalMasterData, self._hashmap)
 
         # Add modules, masters and build
         for moduleData in data["modules"]:
@@ -141,7 +150,7 @@ class Scene(object):
                 moduleData.get('side'),
                 moduleData.get('skeletonJoints')
             )
-            mod.deserialize(moduleData, hashmap)
+            mod.deserialize(moduleData, self._hashmap)
 
         for masterData in data["masters"]:
             mst = self.addMaster(
@@ -149,16 +158,16 @@ class Scene(object):
                 masterData.get('name'),
                 masterData.get('side')
             )
-            mst.deserialize(masterData, hashmap)
+            mst.deserialize(masterData, self._hashmap)
             self._globalMaster.addMasters(mst)
 
         # Add space switch builder
         for spaceSwitchBuildersData in data["spaceSwitchBuilders"]:
             ssb = self.addSpaceSwitchBuilder()
-            ssb.deserialize(spaceSwitchBuildersData, hashmap)
+            ssb.deserialize(spaceSwitchBuildersData, self._hashmap)
             self._globalMaster.addSpaceSwitchBuilder(ssb)
 
         # Process post-build custom scripts
         for postCustomScriptData in data["postCustomScripts"]:
             cs = self.addPostCustomScript(postCustomScriptData.get('name'))
-            cs.deserialize(postCustomScriptData, hashmap)
+            cs.deserialize(postCustomScriptData, self._hashmap)

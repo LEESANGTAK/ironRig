@@ -26,6 +26,9 @@ class System(Container):
         self._controllerShape = Controller.SHAPE.CIRCLE
         self._controllerSize = 10
 
+    def __repr__(self):
+        return "irSystem.{}('{}')".format(self.__class__.__name__, self.longName)
+
     @property
     def aimSign(self):
         return self._aimSign

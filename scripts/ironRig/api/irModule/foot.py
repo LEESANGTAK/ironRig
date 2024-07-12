@@ -123,32 +123,80 @@ class Foot(Module):
 
     def attachTo(self, parentModule, parentModuleOutJointIndex=-1000000):
         if parentModule.__class__.__name__ in ['TwoBoneLimb', 'ThreeBoneLimb']:
+            cnsts = []
             # Connect ik joints
             utils.removeConnections(self._ikSystem.joints[0])
-            cmds.parentConstraint(parentModule.ikSystem.joints[-1], self._ikSystem.joints[0], mo=True)
+            cnsts.append(cmds.parentConstraint(parentModule.ikSystem.joints[-1], self._ikSystem.joints[0], mo=True)[0])
             # Connect skel joints
             utils.removeConnections(parentModule.skelJoints[-1])
-            cmds.parentConstraint(self._outJoints[0], parentModule.skelJoints[-1], mo=True)
+            cnsts.append(cmds.parentConstraint(self._outJoints[0], parentModule.skelJoints[-1], mo=True)[0])
             # Connect ik handle
             moduleIkHandleLoc = parentModule.ikSystem.ikHandleLocator
             utils.removeConnections(moduleIkHandleLoc)
-            cmds.pointConstraint(self._ikSystem.revFootJoints()[-1], moduleIkHandleLoc, mo=True)
+            cnsts.append(cmds.pointConstraint(self._ikSystem.revFootJoints[-1], moduleIkHandleLoc, mo=True)[0])
             # Connect ik controllers
-            cmds.parentConstraint(parentModule.ikSystem.controllers[0], self._ikSystem.controllers[0], mo=True)
-            utils.cloneUserDefinedAttrs(self._ikSystem.controllers[0], parentModule.ikSystem.controllers[0])
+            cnsts.append(cmds.parentConstraint(parentModule.ikSystem.controllers[0], self._ikSystem.controllers[0], mo=True)[0])
+            clonedAttrs = utils.cloneUserDefinedAttrs(self._ikSystem.controllers[0], parentModule.ikSystem.controllers[0])
             self._ikSystem.controllers[0].hide()
             # Connect fk controllers
-            cmds.parentConstraint(parentModule.fkSystem.controllers[-1], self._fkSystem.controllers[0], mo=True)
+            cnsts.append(cmds.parentConstraint(parentModule.fkSystem.controllers[-1], self._fkSystem.controllers[0], mo=True)[0])
             self._fkSystem.controllers[0].hide()
             # Connect module controllers
             cmds.connectAttr('{}.ik'.format(parentModule.controllers[0]), '{}.ik'.format(self._controllers[0]))
             self._controllers[0].hide()
+
+            self._attachInfo['nodes'] = cnsts
+            self._attachInfo['attributes'] = clonedAttrs
+            self._attachInfo['connections'] = [('{}.ik'.format(parentModule.controllers[0]), '{}.ik'.format(self._controllers[0]))]
 
             self._parentModule = parentModule
             self._parentModuleOutJointIndex = parentModuleOutJointIndex
             self._parentModule.addChildren(self)
         else:
             super().attachTo(parentModule, parentModuleOutJointIndex)
+
+    def detach(self):
+        """Detach from the parent sapce. And remove created nodes, attributes when attached.
+        """
+        for node in self._attachInfo.get('nodes'):
+            if cmds.objExists(node):
+                cmds.delete(node)
+        for driver, driven in self._attachInfo.get('connections'):
+            cmds.disconnectAttr(driver, driven)
+        for attr in self._attachInfo.get('attributes'):
+            cmds.deleteAttr(attr)
+
+        if self._parentModule.__class__.__name__ in ['TwoBoneLimb', 'ThreeBoneLimb']:
+            # Constraints
+            cmds.pointConstraint(self._parentModule.ikSystem.ikHandleController, self._parentModule.ikSystem.ikHandleLocator, mo=True)
+            cmds.parentConstraint(self._parentModule.outJoints[-1], self._parentModule.skelJoints[-1], mo=True)
+            cmds.parentConstraint(self._ikSystem.revFootJoints[-1], self._ikSystem.joints[0], mo=True)
+
+            # Unhide controllers
+            self._ikSystem.controllers[0].hide(False)
+            self._fkSystem.controllers[0].hide(False)
+            self._controllers[0].hide(False)
+
+        if self._parentModule:
+            self._parentModule.removeChildren(self)
+
+        # Initialize parent module data
+        self._parentModule = None
+        self._parentModuleOutJointIndex = -1000000
+        self._attachInfo = {
+            'nodes': [],
+            'attributes': [],
+            'connections': [],
+        }
+
+    def clear(self):
+        spaceSwitchBuilders = super().clear()
+
+        # Initialize attributes
+        self._blendJoints = []
+        self._blendConstraints = []
+
+        return spaceSwitchBuilders
 
     def mirror(self, skeletonSearchStr='_l', skeletonReplaceStr='_r', mirrorTranslate=False):
         oppSideChar, oppSkelJoints = super().mirror(skeletonSearchStr, skeletonReplaceStr)
@@ -174,39 +222,9 @@ class Foot(Module):
         moduleData['pivotLocatorsPosition'] = [cmds.xform(loc, q=True, t=True, ws=True) for loc in self._pivotLocators]
         return moduleData
 
-    def deserialize(self, data, hashmap={}):
-        hashmap[data.get('id')] = self
-        self._id = data.get('id')
-
-        self.preBuild()
-
-        # Set porperties before build
-        self.mirrorTranslate = data.get('mirrorTranslate')
-
-        # Set mid locator position and attributes for the joint axis
-        midLocator = self._oriPlaneLocators[1]
-        cmds.xform(midLocator, t=data.get('midLocatorPosition'), ws=True)
-        for attr, val in zip(['negateXAxis', 'negateZAxis', 'swapYZAxis'], data.get('midLocatorAxisAttributes')):
-            cmds.setAttr('{}.{}'.format(midLocator, attr), val)
+    def _setAttributesFromData(self, data):
+        super()._setAttributesFromData(data)
 
         # Set pivot locators position
         for pivotLoc, pivotLocPos in zip(self._pivotLocators, data.get('pivotLocatorsPosition')):
             cmds.xform(pivotLoc, t=pivotLocPos, ws=True)
-
-        self.build()
-
-        # Add to master
-        if self._master:
-            self._master.addModules(self)
-
-        # Set controllers shapes
-        self.controllerSize = data.get('controllerSize')
-        self.controllerColor = data.get('controllerColor')
-        for ctrl, ctrlData in zip(self._allControllers(), data.get('allControllers')):
-            ctrl.deserialize(ctrlData, hashmap)
-
-        # Attach to parent module
-        parentModuleID = data.get('parentModuleID')
-        if parentModuleID:
-            parentModule = hashmap.get(parentModuleID)
-            self.attachTo(parentModule, data.get('parentModuleOutJointIndex'))

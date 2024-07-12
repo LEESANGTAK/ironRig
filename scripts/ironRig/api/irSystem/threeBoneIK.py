@@ -470,3 +470,4 @@ class ThreeBoneIK(System):
         startCtrl.lockHideChannels(['rotate', 'scale', 'visibility'])
         self._controllers.append(startCtrl)
         cmds.parent(startCtrl.zeroGrp, self._controllerGrp)
+        self.addMembers(startCtrl.allNodes)
