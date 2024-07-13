@@ -150,7 +150,7 @@ class Master(Container):
             self.attachTo(parentModule, data.get('parentModuleOutJointIndex'))
 
         # Set controllers shapes
-        self._controllerSize = data.get('controllerSize')
-        self._controllerColor = data.get('controllerColor')
+        self.controllerSize = data.get('controllerSize')
+        self.controllerColor = data.get('controllerColor')
         for ctrl, ctrlData in zip(self._controllers, data.get('controllers')):
             ctrl.deserialize(ctrlData, hashmap)

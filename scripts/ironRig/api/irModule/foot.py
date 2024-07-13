@@ -224,8 +224,8 @@ class Foot(Module):
         moduleData['pivotLocatorsPosition'] = [cmds.xform(loc, q=True, t=True, ws=True) for loc in self._pivotLocators]
         return moduleData
 
-    def _setAttributesFromData(self, data):
-        super()._setAttributesFromData(data)
+    def _setPropertiesFromData(self, data):
+        super()._setPropertiesFromData(data)
 
         # Set pivot locators position
         for pivotLoc, pivotLocPos in zip(self._pivotLocators, data.get('pivotLocatorsPosition')):

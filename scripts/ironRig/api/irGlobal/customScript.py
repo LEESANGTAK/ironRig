@@ -30,10 +30,14 @@ class CustomScript(Serializable):
     def code(self, code):
         self._code = code
 
+    @property
+    def attributes(self):
+        return self._attributes
+
     def addAttribute(self, name='', type=None, value=None):
         self._attributes.append(Attribute(name, type, value))
 
-    def _getAttribute(self, name):
+    def findAttribute(self, name):
         for attr in self._attributes:
             if attr.name == name:
                 return attr
@@ -49,7 +53,7 @@ class CustomScript(Serializable):
         code = self._code
         attrStrs = re.findall('(@.+?)[^a-zA-Z0-9]', self._code)
         for attrStr in attrStrs:
-            attr = self._getAttribute(attrStr.strip('@'))
+            attr = self.findAttribute(attrStr.strip('@'))
             attrVal = '"{}"'.format(attr.value) if attr.type == Attribute.TYPE.STRING else str(attr.value)
             code = code.replace(attrStr, attrVal, 1)
         return code

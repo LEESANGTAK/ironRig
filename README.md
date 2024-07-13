@@ -16,9 +16,3 @@ Attaching control rig modules to the parts of a `Skeletal Mesh` like **Iron Man*
 
 ## Roadmap
 [Trello Board Link](https://trello.com/b/rdtV0nDj/ironrig)
-- Adding wing module
-- Adding facial modules (e.g. Brow, Lid, Lip, ...)
-- Adding milliped module for creatures who has a bunch of legs
-- Building node editor GUI
-- Adding animation dynamic marking menu
-- Removing pymel dependency

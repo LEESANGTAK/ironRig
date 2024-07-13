@@ -36,7 +36,6 @@ class Neck(Module):
 
     def _addSystems(self):
         self._ikSystem = SplineIK(self._name, self._side)
-        self._ikSystem.numberOfControllers = self._numberOfControllers
         self._ikSystem.alignControllerToWorld = SplineIK.ALIGN_CONTROLLER_TO_WORLD.END
         self._systems.append(self._ikSystem)
 
@@ -119,6 +118,6 @@ class Neck(Module):
         data['numberOfControllers'] = self._numberOfControllers
         return data
 
-    def _setAttributesFromData(self, data):
-        super()._setAttributesFromData(data)
-        self._numberOfControllers = data.get('numberOfControllers')
+    def _setPropertiesFromData(self, data):
+        super()._setPropertiesFromData(data)
+        self.numberOfControllers = data.get('numberOfControllers')

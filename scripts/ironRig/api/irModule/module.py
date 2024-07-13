@@ -566,10 +566,11 @@ class Module(Container):
         super().deserialize(data, hashmap)
 
         self.preBuild()
-        self._setAttributesFromData(data)
+        self._setPropertiesFromData(data)
+
         self.build()
 
-        self._setControllersShapeFromData(data, hashmap)
+        self._deserializeControllers(data, hashmap)
 
         # Add to a master
         masterID = data.get('masterID')
@@ -584,8 +585,8 @@ class Module(Container):
             parentModule = hashmap.get(parentModuleID)
             self.attachTo(parentModule, data.get('parentModuleOutJointIndex'))
 
-    def _setAttributesFromData(self, data):
-        self._mirrorTranslate = data.get('mirrorTranslate')
+    def _setPropertiesFromData(self, data):
+        self.mirrorTranslate = data.get('mirrorTranslate')
 
         # Set mid locator position and attributes for the joint axis
         midLocator = self._oriPlaneLocators[1]
@@ -593,7 +594,7 @@ class Module(Container):
         for attr, val in zip(['negateXAxis', 'negateZAxis', 'swapYZAxis'], data.get('midLocatorAxisAttributes')):
             cmds.setAttr('{}.{}'.format(midLocator, attr), val)
 
-    def _setControllersShapeFromData(self, data, hashmap):
+    def _deserializeControllers(self, data, hashmap):
         self.controllerSize = data.get('controllerSize')
         self.controllerColor = data.get('controllerColor')
         ctrlsData = data.get('allControllers')

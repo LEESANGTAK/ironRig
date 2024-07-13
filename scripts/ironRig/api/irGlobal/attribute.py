@@ -1,3 +1,4 @@
+import os
 from .serializable import Serializable
 
 
@@ -14,6 +15,11 @@ class Attribute(Serializable):
         self._name = name
         self._type = type
         self._value = value
+
+        self._handleBackslash()
+
+    def __repr__(self):
+        return "irGlobal.{}('{}')".format(self.__class__.__name__, self._name)
 
     @property
     def name(self):
@@ -38,6 +44,12 @@ class Attribute(Serializable):
     @value.setter
     def value(self, value):
         self._value = value
+        self._handleBackslash()
+
+    def _handleBackslash(self):
+        if self._value and self._type == Type.STRING:
+            encodedString = self._value.encode('unicode_escape').decode('utf-8')
+            self._value = os.path.normpath(encodedString).replace('\\', '/')
 
     def serialize(self):
         return {

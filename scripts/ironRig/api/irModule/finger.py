@@ -68,6 +68,6 @@ class Finger(Module):
         data['curlStartIndex'] = self._curlStartIndex
         return data
 
-    def _setAttributesFromData(self, data):
-        super()._setAttributesFromData(data)
-        self._curlStartIndex = data.get('curlStartIndex')
+    def _setPropertiesFromData(self, data):
+        super()._setPropertiesFromData(data)
+        self.curlStartIndex = data.get('curlStartIndex')

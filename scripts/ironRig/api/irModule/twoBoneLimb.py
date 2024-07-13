@@ -460,7 +460,7 @@ class TwoBoneLimb(Module):
         data['nonroll'] = self._nonroll
         return data
 
-    def _setAttributesFromData(self, data):
-        super()._setAttributesFromData(data)
-        self._ikRootController = data.get('ikRootController')
-        self._nonroll = data.get('nonroll')
+    def _setPropertiesFromData(self, data):
+        super()._setPropertiesFromData(data)
+        self.ikRootController = data.get('ikRootController')
+        self.nonroll = data.get('nonroll')
