@@ -111,8 +111,6 @@ class Scene(object):
         logger.info("Saving file to '{}' is done successfully.".format(filename))
 
     def buildFromFile(self, filename):
-        self.clear()
-
         with open(filename, "r") as f:
             data = json.load(f)
             globalMst = self.deserialize(data)
