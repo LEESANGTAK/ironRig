@@ -5,6 +5,7 @@ from ..irModule.twoBoneLimb import TwoBoneLimb
 from ..irModule.threeBoneLimb import ThreeBoneLimb
 from ..irModule.foot import Foot
 from ..irModule.finger import Finger
+from ..irModule.string import String
 
 from ..irMaster.fingersMaster import FingersMaster
 from ..irMaster.eyesMaster import EyesMaster
@@ -18,6 +19,7 @@ MODULE_TABLE = {
     ThreeBoneLimb.__name__: ThreeBoneLimb,
     Foot.__name__: Foot,
     Finger.__name__: Finger,
+    String.__name__: String,
 }
 
 

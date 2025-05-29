@@ -126,7 +126,8 @@ class String(Module):
             if self._dynamic:
                 self._ikSystem.setupDynamic()
         elif self._ikType == String.IK_TYPE.RIBBON:
-            self._ikSystem = RibbonIK(self.shortName+'ik_', ikJoints, self._numberOfControllers)
+            self._ikSystem = RibbonIK(self._name, self._side, numberOfControllers=self._numberOfControllers)
+            self._ikSystem.joints = ikJoints
             self._ikSystem.build()
             if self._hybridIK:
                 self._ikSystem.setupHybridIK()
