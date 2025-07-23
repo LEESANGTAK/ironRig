@@ -58,5 +58,8 @@ You can modify the attributes and code to fit your workflow.
 - **Build**: Create systems and controllers
 - **Post-Build**: Modify controller shapes and scales
 
-## Roadmap
-[Trello Board Link](https://trello.com/b/rdtV0nDj/ironrig)
+## TO DO
+- Graph based GUI
+- Systems: Lid, Fin, Piston, Wheel, Tread
+- Modules: Brow, Lid, Lip, Tongue, Wing, Multiped
+- Template: Biped, Quadroped, Bird, Face

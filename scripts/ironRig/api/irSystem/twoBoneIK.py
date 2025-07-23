@@ -329,6 +329,10 @@ class TwoBoneIK(System):
         cmds.connectAttr('{}.outLength1'.format(pinOutputNode), '{}.{}'.format(self._joints[1], 'translate{}'.format(self._aimAxis)))
         cmds.connectAttr('{}.outLength2'.format(pinOutputNode), '{}.{}'.format(self._joints[2], 'translate{}'.format(self._aimAxis)))
 
+    # TODO
+    def setupSoftIK(self):
+        pass
+
     def buildRootController(self):
         startCtrl = Controller('{}_root'.format(self.shortName), shape=Controller.SHAPE.SPHERE)
         cmds.matchTransform(startCtrl.zeroGrp, self._joints[0], position=True)
