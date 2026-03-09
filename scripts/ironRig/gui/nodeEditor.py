@@ -5,6 +5,25 @@ from .moduleNode import ModuleNode
 from .connectionLine import ConnectionLine
 
 
+class TemporaryConnectionLine(QtWidgets.QGraphicsPathItem):
+    """Temporary line shown while dragging a connection"""
+    def __init__(self):
+        super().__init__()
+        self.setPen(QtGui.QPen(QtGui.QColor(224, 134, 0, 255), 3, QtCore.Qt.SolidLine))
+        self.setZValue(100) # Ensure it's on top while dragging
+
+    def updatePath(self, startPos, endPos):
+        path = QtGui.QPainterPath()
+        path.moveTo(startPos)
+        
+        dy = endPos.y() - startPos.y()
+        cp1 = QtCore.QPointF(startPos.x(), startPos.y() + dy * 0.5)
+        cp2 = QtCore.QPointF(endPos.x(), endPos.y() - dy * 0.5)
+        path.cubicTo(cp1, cp2, endPos)
+        
+        self.setPath(path)
+
+
 class NodeEditor(QtWidgets.QGraphicsView):
     """Main node editor widget for creating and connecting modules"""
 
@@ -15,8 +34,8 @@ class NodeEditor(QtWidgets.QGraphicsView):
         super().__init__()
 
         # Setup scene
-        self.scene = QtWidgets.QGraphicsScene()
-        self.setScene(self.scene)
+        self._scene = QtWidgets.QGraphicsScene()
+        self.setScene(self._scene)
         self.setRenderHint(QtGui.QPainter.Antialiasing)
         self.setViewportUpdateMode(QtWidgets.QGraphicsView.FullViewportUpdate)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
@@ -34,17 +53,30 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.selectedNode = None
         self.connectionStartNode = None
         self.connectionStartPort = None
+        self.connectionStartType = None
+        self.tempConnectionLine = TemporaryConnectionLine()
+        self._scene.addItem(self.tempConnectionLine)
+        self.tempConnectionLine.hide()
 
         # Setup grid
         self.setupGrid()
 
         # Connect signals
-        self.scene.selectionChanged.connect(self.onSelectionChanged)
+        self._scene.selectionChanged.connect(self.onSelectionChanged)
+
+        # Tab menu state
+        self.tabMenu = None
+
+        # Zoom level
+        self._zoom = 1.0
+        self.zoomStep = 1.1
 
     def setupGrid(self):
-        """Setup the background grid"""
-        self.gridSize = 20
-        self.gridColor = QtGui.QColor(50, 50, 50)
+        """Setup the background grid (Houdini style)"""
+        self.gridSize = 25
+        self.gridColorMajor = QtGui.QColor(35, 35, 35)
+        self.gridColorMinor = QtGui.QColor(45, 45, 45)
+        self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(50, 50, 50)))
 
     def createModuleNode(self, moduleType, moduleName=None):
         """Create a new module node"""
@@ -55,7 +87,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
         node.setPos(100 + len(self.nodes) * 150, 100 + len(self.nodes) * 100)
 
         # Add to scene and track
-        self.scene.addItem(node)
+        self._scene.addItem(node)
         self.nodes[moduleName] = node
 
         # Connect node signals
@@ -71,6 +103,42 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.connectionStartNode = node
         self.connectionStartPort = portName
         self.connectionStartType = portType
+        self.tempConnectionLine.show()
+        
+        # Initial path
+        startPos = self.connectionStartNode.pos() + self.connectionStartNode.getPortPositionLocal(portName, portType)
+        self.tempConnectionLine.updatePath(startPos, startPos)
+
+    def mouseMoveEvent(self, event):
+        """Handle mouse move for temporary connection line"""
+        if self.connectionStartNode:
+            startPos = self.connectionStartNode.pos() + self.connectionStartNode.getPortPositionLocal(self.connectionStartPort, self.connectionStartType)
+            endPos = self.mapToScene(event.pos())
+            self.tempConnectionLine.updatePath(startPos, endPos)
+        
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        """Handle mouse release to complete connection"""
+        if self.connectionStartNode:
+            # Check if we released over a port
+            items = self.items(event.pos())
+            for item in items:
+                if isinstance(item, ModuleNode):
+                    localPos = item.mapFromScene(self.mapToScene(event.pos()))
+                    port = item.getPortAtPosition(localPos)
+                    if port:
+                        self.completeConnection(item, port[0], port[1])
+                        break
+            
+            # Reset if no connection made
+            if self.connectionStartNode:
+                self.connectionStartNode = None
+                self.connectionStartPort = None
+                self.connectionStartType = None
+                self.tempConnectionLine.hide()
+
+        super().mouseReleaseEvent(event)
 
     def completeConnection(self, targetNode, targetPort, targetType):
         """Complete a connection to a target node port"""
@@ -84,7 +152,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
                 targetNode, targetPort
             )
 
-            self.scene.addItem(connection)
+            self._scene.addItem(connection)
             self.connections.append(connection)
 
             # Store connection in nodes
@@ -100,6 +168,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.connectionStartNode = None
         self.connectionStartPort = None
         self.connectionStartType = None
+        self.tempConnectionLine.hide()
 
     def deleteNode(self, node):
         """Delete a node and its connections"""
@@ -111,16 +180,16 @@ class NodeEditor(QtWidgets.QGraphicsView):
                     connections_to_remove.append(conn)
 
             for conn in connections_to_remove:
-                self.scene.removeItem(conn)
+                self._scene.removeItem(conn)
                 self.connections.remove(conn)
 
             # Remove node
-            self.scene.removeItem(node)
+            self._scene.removeItem(node)
             del self.nodes[node.moduleName]
 
     def onSelectionChanged(self):
         """Handle selection changes"""
-        selectedItems = self.scene.selectedItems()
+        selectedItems = self._scene.selectedItems()
         if selectedItems:
             self.selectedNode = selectedItems[0] if isinstance(selectedItems[0], ModuleNode) else None
         else:
@@ -128,7 +197,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
 
     def clearScene(self):
         """Clear all nodes and connections"""
-        self.scene.clear()
+        self._scene.clear()
         self.nodes.clear()
         self.connections.clear()
         self.selectedNode = None
@@ -200,7 +269,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
                     startNode, connData['startPort'],
                     endNode, connData['endPort']
                 )
-                self.scene.addItem(connection)
+                self._scene.addItem(connection)
                 self.connections.append(connection)
 
                 startNode.addConnection(connection, 'output')
@@ -280,25 +349,87 @@ class NodeEditor(QtWidgets.QGraphicsView):
         return globalMst
 
     def drawBackground(self, painter, rect):
-        """Draw the background grid"""
+        """Draw the background grid (Major and Minor)"""
         super().drawBackground(painter, rect)
 
-                # Draw grid
-        painter.setPen(QtGui.QPen(self.gridColor, 1, QtCore.Qt.SolidLine))
+        left = int(rect.left())
+        top = int(rect.top())
+        right = int(rect.right())
+        bottom = int(rect.bottom())
 
-        left = int(rect.left()) - (int(rect.left()) % self.gridSize)
-        top = int(rect.top()) - (int(rect.top()) % self.gridSize)
+        # Major grid pen
+        majorPen = QtGui.QPen(self.gridColorMajor, 1)
+        # Minor grid pen
+        minorPen = QtGui.QPen(self.gridColorMinor, 0.5)
 
-        # Create grid lines
-        gridLines = []
-        x = left
-        while x < rect.right():
-            gridLines.append((QtCore.QPointF(x, rect.top()), QtCore.QPointF(x, rect.bottom())))
-            x += self.gridSize
+        # Draw lines
+        gridLinesMajor = []
+        gridLinesMinor = []
 
-        y = top
-        while y < rect.bottom():
-            gridLines.append((QtCore.QPointF(rect.left(), y), QtCore.QPointF(rect.right(), y)))
-            y += self.gridSize
+        # Vertical lines
+        for x in range(left - (left % self.gridSize), right, self.gridSize):
+            if x % (self.gridSize * 4) == 0:
+                gridLinesMajor.append(QtCore.QLineF(x, top, x, bottom))
+            else:
+                gridLinesMinor.append(QtCore.QLineF(x, top, x, bottom))
 
-        painter.drawLines(gridLines)
+        # Horizontal lines
+        for y in range(top - (top % self.gridSize), bottom, self.gridSize):
+            if y % (self.gridSize * 4) == 0:
+                gridLinesMajor.append(QtCore.QLineF(left, y, right, y))
+            else:
+                gridLinesMinor.append(QtCore.QLineF(left, y, right, y))
+
+        painter.setPen(minorPen)
+        painter.drawLines(gridLinesMinor)
+        painter.setPen(majorPen)
+        painter.drawLines(gridLinesMajor)
+
+    def wheelEvent(self, event):
+        """Handle mouse wheel for zooming"""
+        if event.angleDelta().y() > 0:
+            factor = self.zoomStep
+            self._zoom *= factor
+        else:
+            factor = 1.0 / self.zoomStep
+            self._zoom *= factor
+
+        self.scale(factor, factor)
+
+    def keyPressEvent(self, event):
+        """Handle key press events (Tab menu)"""
+        if event.key() == QtCore.Qt.Key_Tab:
+            self.showTabMenu()
+        else:
+            super().keyPressEvent(event)
+
+    def showTabMenu(self):
+        """Show a search menu for creating modules (Tab menu)"""
+        menu = QtWidgets.QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #333333;
+                color: #DDDDDD;
+                border: 1px solid #555555;
+            }
+            QMenu::item:selected {
+                background-color: #E08600;
+                color: #FFFFFF;
+            }
+        """)
+
+        # Get available modules from ModulePanel if possible, or use defaults
+        moduleTypes = ["Spine", "Neck", "LimbBase", "TwoBoneLimb", "Foot", "Eye", "Brow", "Lip"]
+        
+        for mType in moduleTypes:
+            action = menu.addAction(mType)
+            # Use local position for placement
+            action.triggered.connect(lambda t=mType: self.createModuleAtMouse(t))
+
+        menu.exec_(QtGui.QCursor.pos())
+
+    def createModuleAtMouse(self, moduleType):
+        """Create a module at the current mouse position"""
+        mousePos = self.mapToScene(self.mapFromGlobal(QtGui.QCursor.pos()))
+        node = self.createModuleNode(moduleType)
+        node.setPos(mousePos)

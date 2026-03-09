@@ -31,7 +31,7 @@ class ConnectionLine(QtWidgets.QGraphicsPathItem):
         self.selectedPen = QtGui.QPen(QtGui.QColor(255, 255, 100), 3, QtCore.Qt.SolidLine)
 
     def updatePath(self):
-        """Update the path of the connection line"""
+        """Update the path of the connection line (Vertical S-Curve)"""
         if not self.startNode or not self.endNode:
             return
 
@@ -44,20 +44,19 @@ class ConnectionLine(QtWidgets.QGraphicsPathItem):
             path = QtGui.QPainterPath()
             path.moveTo(startPos)
 
-            # Calculate control points for smooth curve
-            dx = endPos.x() - startPos.x()
+            # Calculate control points for smooth vertical S-curve
             dy = endPos.y() - startPos.y()
-
-            # Control points for smooth curve
-            cp1 = QtCore.QPointF(startPos.x() + dx * 0.3, startPos.y())
-            cp2 = QtCore.QPointF(endPos.x() - dx * 0.3, endPos.y())
+            
+            # Control points: move vertically first, then towards target
+            cp1 = QtCore.QPointF(startPos.x(), startPos.y() + dy * 0.5)
+            cp2 = QtCore.QPointF(endPos.x(), endPos.y() - dy * 0.5)
 
             path.cubicTo(cp1, cp2, endPos)
 
             self.setPath(path)
 
     def getPortPosition(self, node, portName, portType):
-        """Get the position of a port on a node"""
+        """Get the position of a port on a node (Top/Bottom)"""
         if not node:
             return None
 
@@ -76,9 +75,16 @@ class ConnectionLine(QtWidgets.QGraphicsPathItem):
         if portIndex == -1:
             return None
 
-        # Calculate port position
-        y = rect.y() + 20 + portIndex * node.portSpacing
-        x = rect.x() - node.portRadius if portType == 'input' else rect.x() + rect.width() + node.portRadius
+        # Calculate port position (Matching ModuleNode.drawPorts logic)
+        numPorts = len(ports)
+        x_offset = (rect.width() / (numPorts + 1)) * (portIndex + 1)
+        
+        if portType == 'input':
+            y = rect.y() - node.portOffset
+        else:
+            y = rect.y() + rect.height() + node.portOffset
+            
+        x = rect.x() + x_offset
 
         return nodePos + QtCore.QPointF(x, y)
 
@@ -181,7 +187,10 @@ class ConnectionLine(QtWidgets.QGraphicsPathItem):
         deleteAction = menu.addAction("Delete Connection")
         deleteAction.triggered.connect(self.deleteConnection)
 
-        menu.exec_(event.screenPos())
+        if not self.scene() or not self.scene().views():
+            return
+        
+        menu.exec_(QtGui.QCursor.pos())
 
     def deleteConnection(self):
         """Delete this connection"""

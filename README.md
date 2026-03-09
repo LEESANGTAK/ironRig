@@ -2,7 +2,7 @@
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## What is Iron Rig?
-Iron Rig allows you to attach control rig modules to parts of a `Skeletal Mesh`, similar to **Iron Man**.
+> Iron Rig allows you to attach control rig modules to parts of a `Skeletal Mesh`, similar to **Iron Man**.
 - Minimizes the guide placement process
 - Enables flexible connection and disconnection of modules
 - Allows rebuilding of individual parts instead of the entire rig
@@ -57,6 +57,14 @@ You can modify the attributes and code to fit your workflow.
 - **Pre-Build**: Create and orient joints
 - **Build**: Create systems and controllers
 - **Post-Build**: Modify controller shapes and scales
+
+## Launch GUI
+```python
+from imp import reload
+import ironRig; reload(ironRig)
+
+ironRig.gui.ironrig_command.run_ironrig()
+```
 
 ## TO DO
 - Graph based GUI

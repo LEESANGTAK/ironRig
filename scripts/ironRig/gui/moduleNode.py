@@ -3,7 +3,7 @@ from Qt import QtWidgets, QtCore, QtGui
 import ironRig.api.irModule as irm
 
 
-class ModuleNode(QtWidgets.QGraphicsItem):
+class ModuleNode(QtWidgets.QGraphicsObject):
     """Visual representation of a module in the node editor"""
 
     connectionRequested = QtCore.Signal(object, str, str)  # node, port_name, port_type
@@ -18,10 +18,12 @@ class ModuleNode(QtWidgets.QGraphicsItem):
         self.properties = {}
 
         # Node dimensions
-        self.width = 200
-        self.height = 120
-        self.portRadius = 8
-        self.portSpacing = 25
+        self.width = 160
+        self.height = 40
+        self.headerHeight = 20
+        self.portRadius = 5
+        self.portOffset = 8  # Offset ports from the body
+        self.portSpacing = 20
 
         # Setup ports
         self.inputPorts = []
@@ -94,96 +96,135 @@ class ModuleNode(QtWidgets.QGraphicsItem):
         self.setGraphicsEffect(shadow)
 
     def boundingRect(self):
-        """Return the bounding rectangle of the node"""
-        return QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        """Return the bounding rectangle of the node (expanded for ports)"""
+        margin = self.portRadius + self.portOffset + 2
+        return QtCore.QRectF(-self.width/2 - margin, -self.height/2 - margin, 
+                             self.width + margin * 2, self.height + margin * 2)
 
     def paint(self, painter, option, widget):
         """Paint the node"""
         # Setup painter
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
-        # Node background
+        # Colors
         if self.isSelected():
-            bgColor = QtGui.QColor(80, 120, 200)
-            borderColor = QtGui.QColor(120, 180, 255)
-        else:
+            headerColor = QtGui.QColor(224, 134, 0)  # Houdini Orange
             bgColor = QtGui.QColor(60, 60, 60)
-            borderColor = QtGui.QColor(100, 100, 100)
+            borderColor = QtGui.QColor(255, 255, 255)
+        else:
+            headerColor = QtGui.QColor(80, 80, 80)
+            bgColor = QtGui.QColor(45, 45, 45)
+            borderColor = QtGui.QColor(30, 30, 30)
 
-        # Draw node body
+        # Draw node body (use fixed size, not full boundingRect)
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        
         painter.setBrush(QtGui.QBrush(bgColor))
-        painter.setPen(QtGui.QPen(borderColor, 2))
+        
+        # Only show border if selected, and draw it ONLY on the body
+        if self.isSelected():
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255), 1.5))
+        else:
+            painter.setPen(QtGui.QPen(borderColor, 1))
+            
+        painter.drawRect(bodyRect)
 
-        rect = self.boundingRect()
-        painter.drawRoundedRect(rect, 10, 10)
+        # Draw header
+        headerRect = QtCore.QRectF(bodyRect.x(), bodyRect.y(), bodyRect.width(), self.headerHeight)
+        painter.setBrush(QtGui.QBrush(headerColor))
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.drawRect(headerRect)
 
-        # Draw title
-        painter.setPen(QtGui.QColor(255, 255, 255))
-        font = QtGui.QFont()
+        # Draw title (moduleType)
+        painter.setPen(QtGui.QColor(220, 220, 220))
+        font = QtGui.QFont("Inter", 9)
         font.setBold(True)
-        font.setPointSize(10)
         painter.setFont(font)
-
-        titleRect = QtCore.QRectF(rect.x(), rect.y() - 30, rect.width(), 30)
-        painter.drawText(titleRect, QtCore.Qt.AlignCenter, self.moduleType)
+        painter.drawText(headerRect.adjusted(5, 0, -5, 0), QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.moduleType)
 
         # Draw module name
         font.setBold(False)
         font.setPointSize(8)
         painter.setFont(font)
-        nameRect = QtCore.QRectF(rect.x(), rect.y() - 15, rect.width(), 15)
-        painter.drawText(nameRect, QtCore.Qt.AlignCenter, self.moduleName)
+        painter.setPen(QtGui.QColor(180, 180, 180))
+        nameRect = QtCore.QRectF(bodyRect.x(), bodyRect.y() + self.headerHeight, bodyRect.width(), bodyRect.height() - self.headerHeight)
+        painter.drawText(nameRect.adjusted(5, 0, -5, 0), QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.moduleName)
 
         # Draw ports
         self.drawPorts(painter)
 
     def drawPorts(self, painter):
-        """Draw input and output ports"""
-        rect = self.boundingRect()
+        """Draw input and output ports with better aesthetics"""
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
 
-        # Draw input ports (left side)
+        # Draw input ports (Top side - Offset upwards)
+        numInputs = len(self.inputPorts)
         for i, (portName, portType) in enumerate(self.inputPorts):
-            y = rect.y() + 20 + i * self.portSpacing
-            x = rect.x() - self.portRadius
+            x = bodyRect.x() + (bodyRect.width() / (numInputs + 1)) * (i + 1)
+            y = bodyRect.y() - self.portOffset
 
-            # Port circle
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(100, 150, 255)))
-            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255), 1))
+            # Port circle (Houdini style)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(180, 180, 180)))
+            painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1))
             painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
+            
+            # Inner dot
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))
+            painter.setPen(QtCore.Qt.NoPen)
+            painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius * 0.4, self.portRadius * 0.4)
 
-            # Port label
-            painter.setPen(QtGui.QColor(255, 255, 255))
-            font = QtGui.QFont()
-            font.setPointSize(7)
-            painter.setFont(font)
-            painter.drawText(QtCore.QRectF(x - 50, y - 10, 45, 20),
-                           QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter, portName)
-
-        # Draw output ports (right side)
+        # Draw output ports (Bottom side - Offset downwards)
+        numOutputs = len(self.outputPorts)
         for i, (portName, portType) in enumerate(self.outputPorts):
-            y = rect.y() + 20 + i * self.portSpacing
-            x = rect.x() + rect.width() + self.portRadius
+            x = bodyRect.x() + (bodyRect.width() / (numOutputs + 1)) * (i + 1)
+            y = bodyRect.y() + bodyRect.height() + self.portOffset
 
             # Port circle
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(255, 150, 100)))
-            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255), 1))
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(180, 180, 180)))
+            painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1))
             painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
+            
+            # Inner dot
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))
+            painter.setPen(QtCore.Qt.NoPen)
+            painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius * 0.4, self.portRadius * 0.4)
 
-            # Port label
-            painter.setPen(QtGui.QColor(255, 255, 255))
-            font = QtGui.QFont()
-            font.setPointSize(7)
-            painter.setFont(font)
-            painter.drawText(QtCore.QRectF(x + 5, y - 10, 45, 20),
-                           QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, portName)
+    def shape(self):
+        """Return a precise shape for hit testing (Body + Ports)"""
+        path = QtGui.QPainterPath()
+        
+        # Add body
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        path.addRect(bodyRect)
+        
+        # Add port shapes (circles)
+        # Input ports
+        numInputs = len(self.inputPorts)
+        for i in range(numInputs):
+            x = bodyRect.x() + (bodyRect.width() / (numInputs + 1)) * (i + 1)
+            y = bodyRect.y() - self.portOffset
+            path.addEllipse(QtCore.QPointF(x, y), self.portRadius * 2, self.portRadius * 2)
+            
+        # Output ports
+        numOutputs = len(self.outputPorts)
+        for i in range(numOutputs):
+            x = bodyRect.x() + (bodyRect.width() / (numOutputs + 1)) * (i + 1)
+            y = bodyRect.y() + bodyRect.height() + self.portOffset
+            path.addEllipse(QtCore.QPointF(x, y), self.portRadius * 2, self.portRadius * 2)
+            
+        return path
 
     def mousePressEvent(self, event):
-        """Handle mouse press events"""
+        """Handle mouse press events - Block selection if clicking on a port"""
         if event.button() == QtCore.Qt.LeftButton:
             # Check if clicking on a port
             port = self.getPortAtPosition(event.pos())
             if port:
+                # Store selection state to restore if needed
                 self.connectionRequested.emit(self, port[0], port[1])
+                event.accept()
+                # Explicitly do NOT call super().mousePressEvent(event) to avoid selection
+                return 
             else:
                 super().mousePressEvent(event)
         elif event.button() == QtCore.Qt.RightButton:
@@ -200,26 +241,28 @@ class ModuleNode(QtWidgets.QGraphicsItem):
                 super().mouseReleaseEvent(event)
 
     def getPortAtPosition(self, pos):
-        """Get the port at the given position"""
-        rect = self.boundingRect()
+        """Get the port at the given position (Top/Bottom)"""
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
 
-        # Check input ports (left side)
+        # Check input ports (Top side)
+        numInputs = len(self.inputPorts)
         for i, (portName, portType) in enumerate(self.inputPorts):
-            y = rect.y() + 20 + i * self.portSpacing
-            x = rect.x() - self.portRadius
+            x = bodyRect.x() + (bodyRect.width() / (numInputs + 1)) * (i + 1)
+            y = bodyRect.y() - self.portOffset
 
-            portRect = QtCore.QRectF(x - self.portRadius, y - self.portRadius,
-                             self.portRadius * 2, self.portRadius * 2)
+            portRect = QtCore.QRectF(x - self.portRadius * 2, y - self.portRadius * 2,
+                                     self.portRadius * 4, self.portRadius * 4)
             if portRect.contains(pos):
                 return (portName, portType)
 
-        # Check output ports (right side)
+        # Check output ports (Bottom side)
+        numOutputs = len(self.outputPorts)
         for i, (portName, portType) in enumerate(self.outputPorts):
-            y = rect.y() + 20 + i * self.portSpacing
-            x = rect.x() + rect.width() + self.portRadius
+            x = bodyRect.x() + (bodyRect.width() / (numOutputs + 1)) * (i + 1)
+            y = bodyRect.y() + bodyRect.height() + self.portOffset
 
-            portRect = QtCore.QRectF(x - self.portRadius, y - self.portRadius,
-                             self.portRadius * 2, self.portRadius * 2)
+            portRect = QtCore.QRectF(x - self.portRadius * 2, y - self.portRadius * 2,
+                                     self.portRadius * 4, self.portRadius * 4)
             if portRect.contains(pos):
                 return (portName, portType)
 
@@ -239,8 +282,9 @@ class ModuleNode(QtWidgets.QGraphicsItem):
         deleteAction = menu.addAction("Delete")
         deleteAction.triggered.connect(lambda: self.nodeDeleted.emit(self))
 
-        menu.exec_(self.scene().views()[0].mapToGlobal(
-            self.scene().views()[0].mapFromScene(self.mapToScene(pos))))
+        if self.scene() and self.scene().views():
+            view = self.scene().views()[0]
+            menu.exec_(view.mapToGlobal(view.mapFromScene(self.mapToScene(pos))))
 
     def showProperties(self):
         """Show properties dialog for the node"""
@@ -259,6 +303,34 @@ class ModuleNode(QtWidgets.QGraphicsItem):
     def getProperties(self):
         """Get the current properties of the node"""
         return self.properties.copy()
+
+    def getPortPositionLocal(self, portName, portType):
+        """Get the local position of a port (Relative to Node center)"""
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        
+        # Find port index
+        ports = self.inputPorts if portType == 'input' else self.outputPorts
+        portIndex = -1
+        for i, (name, ptype) in enumerate(ports):
+            if name == portName:
+                portIndex = i
+                break
+        
+        if portIndex == -1:
+            return QtCore.QPointF(0, 0)
+
+        # Calculate local position (Matching drawPorts logic)
+        numPorts = len(ports)
+        x_offset = (bodyRect.width() / (numPorts + 1)) * (portIndex + 1)
+        
+        if portType == 'input':
+            y = bodyRect.y() - self.portOffset
+        else:
+            y = bodyRect.y() + bodyRect.height() + self.portOffset
+            
+        x = bodyRect.x() + x_offset
+        
+        return QtCore.QPointF(x, y)
 
     def setProperties(self, properties):
         """Set the properties of the node"""
