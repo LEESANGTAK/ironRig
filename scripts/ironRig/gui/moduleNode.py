@@ -191,38 +191,37 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius * 0.4, self.portRadius * 0.4)
 
     def shape(self):
-        """Return a precise shape for hit testing (Header + Ports)"""
+        """Return the shape for hit testing (Body + Ports)"""
         path = QtGui.QPainterPath()
         
-        # Add ONLY header for moving/selecting the node
+        # Add the entire body for selecting/moving
         bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
-        headerRect = QtCore.QRectF(bodyRect.x(), bodyRect.y(), bodyRect.width(), self.headerHeight)
-        path.addRect(headerRect)
+        path.addRect(bodyRect)
         
-        # Add port shapes (circles)
+        # Add port shapes (circles) with slightly larger hit area for easier clicking
         # Input ports
         numInputs = len(self.inputPorts)
         for i in range(numInputs):
             x = bodyRect.x() + (bodyRect.width() / (numInputs + 1)) * (i + 1)
             y = bodyRect.y() - self.portOffset
-            path.addEllipse(QtCore.QPointF(x, y), self.portRadius * 2, self.portRadius * 2)
+            path.addEllipse(QtCore.QPointF(x, y), self.portRadius * 1.5, self.portRadius * 1.5)
             
         # Output ports
         numOutputs = len(self.outputPorts)
         for i in range(numOutputs):
             x = bodyRect.x() + (bodyRect.width() / (numOutputs + 1)) * (i + 1)
             y = bodyRect.y() + bodyRect.height() + self.portOffset
-            path.addEllipse(QtCore.QPointF(x, y), self.portRadius * 2, self.portRadius * 2)
+            path.addEllipse(QtCore.QPointF(x, y), self.portRadius * 1.5, self.portRadius * 1.5)
             
         return path
 
     def mousePressEvent(self, event):
         """Handle mouse press events - Precision control for movement/connection"""
         if event.button() == QtCore.Qt.LeftButton:
-            # Check if clicking on a port
+            # Check if clicking on a port (Highest Priority)
             port = self.getPortAtPosition(event.pos())
             if port:
-                # 1. Block movement and selection
+                # 1. Block movement and selection to allow pure connection drag
                 self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
                 if self.scene():
                     self.scene().clearSelection()
@@ -235,17 +234,13 @@ class ModuleNode(QtWidgets.QGraphicsObject):
                 event.accept()
                 return 
             
-            # Check if clicking on header (for moving)
-            bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
-            headerRect = QtCore.QRectF(bodyRect.x(), bodyRect.y(), bodyRect.width(), self.headerHeight)
-            if headerRect.contains(event.pos()):
-                # Enable movement ONLY when clicking header
-                self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
-            else:
-                # Disable movement for body clicks
-                self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-                
+            # Clicking on the body (Selection and Movement)
+            # Enable movement for any body part, but port check above acts as a guard
+            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
             super().mousePressEvent(event)
+            
+        elif event.button() == QtCore.Qt.RightButton:
+            self.showContextMenu(event.pos())
             
         elif event.button() == QtCore.Qt.RightButton:
             self.showContextMenu(event.pos())
@@ -264,8 +259,9 @@ class ModuleNode(QtWidgets.QGraphicsObject):
                 super().mouseReleaseEvent(event)
 
     def getPortAtPosition(self, pos):
-        """Get the port at the given position (Top/Bottom)"""
+        """Get the port at the given position (Matching shape() hit area)"""
         bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        hitSize = self.portRadius * 1.5
 
         # Check input ports (Top side)
         numInputs = len(self.inputPorts)
@@ -273,8 +269,7 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             x = bodyRect.x() + (bodyRect.width() / (numInputs + 1)) * (i + 1)
             y = bodyRect.y() - self.portOffset
 
-            portRect = QtCore.QRectF(x - self.portRadius * 2, y - self.portRadius * 2,
-                                     self.portRadius * 4, self.portRadius * 4)
+            portRect = QtCore.QRectF(x - hitSize, y - hitSize, hitSize * 2, hitSize * 2)
             if portRect.contains(pos):
                 return (portName, portType)
 
@@ -284,8 +279,7 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             x = bodyRect.x() + (bodyRect.width() / (numOutputs + 1)) * (i + 1)
             y = bodyRect.y() + bodyRect.height() + self.portOffset
 
-            portRect = QtCore.QRectF(x - self.portRadius * 2, y - self.portRadius * 2,
-                                     self.portRadius * 4, self.portRadius * 4)
+            portRect = QtCore.QRectF(x - hitSize, y - hitSize, hitSize * 2, hitSize * 2)
             if portRect.contains(pos):
                 return (portName, portType)
 
