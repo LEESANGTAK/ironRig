@@ -31,13 +31,14 @@ def launch_in_maya():
     global _ironrig_window
 
     try:
-        # Close existing window if it exists
-        if _ironrig_window is not None:
-            try:
-                _ironrig_window.close()
-                _ironrig_window.deleteLater()
-            except:
-                pass
+        # Close existing window if it exists (using objectName search)
+        for widget in QtWidgets.QApplication.allWidgets():
+            if widget.objectName() == "ironRigMainWindow":
+                try:
+                    widget.close()
+                    widget.deleteLater()
+                except:
+                    pass
 
         # Create and show main window
         _ironrig_window = MainWindow()

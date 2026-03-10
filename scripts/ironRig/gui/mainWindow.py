@@ -27,6 +27,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     pass
 
         super().__init__(parent)
+        self.setObjectName("ironRigMainWindow") # Unique ID for searching
         self.setWindowTitle("Iron Rig - Node Editor")
         self.setGeometry(100, 100, 1400, 900)
 
