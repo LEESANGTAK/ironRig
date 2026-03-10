@@ -1,0 +1,225 @@
+from Qt import QtWidgets, QtCore, QtGui
+import maya.cmds as cmds
+
+class PropertyEditor(QtWidgets.QWidget):
+    """Panel for editing node properties and joint selection"""
+    
+    propertyChanged = QtCore.Signal(object, dict) # node, properties
+    nodeRenamed = QtCore.Signal(object, str, str) # node, oldName, newName
+    storeDefaultRequested = QtCore.Signal(str, dict) # moduleType, properties
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.currentNode = None
+        self.setupUI()
+
+    def setupUI(self):
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.setContentsMargins(10, 10, 10, 10)
+        self.layout.setSpacing(10)
+
+        # Title / Node info with Gear Button
+        titleLayout = QtWidgets.QHBoxLayout()
+        self.titleLabel = QtWidgets.QLabel("Property Editor")
+        self.titleLabel.setStyleSheet("font-weight: bold; font-size: 14px; color: #E08600;")
+        titleLayout.addWidget(self.titleLabel)
+        
+        self.gearBtn = QtWidgets.QPushButton("\u2699") # Gear unicode
+        self.gearBtn.setFixedSize(24, 24)
+        self.gearBtn.setStyleSheet("""
+            QPushButton { 
+                border: none; 
+                background: transparent; 
+                font-size: 16px; 
+                color: #888; 
+            }
+            QPushButton:hover { color: #BBB; }
+        """)
+        self.gearBtn.clicked.connect(self.showGearMenu)
+        self.gearBtn.hide() # Hide by default
+        titleLayout.addWidget(self.gearBtn)
+        self.layout.addLayout(titleLayout)
+
+        # Scroll Area for properties
+        self.scrollArea = QtWidgets.QScrollArea()
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollContent = QtWidgets.QWidget()
+        self.scrollLayout = QtWidgets.QVBoxLayout(self.scrollContent)
+        self.scrollLayout.setAlignment(QtCore.Qt.AlignTop)
+        self.scrollArea.setWidget(self.scrollContent)
+        self.layout.addWidget(self.scrollArea)
+
+        # Empty state label
+        self.emptyLabel = QtWidgets.QLabel("Select a node to edit properties")
+        self.emptyLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.scrollLayout.addWidget(self.emptyLabel)
+
+    def setNode(self, node):
+        """Display properties for the selected node"""
+        self.currentNode = node
+        
+        # Robustly clear existing layout including sub-layouts
+        self.clearLayout(self.scrollLayout)
+
+        if not node:
+            self.titleLabel.setText("Property Editor")
+            self.gearBtn.hide() # Hide gear when no selection
+            emptyLabel = QtWidgets.QLabel("Select a node to edit properties")
+            emptyLabel.setAlignment(QtCore.Qt.AlignCenter)
+            emptyLabel.setStyleSheet("color: #888; margin-top: 20px;")
+            self.scrollLayout.addWidget(emptyLabel)
+            return
+        
+        self.gearBtn.show() # Show gear when node is selected
+
+        self.titleLabel.setText(f"Properties: {node.moduleName} ({node.moduleType})")
+
+        # 1. Base Properties (Name, Side)
+        self.addHeader("Base Settings")
+        
+        self.nameEdit = self.addStringField("Module Name", node.moduleName, self.onNameChanged)
+        self.sideCombo = self.addComboField("Side", ["CENTER", "LEFT", "RIGHT"], node.properties.get('side', 'CENTER'), self.onSideChanged)
+
+        # 2. Dynamic Port Settings (User Request: All Nodes)
+        self.addHeader("Connectivity")
+        current_ports = len(node.inputPorts)
+        self.portCountSpin = self.addSpinField("Input Port Count", 1, 10, current_ports, self.onPortCountChanged)
+
+        # 3. Joint Selection
+        self.addHeader("Skeleton")
+        self.jointList = QtWidgets.QListWidget()
+        self.jointList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        for jnt in node.properties.get('joints', []):
+            self.jointList.addItem(jnt)
+        self.scrollLayout.addWidget(self.jointList)
+
+        btnLayout = QtWidgets.QHBoxLayout()
+        self.addJntBtn = QtWidgets.QPushButton("Add Selected Joints")
+        self.addJntBtn.clicked.connect(self.addMayaSelectedJoints)
+        self.clearJntBtn = QtWidgets.QPushButton("Clear")
+        self.clearJntBtn.clicked.connect(self.clearJoints)
+        btnLayout.addWidget(self.addJntBtn)
+        btnLayout.addWidget(self.clearJntBtn)
+        self.scrollLayout.addLayout(btnLayout)
+
+    def clearLayout(self, layout):
+        """Recursively clear all widgets and sub-layouts"""
+        if layout is None:
+            return
+            
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+            else:
+                subLayout = item.layout()
+                if subLayout:
+                    self.clearLayout(subLayout)
+
+    def addHeader(self, text):
+        header = QtWidgets.QLabel(text)
+        header.setStyleSheet("font-weight: bold; border-bottom: 1px solid #555; margin-top: 10px; color: #AAA;")
+        self.scrollLayout.addWidget(header)
+
+    def addStringField(self, label, value, callback):
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(QtWidgets.QLabel(label))
+        edit = QtWidgets.QLineEdit(value)
+        edit.editingFinished.connect(callback)
+        layout.addWidget(edit)
+        self.scrollLayout.addLayout(layout)
+        return edit
+
+    def addComboField(self, label, items, current, callback):
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(QtWidgets.QLabel(label))
+        combo = QtWidgets.QComboBox()
+        combo.addItems(items)
+        combo.setCurrentText(current)
+        combo.currentTextChanged.connect(callback)
+        layout.addWidget(combo)
+        self.scrollLayout.addLayout(layout)
+        return combo
+
+    def addSpinField(self, label, min, max, value, callback):
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(QtWidgets.QLabel(label))
+        spin = QtWidgets.QSpinBox()
+        spin.setRange(min, max)
+        spin.setValue(value)
+        spin.valueChanged.connect(callback)
+        layout.addWidget(spin)
+        self.scrollLayout.addLayout(layout)
+        return spin
+
+    # --- Callbacks ---
+
+    def onNameChanged(self):
+        if self.currentNode:
+            oldName = self.currentNode.moduleName
+            newName = self.nameEdit.text()
+            if oldName != newName:
+                self.nodeRenamed.emit(self.currentNode, oldName, newName)
+                self.currentNode.update()
+            
+    def onSideChanged(self, value):
+        if self.currentNode:
+            self.currentNode.properties['side'] = value
+
+    def onPortCountChanged(self, value):
+        """Update node's input port count dynamically (User Request: Generalized)"""
+        if self.currentNode:
+            self.currentNode.setInputPortCount(value)
+
+    def addMayaSelectedJoints(self):
+        sel = cmds.ls(sl=True, type='joint')
+        if not sel:
+            return
+        
+        current_jnts = self.currentNode.properties.get('joints', [])
+        for s in sel:
+            if s not in current_jnts:
+                current_jnts.append(s)
+                self.jointList.addItem(s)
+        
+        self.currentNode.properties['joints'] = current_jnts
+        # Emit signal if needed or just let node hold it
+        if self.currentNode:
+             self.currentNode.update()
+
+    def clearJoints(self):
+        self.jointList.clear()
+        if self.currentNode:
+            self.currentNode.properties['joints'] = []
+
+    def showGearMenu(self):
+        """Show Houdini-style gear menu"""
+        if not self.currentNode:
+            return
+            
+        menu = QtWidgets.QMenu(self)
+        
+        # Save as Defaults
+        saveAction = menu.addAction("Save Options as Defaults")
+        saveAction.triggered.connect(self.onStoreRequested)
+        
+        menu.addSeparator()
+        
+        # Add some mock items for Houdini look
+        menu.addAction("Revert to Base Parameter Layout").setEnabled(False)
+        menu.addAction("Revert to Base Parameters").setEnabled(False)
+        
+        menu.exec_(QtGui.QCursor.pos())
+
+    def onStoreRequested(self):
+        """Request storing current node state as default"""
+        if self.currentNode:
+            config = self.currentNode.getProperties()
+            # We don't want to store the instance name as default
+            if 'name' in config: del config['name'] 
+            self.storeDefaultRequested.emit(self.currentNode.moduleType, config)
+            
+            # Show a brief message or status
+            self.titleLabel.setText("Settings Saved!")
+            QtCore.QTimer.singleShot(1500, lambda: self.titleLabel.setText(f"Properties: {self.currentNode.moduleName} ({self.currentNode.moduleType})"))

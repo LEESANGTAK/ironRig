@@ -3,6 +3,8 @@ from Qt import QtWidgets, QtCore, QtGui
 
 from .nodeEditor import NodeEditor
 from .modulePanel import ModulePanel
+from .propertyEditor import PropertyEditor
+from .nodeConfig import save_node_default
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -37,6 +39,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Initialize components
         self.nodeEditor = NodeEditor()
         self.modulePanel = ModulePanel()
+        self.propertyEditor = PropertyEditor()
 
         self.setupUI()
         self.setupMenuBar()
@@ -45,6 +48,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Connect signals
         self.modulePanel.moduleSelected.connect(self.nodeEditor.createModuleNode)
+        self.nodeEditor.selectionChanged.connect(self.onNodeSelectionChanged)
+        self.propertyEditor.nodeRenamed.connect(self.nodeEditor.renameNode)
+        self.propertyEditor.storeDefaultRequested.connect(self.onStoreNodeDefault)
 
     def setupUI(self):
         """Setup the main UI layout"""
@@ -142,6 +148,20 @@ class MainWindow(QtWidgets.QMainWindow):
         moduleDock.setWidget(self.modulePanel)
         moduleDock.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, moduleDock)
+
+        # Property editor dock
+        propertyDock = QtWidgets.QDockWidget("Property Editor", self)
+        propertyDock.setWidget(self.propertyEditor)
+        propertyDock.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, propertyDock)
+
+    def onNodeSelectionChanged(self, node):
+        """Update property editor when a node is selected"""
+        self.propertyEditor.setNode(node)
+
+    def onStoreNodeDefault(self, moduleType, config):
+        """Save node defaults to disk"""
+        save_node_default(moduleType, config)
 
     def newScene(self):
         """Create a new scene"""

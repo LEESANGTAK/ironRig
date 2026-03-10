@@ -3,6 +3,7 @@ from Qt import QtWidgets, QtCore, QtGui
 
 from .moduleNode import ModuleNode
 from .connectionLine import ConnectionLine
+from .nodeConfig import get_node_default
 
 
 class TemporaryConnectionLine(QtWidgets.QGraphicsPathItem):
@@ -31,6 +32,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
 
     moduleCreated = QtCore.Signal(str, str)  # module_type, module_name
     connectionCreated = QtCore.Signal(str, str)  # from_node, to_node
+    selectionChanged = QtCore.Signal(object) # selected_node
 
     def __init__(self):
         super().__init__()
@@ -44,6 +46,9 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+
+        # Explicitly set a very large scene rect to allow panning anywhere
+        self._scene.setSceneRect(-50000, -50000, 100000, 100000)
 
         # Setup view properties
         self.setDragMode(QtWidgets.QGraphicsView.RubberBandDrag)
@@ -73,6 +78,9 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self._zoom = 1.0
         self.zoomStep = 1.1
 
+        # Pan state
+        self._last_pan_pos = None
+
     def setupGrid(self):
         """Setup the background grid (Houdini style)"""
         self.gridSize = 25
@@ -85,7 +93,19 @@ class NodeEditor(QtWidgets.QGraphicsView):
         if moduleName is None:
             moduleName = f"{moduleType}_{len(self.nodes)}"
 
+        # Customization for specialized nodes (handled in ModuleNode.setupPorts)
         node = ModuleNode(moduleType, moduleName)
+        
+        # Apply stored defaults if available
+        defaults = get_node_default(moduleType)
+        if defaults:
+            # Apply port count first as it affects geometry
+            if 'inputPortCount' in defaults:
+                node.setInputPortCount(defaults['inputPortCount'])
+            
+            node.setProperties(defaults)
+            print(f"Applied defaults for {moduleType}")
+            
         node.setPos(100 + len(self.nodes) * 150, 100 + len(self.nodes) * 100)
 
         # Add to scene and track
@@ -97,9 +117,22 @@ class NodeEditor(QtWidgets.QGraphicsView):
         node.connectionUnplugged.connect(self.unplugConnection)
         node.connectionCompleted.connect(self.completeConnection)
         node.nodeDeleted.connect(self.deleteNode)
+        node.displayFlagChanged.connect(self.onNodeDisplayFlagChanged)
 
         self.moduleCreated.emit(moduleType, moduleName)
         return node
+
+    def mousePressEvent(self, event):
+        """Handle mouse press for navigation and connections"""
+        if event.button() == QtCore.Qt.MiddleButton:
+            self._last_pan_pos = event.pos()
+            self.setCursor(QtCore.Qt.SizeAllCursor)
+            event.accept()
+            return
+
+        super().mousePressEvent(event)
+        # Ensure focus for key events
+        self.setFocus()
 
     def startConnection(self, node, portName, portType):
         """Start creating a connection from a node port"""
@@ -118,7 +151,20 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.tempConnectionLine.updatePath(startPos, startPos)
 
     def mouseMoveEvent(self, event):
-        """Handle mouse move for temporary connection line"""
+        """Handle mouse move for panning and temporary connection line"""
+        # 1. Handle MMB Panning
+        if self._last_pan_pos is not None:
+            delta = event.pos() - self._last_pan_pos
+            self._last_pan_pos = event.pos()
+            
+            hs = self.horizontalScrollBar()
+            vs = self.verticalScrollBar()
+            hs.setValue(hs.value() - delta.x())
+            vs.setValue(vs.value() - delta.y())
+            event.accept()
+            return
+
+        # 2. Handle Connection Dragging
         if self.connectionStartNode:
             # Calculate scene positions dynamically
             localPortPos = self.connectionStartNode.getPortPositionLocal(self.connectionStartPort, self.connectionStartType)
@@ -131,7 +177,15 @@ class NodeEditor(QtWidgets.QGraphicsView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
-        """Handle mouse release to complete connection"""
+        """Handle mouse release to complete connection or stop panning"""
+        # 1. Stop MMB Panning
+        if event.button() == QtCore.Qt.MiddleButton:
+            self._last_pan_pos = None
+            self.setCursor(QtCore.Qt.ArrowCursor)
+            event.accept()
+            return
+
+        # 2. Complete Connection
         if self.connectionStartNode:
             # Check if we released over a port
             items = self.items(event.pos())
@@ -152,36 +206,60 @@ class NodeEditor(QtWidgets.QGraphicsView):
 
         super().mouseReleaseEvent(event)
 
+    def dragEnterEvent(self, event):
+        """Allow drop if mime data contains text (module type)"""
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event):
+        """Accept move for drag & drop feedack"""
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        """Create a new node at the drop position"""
+        if event.mimeData().hasText():
+            moduleType = event.mimeData().text()
+            
+            # map drop position from View coords to Scene coords
+            scenePos = self.mapToScene(event.pos())
+            
+            # Create node at the drop position
+            node = self.createModuleNode(moduleType)
+            node.setPos(scenePos)
+            
+            event.acceptProposedAction()
+
     def completeConnection(self, targetNode, targetPort, targetType):
         """Complete a connection to a target node port (Normalized as Output -> Input)"""
         if (self.connectionStartNode and
             self.connectionStartNode != targetNode and
             self.connectionStartType != targetType): 
 
-            # Normalize direction: Always Start=Output, End=Input
+            # Normalize direction: Always Source=Child (Output), Target=Parent (Input)
             if self.connectionStartType == 'output':
-                sourceNode, sourcePort = self.connectionStartNode, self.connectionStartPort
-                sinkNode, sinkPort = targetNode, targetPort
+                childNode, childPort = self.connectionStartNode, self.connectionStartPort
+                parentNode, parentPort = targetNode, targetPort
             else:
-                sourceNode, sourcePort = targetNode, targetPort
-                sinkNode, sinkPort = self.connectionStartNode, self.connectionStartPort
+                childNode, childPort = targetNode, targetPort
+                parentNode, parentPort = self.connectionStartNode, self.connectionStartPort
 
             # Create connection line
             connection = ConnectionLine(
-                sourceNode, sourcePort,
-                sinkNode, sinkPort
+                childNode, childPort,
+                parentNode, parentPort
             )
 
             self._scene.addItem(connection)
             self.connections.append(connection)
 
-            # Store connection in nodes using normalized direction
-            sourceNode.addConnection(connection, 'output')
-            sinkNode.addConnection(connection, 'input')
+            # Store connection in nodes
+            childNode.addConnection(connection, 'output')
+            parentNode.addConnection(connection, 'input')
 
             self.connectionCreated.emit(
-                sourceNode.moduleName,
-                sinkNode.moduleName
+                childNode.moduleName,
+                parentNode.moduleName
             )
 
         # Reset connection state
@@ -215,22 +293,52 @@ class NodeEditor(QtWidgets.QGraphicsView):
         # 3. Start a new connection drag from the original source
         self.startConnection(sourceNode, sourcePort, sourceType)
 
+    def renameNode(self, node, oldName, newName):
+        """Update node name and dictionary key"""
+        if oldName in self.nodes:
+            del self.nodes[oldName]
+        
+        node.moduleName = newName
+        self.nodes[newName] = node
+        print(f"Node renamed: {oldName} -> {newName}")
+
     def deleteNode(self, node):
         """Delete a node and its connections"""
-        if node.moduleName in self.nodes:
-            # Remove connections associated with this node
-            connections_to_remove = []
-            for conn in self.connections:
-                if (conn.startNode == node or conn.endNode == node):
-                    connections_to_remove.append(conn)
+        # Find which key this node is stored under (robust search)
+        key_to_del = None
+        for name, n in self.nodes.items():
+            if n == node:
+                key_to_del = name
+                break
 
-            for conn in connections_to_remove:
-                self.deleteConnection(conn)
+        # Remove connections associated with this node
+        connections_to_remove = []
+        for conn in self.connections:
+            if (conn.startNode == node or conn.endNode == node):
+                connections_to_remove.append(conn)
 
-            # Remove node from scene and tracking
-            if self._scene:
-                self._scene.removeItem(node)
-            del self.nodes[node.moduleName]
+        for conn in connections_to_remove:
+            self.deleteConnection(conn)
+
+        # Remove node from scene and tracking
+        if self._scene and node.scene() == self._scene:
+            self._scene.removeItem(node)
+            
+        if key_to_del:
+            del self.nodes[key_to_del]
+        
+        print(f"Node deleted: {getattr(node, 'moduleName', 'Unknown')}")
+
+    def onNodeDisplayFlagChanged(self, node, state):
+        """Ensure only one node has the display flag active (Mutual Exclusion)"""
+        if state:
+            for otherNode in self.nodes.values():
+                if otherNode != node and getattr(otherNode, 'displayFlag', False):
+                    otherNode.displayFlag = False
+                    otherNode.update()
+            
+            # TODO: Trigger rig rebuild up to this node
+            print(f"Display Flag active on: {node.moduleName}. Rig will build up to here.")
 
     def deleteSelectedItems(self):
         """Delete currently selected nodes and connections"""
@@ -254,9 +362,12 @@ class NodeEditor(QtWidgets.QGraphicsView):
         """Handle selection changes"""
         selectedItems = self._scene.selectedItems()
         if selectedItems:
-            self.selectedNode = selectedItems[0] if isinstance(selectedItems[0], ModuleNode) else None
+            node = selectedItems[0] if isinstance(selectedItems[0], ModuleNode) else None
+            self.selectedNode = node
         else:
             self.selectedNode = None
+            
+        self.selectionChanged.emit(self.selectedNode)
 
     def clearScene(self):
         """Clear all nodes and connections"""
@@ -338,77 +449,110 @@ class NodeEditor(QtWidgets.QGraphicsView):
                 startNode.addConnection(connection, 'output')
                 endNode.addConnection(connection, 'input')
 
+    def getBuildChain(self):
+        """Calculate the build chain from GlobalMaster to the node with Display Flag active"""
+        # 1. Find the node with Display Flag
+        displayNode = None
+        for node in self.nodes.values():
+            if getattr(node, 'displayFlag', False):
+                displayNode = node
+                break
+        
+        if not displayNode:
+            return []
+
+        # 2. Trace back to GlobalMaster
+        chain = []
+        curr = displayNode
+        while curr:
+            chain.append(curr)
+            # Find parent (Input port of curr is connected to Output port of parent)
+            parent = None
+            for conn in curr.connections.get('output', []):
+                # In our logic: child.output -> parent.input
+                # So conn.endNode is the parent
+                parent = conn.endNode
+                break
+            curr = parent
+            
+            # Safety break for cycles
+            if curr in chain:
+                break
+                
+        # 3. Reverse to get GlobalMaster -> DisplayNode order
+        chain.reverse()
+        return chain
+
     def buildRig(self):
-        """Build the rig from the node graph"""
+        """Build the rig incrementally from the node graph based on Display Flag"""
         # Import Iron Rig modules
-        import ironRig.api.irGlobal as irg
-        import ironRig.api.irSystem as irs
-        import ironRig.api.irModule as irm
         import ironRig.api.irMaster as irmst
 
-        # Create global master
+        # Reset Maya scene or handle updates properly
+        # For simplicity, we'll start with a fresh build or clear old modules
+        
+        # 1. Get the build chain
+        buildChain = self.getBuildChain()
+        if not buildChain:
+            print("No Display Flag active. Nothing to build.")
+            return
+
+        # 2. Build GlobalMaster (should be first in chain or created if not exists)
+        globalMasterNode = None
+        for node in self.nodes.values():
+            if node.moduleType == 'GlobalMaster':
+                globalMasterNode = node
+                break
+        
+        # If GlobalMaster is not in chain, we might still need it as a base
+        # But if the user follows the tree, it should be the root of the chain.
+        
+        # Create Global Master API object
         globalMst = irmst.GlobalMaster('root', True)
         globalMst.build()
 
-        # Build modules in dependency order
-        builtModules = {}
+        # 3. Build modules in chain order
+        builtModulesMap = {} # Node Name -> API Module Object
 
-        # First pass: create all modules
-        for name, node in self.nodes.items():
+        # Mocking the ironRig API interaction (Needs actual API details)
+        import ironRig.api.irModule as irm
+        
+        for node in buildChain:
+            if node.moduleType == 'GlobalMaster':
+                continue # Already handled or acts as base
+                
             moduleType = node.moduleType
             properties = node.getProperties()
-
-            # Create module based on type
-            if moduleType == 'Spine':
-                joints = properties.get('joints', [])
-                module = irm.Spine(name, irm.Module.SIDE.CENTER, joints)
-            elif moduleType == 'Neck':
-                joints = properties.get('joints', [])
-                module = irm.Neck(name, irm.Module.SIDE.CENTER, joints)
-            elif moduleType == 'LimbBase':
-                joints = properties.get('joints', [])
-                side = properties.get('side', irm.Module.SIDE.LEFT)
-                module = irm.LimbBase(name, side, joints)
-            elif moduleType == 'TwoBoneLimb':
-                joints = properties.get('joints', [])
-                side = properties.get('side', irm.Module.SIDE.LEFT)
-                module = irm.TwoBoneLimb(name, side, joints)
-            elif moduleType == 'Foot':
-                joints = properties.get('joints', [])
-                side = properties.get('side', irm.Module.SIDE.LEFT)
-                module = irm.Foot(name, side, joints)
-            else:
-                # Generic module creation
-                joints = properties.get('joints', [])
-                side = properties.get('side', irm.Module.SIDE.CENTER)
-                module = irm.Module(name, side, joints)
-
+            name = node.moduleName
+            
+            # Create API Module
+            side = getattr(irm.Module.SIDE, properties.get('side', 'CENTER'))
+            module = None
+            
+            # Generic factory (simplified)
+            module_class = getattr(irm, moduleType, irm.Module)
+            module = module_class(name, side, properties.get('joints', []))
+            
             # Set properties
-            if 'controllerSize' in properties:
-                module.controllerSize = properties['controllerSize']
-            if 'controllerColor' in properties:
-                module.controllerColor = properties['controllerColor']
-
-            builtModules[name] = module
-
-        # Second pass: build modules and create connections
-        for name, node in self.nodes.items():
-            module = builtModules[name]
-
-            # Build the module
+            module.controllerSize = properties.get('controllerSize', 10)
+            
+            # Build API lifecycle
             module.preBuild()
             module.build()
-
+            
             # Add to global master
             globalMst.addModules(module)
-
-            # Handle connections (attachments)
-            for conn in self.connections:
-                if conn.startNode == node:
-                    targetModule = builtModules.get(conn.endNode.moduleName)
-                    if targetModule:
-                        module.attachTo(targetModule)
-
+            builtModulesMap[name] = module
+            
+            # Handle Attachment (Child -> Parent)
+            # Find which parent this node is connected to in the graph
+            for conn in node.connections.get('output', []):
+                parent_node = conn.endNode
+                parent_module = builtModulesMap.get(parent_node.moduleName)
+                if parent_module:
+                    module.attachTo(parent_module)
+                    break # Single parent for now
+                    
         return globalMst
 
     def drawBackground(self, painter, rect):
@@ -484,7 +628,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
         """)
 
         # Get available modules from ModulePanel if possible, or use defaults
-        moduleTypes = ["Spine", "Neck", "LimbBase", "TwoBoneLimb", "Foot", "Eye", "Brow", "Lip"]
+        moduleTypes = ["GlobalMaster", "Spine", "Neck", "LimbBase", "TwoBoneLimb", "Foot", "Finger", "MasterGroup", "SpaceSwitch", "CustomScript"]
         
         for mType in moduleTypes:
             action = menu.addAction(mType)
