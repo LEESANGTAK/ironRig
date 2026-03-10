@@ -74,6 +74,13 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         elif mType in ['globalmaster', 'master']:
             self.inputPorts = [('spine', 'input'), ('arm_l', 'input'), ('arm_r', 'input'), ('leg_l', 'input'), ('leg_r', 'input'), ('other', 'input')]
             self.outputPorts = []
+        elif mType == 'spaceswitch':
+            # Port 0: Driven, Port 1+: Drivers
+            self.inputPorts = [('driven_0', 'input'), ('driver_1', 'input')]
+            self.outputPorts = [('out_parent', 'output')]
+        elif mType == 'customscript':
+            self.inputPorts = [('port_0', 'input')]
+            self.outputPorts = [('out_exec', 'output')]
         else:
             # Generic ports
             self.inputPorts = [('in_child', 'input')]
@@ -197,15 +204,10 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             x = bodyRect.x() + (bodyRect.width() / (numInputs + 1)) * (i + 1)
             y = bodyRect.y() - self.portOffset
 
-            # Port circle
+            # Port circle (Improved visually without inner dot as requested)
             painter.setBrush(QtGui.QBrush(QtGui.QColor(180, 180, 180)))
-            painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1))
+            painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1.5))
             painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
-            
-            # Inner dot
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))
-            painter.setPen(QtCore.Qt.NoPen)
-            painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius * 0.4, self.portRadius * 0.4)
 
         # Draw output ports (Bottom side - Connects to parent below)
         numOutputs = len(self.outputPorts)
@@ -215,13 +217,8 @@ class ModuleNode(QtWidgets.QGraphicsObject):
 
             # Port circle
             painter.setBrush(QtGui.QBrush(QtGui.QColor(180, 180, 180)))
-            painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1))
+            painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1.5))
             painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
-            
-            # Inner dot
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))
-            painter.setPen(QtCore.Qt.NoPen)
-            painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius * 0.4, self.portRadius * 0.4)
 
     def shape(self):
         """Return the shape for hit testing (Body + Ports)"""
@@ -313,6 +310,7 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         """Handle mouse release events"""
         # Always restore movement flag on release
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+        self.setCursor(QtCore.Qt.ArrowCursor) # Added cursor reset
         
         if event.button() == QtCore.Qt.LeftButton:
             # Check if releasing on a port
@@ -321,6 +319,51 @@ class ModuleNode(QtWidgets.QGraphicsObject):
                 self.connectionCompleted.emit(self, port[0], port[1])
             else:
                 super().mouseReleaseEvent(event)
+
+    def hoverMoveEvent(self, event):
+        """Handle hover move events to show tooltips for ports"""
+        pos = event.pos()
+        port = self.getPortAtPosition(pos)
+        
+        if port:
+            portName, portType = port
+            tooltip = self.getPortToolTip(portName, portType)
+            self.setToolTip(tooltip)
+            # Use specific cursor over ports
+            self.setCursor(QtCore.Qt.CrossCursor)
+        elif self.isOverDisplayFlag(pos):
+            self.setToolTip("Build Visibility Flag: 클릭하여 이 노드까지 빌드합니다.")
+            self.setCursor(QtCore.Qt.PointingHandCursor)
+        else:
+            self.setToolTip(f"{self.moduleType}: {self.moduleName}")
+            self.setCursor(QtCore.Qt.ArrowCursor)
+            
+        super().hoverMoveEvent(event)
+
+    def getPortToolTip(self, portName, portType):
+        """Get the tooltip for a port based on its name and module context"""
+        mType = self.moduleType
+        
+        if portType == 'input':
+            if mType == 'SpaceSwitch':
+                try:
+                    idx = int(portName.split('_')[-1])
+                    if idx == 0: return "Driven Input: 다른 타겟으로 전환될 대상 모듈을 연결하세요."
+                    return f"Driver Input {idx}: 공간의 기준이 될 타겟 모듈을 연결하세요."
+                except: return "Space Driver Input"
+            elif mType == 'CustomScript':
+                return f"Variable Input ({portName}): 스크립트 내에서 @{portName}으로 참조할 수 있습니다."
+            elif mType == 'GlobalMaster':
+                return f"Root Child ({portName}): 리그 루트 아래에 연결될 모듈을 여기에 연결하세요."
+            else:
+                return f"Child Input ({portName}): 자식 모듈을 여기에 연결하여 리깅 구조를 만드세요."
+        else: # output
+            if mType == 'SpaceSwitch':
+                return "Output: 부모 모듈에 연결하거나 다른 SpaceSwitch의 Driven으로 연결 가능합니다."
+            elif mType == 'CustomScript':
+                return "Execution Output: 빌드 실행 순서를 제어하기 위해 사용합니다."
+            else:
+                return f"Connect to Parent: 위쪽에 있는 부모 모듈의 Input 포트에 연결하세요."
 
     def getPortAtPosition(self, pos):
         """Get the port at the given position (Matching shape() hit area)"""
@@ -444,7 +487,9 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             'master': ['spine', 'arm_l', 'arm_r', 'leg_l', 'leg_r', 'other'],
             'neck': ['head', 'other'],
             'twobonelimb': ['hand_foot', 'other'],
-            'limbbase': ['limb', 'other']
+            'limbbase': ['limb', 'other'],
+            'spaceswitch': ['driven_0', 'driver_1', 'driver_2', 'driver_3', 'driver_4'],
+            'customscript': ['port_0', 'port_1', 'port_2', 'port_3', 'port_4']
         }
         
         mType = self.moduleType.lower()

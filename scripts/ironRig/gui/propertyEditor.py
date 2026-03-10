@@ -90,24 +90,44 @@ class PropertyEditor(QtWidgets.QWidget):
             self.addHeader("Global Master Settings")
             self.buildRootCheck = self.addCheckField("Build Root Controller", node.properties.get('buildRootController', True), 
                                                    lambda v: self.onToggleProperty(node, 'buildRootController', v))
+        
+        # 4. SpaceSwitch Specific
+        if node.moduleType == 'SpaceSwitch':
+            self.addHeader("Space Switch Settings")
+            self.addComboField("Constraint Type", ["Parent", "Orient"], 
+                               "Parent" if node.properties.get('isParentType', True) else "Orient", 
+                               self.onSpaceConstraintTypeChanged)
+            self.addSpinField("Default Driver Index", 0, 10, node.properties.get('defaultDriverIndex', 0),
+                              lambda v: self.onToggleProperty(node, 'defaultDriverIndex', v))
 
-        # 4. Skeleton Selection
+        # 5. CustomScript Specific
+        if node.moduleType == 'CustomScript':
+            self.addHeader("Custom Script Settings")
+            self.addComboField("Execution Timing", ["Pre-Build", "Post-Build"], 
+                               node.properties.get('timing', 'Post-Build'), 
+                               lambda v: self.onToggleProperty(node, 'timing', v))
+            self.addTextAreaField("Python Code", node.properties.get('code', ''), 
+                                  self.onScriptCodeChanged)
+
+        # 6. Skeleton Selection
         headerText = "Skeleton (Root Joint)" if node.moduleType == 'GlobalMaster' else "Skeleton (Joint List)"
-        self.addHeader(headerText)
-        self.jointList = QtWidgets.QListWidget()
-        self.jointList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        for jnt in node.properties.get('joints', []):
-            self.jointList.addItem(jnt)
-        self.scrollLayout.addWidget(self.jointList)
-
-        btnLayout = QtWidgets.QHBoxLayout()
-        self.addJntBtn = QtWidgets.QPushButton("Add Selected Joints")
-        self.addJntBtn.clicked.connect(self.addMayaSelectedJoints)
-        self.clearJntBtn = QtWidgets.QPushButton("Clear")
-        self.clearJntBtn.clicked.connect(self.clearJoints)
-        btnLayout.addWidget(self.addJntBtn)
-        btnLayout.addWidget(self.clearJntBtn)
-        self.scrollLayout.addLayout(btnLayout)
+        # Hide skeleton for non-module types
+        if node.moduleType not in ['SpaceSwitch', 'CustomScript']:
+            self.addHeader(headerText)
+            self.jointList = QtWidgets.QListWidget()
+            self.jointList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+            for jnt in node.properties.get('joints', []):
+                self.jointList.addItem(jnt)
+            self.scrollLayout.addWidget(self.jointList)
+    
+            btnLayout = QtWidgets.QHBoxLayout()
+            self.addJntBtn = QtWidgets.QPushButton("Add Selected Joints")
+            self.addJntBtn.clicked.connect(self.addMayaSelectedJoints)
+            self.clearJntBtn = QtWidgets.QPushButton("Clear")
+            self.clearJntBtn.clicked.connect(self.clearJoints)
+            btnLayout.addWidget(self.addJntBtn)
+            btnLayout.addWidget(self.clearJntBtn)
+            self.scrollLayout.addLayout(btnLayout)
 
     def clearLayout(self, layout):
         """Recursively clear all widgets and sub-layouts"""
@@ -169,6 +189,16 @@ class PropertyEditor(QtWidgets.QWidget):
         self.scrollLayout.addLayout(layout)
         return check
 
+    def addTextAreaField(self, label, value, callback):
+        self.addHeader(label)
+        edit = QtWidgets.QPlainTextEdit()
+        edit.setPlainText(value)
+        edit.setMinimumHeight(150)
+        edit.setStyleSheet("background-color: #222; color: #EEE; font-family: 'Consolas', monospace;")
+        edit.textChanged.connect(lambda: callback(edit.toPlainText()))
+        self.scrollLayout.addWidget(edit)
+        return edit
+
     # --- Callbacks ---
 
     def onNameChanged(self):
@@ -186,6 +216,15 @@ class PropertyEditor(QtWidgets.QWidget):
     def onToggleProperty(self, node, key, value):
         if node:
             node.properties[key] = value
+
+    def onSpaceConstraintTypeChanged(self, value):
+        if self.currentNode:
+            self.currentNode.properties['isParentType'] = (value == "Parent")
+            self.currentNode.properties['isOrientType'] = (value == "Orient")
+
+    def onScriptCodeChanged(self, value):
+        if self.currentNode:
+            self.currentNode.properties['code'] = value
 
     def onPortCountChanged(self, value):
         """Update node's input port count dynamically (User Request: Generalized)"""

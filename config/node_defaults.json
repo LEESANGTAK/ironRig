@@ -49,5 +49,16 @@
         "controllerSize": 10,
         "controllerColor": "BLUE",
         "inputPortCount": 1
+    },
+    "SpaceSwitch": {
+        "isParentType": true,
+        "isOrientType": false,
+        "defaultDriverIndex": 0,
+        "inputPortCount": 2
+    },
+    "CustomScript": {
+        "timing": "Post-Build",
+        "code": "# Python script here\n# Use @port0 to reference the module connected to input port 0",
+        "inputPortCount": 1
     }
 }

@@ -163,6 +163,16 @@ class ModulePanel(QtWidgets.QWidget):
                     'description': 'Root of the control rig. Required for building.',
                     'icon': 'master_icon.png',
                     'category': 'Special'
+                },
+                'SpaceSwitch': {
+                    'description': 'Creates dynamic space switches between modules.',
+                    'icon': 'spaceswitch_icon.png',
+                    'category': 'Special'
+                },
+                'CustomScript': {
+                    'description': 'Executes custom Python code during build.',
+                    'icon': 'script_icon.png',
+                    'category': 'Special'
                 }
             }
         }

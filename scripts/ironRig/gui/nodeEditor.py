@@ -545,7 +545,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
         globalMst.build()
         builtModulesMap = {} # Node Name -> API Module Object
 
-        # 5. Build modules in chain order
+        # 5. Build modules and Advanced Nodes in chain order
         for node in buildChain:
             if node.moduleType == 'GlobalMaster':
                 continue
@@ -553,54 +553,119 @@ class NodeEditor(QtWidgets.QGraphicsView):
             moduleType = node.moduleType
             properties = node.getProperties()
             name = node.moduleName
-            side_str = properties.get('side', 'CENTER')
-            side = getattr(irg.container.Container.SIDE, side_str)
-            joints = properties.get('joints', [])
             
-            # Create API Module via Scene/Factory
-            try:
-                module = irScene.addModule(moduleType, name, side, skeletonJoints=joints)
-            except KeyError:
-                self.logMessage.emit(f"Warning: Module type '{moduleType}' not found in API Factory. Skipping.", "warning")
-                continue
-            
-            # Apply common properties
-            if 'controllerSize' in properties:
-                module.controllerSize = properties.get('controllerSize')
-            if 'controllerColor' in properties:
-                module.controllerColor = properties.get('controllerColor')
-            
-            # API Build Lifecycle
-            try:
-                self.logMessage.emit(f"Building {moduleType}: {name}...", "info")
-                module.preBuild()
+            # --- Case A: Standard Modules ---
+            if moduleType not in ['SpaceSwitch', 'CustomScript']:
+                side_str = properties.get('side', 'CENTER')
+                side = getattr(irg.container.Container.SIDE, side_str)
+                joints = properties.get('joints', [])
                 
-                # Apply module-specific properties AFTER preBuild (when systems are initialized)
-                if moduleType == 'Neck' and 'inputPortCount' in properties:
-                    module.numberOfControllers = properties.get('inputPortCount', 2)
+                try:
+                    module = irScene.addModule(moduleType, name, side, skeletonJoints=joints)
+                except KeyError:
+                    self.logMessage.emit(f"Warning: Module type '{moduleType}' not found in API Factory. Skipping.", "warning")
+                    continue
                 
-                module.build()
+                if 'controllerSize' in properties:
+                    module.controllerSize = properties.get('controllerSize')
+                if 'controllerColor' in properties:
+                    module.controllerColor = properties.get('controllerColor')
                 
-                # Parent to GlobalMaster
-                globalMst.addModules(module)
-                builtModulesMap[name] = module
-                self.logMessage.emit(f"Successfully built {name}", "success")
-            except Exception as e:
-                self.logMessage.emit(f"Error building {name}: {str(e)}", "error")
-                self.logMessage.emit(traceback.format_exc(), "error")
-                return 
-            
-            # Handle Attachment (Child -> Parent)
-            for conn in node.connections.get('output', []):
-                parent_node = conn.endNode
-                parent_module = builtModulesMap.get(parent_node.moduleName)
-                if parent_module:
-                    try:
-                        module.attachTo(parent_module)
-                        self.logMessage.emit(f"Attached {name} to {parent_node.moduleName}", "info")
-                    except Exception as e:
-                        self.logMessage.emit(f"Attachment error: {str(e)}", "error")
-                    break 
+                try:
+                    self.logMessage.emit(f"Building Module {moduleType}: {name}...", "info")
+                    module.preBuild()
+                    
+                    # Apply specific properties AFTER preBuild
+                    if moduleType == 'Neck' and 'inputPortCount' in properties:
+                        module.numberOfControllers = properties.get('inputPortCount', 2)
+                    
+                    module.build()
+                    globalMst.addModules(module)
+                    builtModulesMap[name] = module
+                    self.logMessage.emit(f"Successfully built {name}", "success")
+                except Exception as e:
+                    self.logMessage.emit(f"Error building {name}: {str(e)}", "error")
+                    self.logMessage.emit(traceback.format_exc(), "error")
+                    return 
+
+                # Handle Standard Attachment
+                for conn in node.connections.get('output', []):
+                    parent_node = conn.endNode
+                    parent_module = builtModulesMap.get(parent_node.moduleName)
+                    if parent_module:
+                        try:
+                            module.attachTo(parent_module)
+                            self.logMessage.emit(f"Attached {name} to {parent_node.moduleName}", "info")
+                        except Exception as e:
+                            self.logMessage.emit(f"Attachment error: {str(e)}", "error")
+                        break 
+
+            # --- Case B: SpaceSwitch ---
+            elif moduleType == 'SpaceSwitch':
+                try:
+                    self.logMessage.emit(f"Setting up SpaceSwitch: {name}...", "info")
+                    
+                    # Resolve Driven from Port 0
+                    drivenMod = None
+                    for conn in node.connections.get('input', []):
+                        if conn.endPort.split('_')[-1] == '0':
+                            drivenMod = builtModulesMap.get(conn.startNode.moduleName)
+                            break
+                    
+                    if not drivenMod:
+                        self.logMessage.emit(f"Warning: No driven module connected to {name} Port 0.", "warning")
+                        continue
+                        
+                    # Resolve Drivers from Port 1+
+                    driverMods = []
+                    for conn in node.connections.get('input', []):
+                        portIdx = int(conn.endPort.split('_')[-1])
+                        if portIdx > 0:
+                            mod = builtModulesMap.get(conn.startNode.moduleName)
+                            if mod: driverMods.append(mod)
+                    
+                    if not driverMods:
+                        self.logMessage.emit(f"Warning: No driver modules connected to {name}.", "warning")
+                        continue
+
+                    # API call (Heuristic: Use last controller)
+                    drivenCtrl = drivenMod.controllers[-1]
+                    driverCtrls = [m.controllers[-1] for m in driverMods]
+                    
+                    defaultIdx = properties.get('defaultDriverIndex', 0)
+                    defaultIdx = min(max(0, defaultIdx), len(driverCtrls)-1)
+                    defaultCtrl = driverCtrls[defaultIdx]
+                    
+                    ssb = irScene.addSpaceSwitchBuilder(drivenCtrl, driverCtrls, defaultCtrl)
+                    ssb.isParentType = properties.get('isParentType', True)
+                    ssb.isOrientType = properties.get('isOrientType', False)
+                    
+                    globalMst.addSpaceSwitchBuilder(ssb)
+                    self.logMessage.emit(f"SpaceSwitch {name} registered.", "success")
+                except Exception as e:
+                    self.logMessage.emit(f"SpaceSwitch Error: {str(e)}", "error")
+
+            # --- Case C: CustomScript ---
+            elif moduleType == 'CustomScript':
+                try:
+                    timing = properties.get('timing', 'Post-Build')
+                    code = properties.get('code', '# No code defined')
+                    self.logMessage.emit(f"Adding Custom Script ({timing}): {name}...", "info")
+                    
+                    if timing == 'Pre-Build':
+                        cs = irScene.addPreCustomScript(name, code)
+                    else:
+                        cs = irScene.addPostCustomScript(name, code)
+                    
+                    # Inject variables from inputs
+                    for conn in node.connections.get('input', []):
+                        portIdx = conn.endPort.split('_')[-1]
+                        modName = conn.startNode.moduleName
+                        cs.addAttribute(f'port{portIdx}', 1, modName) # 1 = STRING
+                    
+                    self.logMessage.emit(f"Custom Script {name} added.", "success")
+                except Exception as e:
+                    self.logMessage.emit(f"CustomScript Error: {str(e)}", "error")
 
         self.logMessage.emit(f"Rig Build Complete up to: {buildChain[-1].moduleName}", "success")
         self.logMessage.emit("-" * 50, "info")
