@@ -453,8 +453,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
                 endNode.addConnection(connection, 'input')
 
     def getBuildChain(self):
-        """Calculate the build chain from GlobalMaster to the node with Display Flag active"""
-        # 1. Find the node with Display Flag
+        """Calculate the build chain (topological sort) from dependencies of the Display Node"""
         displayNode = None
         for node in self.nodes.values():
             if getattr(node, 'displayFlag', False):
@@ -464,27 +463,44 @@ class NodeEditor(QtWidgets.QGraphicsView):
         if not displayNode:
             return []
 
-        # 2. Trace back to GlobalMaster
-        chain = []
-        curr = displayNode
-        while curr:
-            chain.append(curr)
-            # Find parent (Input port of curr is connected to Output port of parent)
-            parent = None
-            for conn in curr.connections.get('output', []):
-                # In our logic: child.output -> parent.input
-                # So conn.endNode is the parent
-                parent = conn.endNode
-                break
-            curr = parent
-            
-            # Safety break for cycles
-            if curr in chain:
-                break
+        # Topological Sort using DFS
+        stack = []
+        visited = set()
+        processing = set() # For cycle detection
+        
+        def visit(node):
+            if node in processing:
+                print(f"Cycle detected at node: {node.moduleName}")
+                return
+            if node in visited:
+                return
                 
-        # 3. Reverse to get GlobalMaster -> DisplayNode order
-        chain.reverse()
-        return chain
+            processing.add(node)
+            
+            # Dependencies:
+            # 1. Structural Parents (Follow 'output' connections for all nodes)
+            # In ironRig: Child.Output -> Parent.Input
+            for conn in node.connections.get('output', []):
+                visit(conn.endNode) 
+                
+            # 2. Functional Data Dependencies (Follow 'input' connections for specific types)
+            # For these nodes, input ports provide actual data/objects needed for build.
+            if node.moduleType in ['SpaceSwitch', 'ModuleDecompose', 'CustomScript']:
+                for conn in node.connections.get('input', []):
+                    visit(conn.startNode)
+                
+            processing.remove(node)
+            visited.add(node)
+            stack.append(node)
+
+        # Always ensure GlobalMaster is at the start if it exists
+        gm = next((n for n in self.nodes.values() if n.moduleType == 'GlobalMaster'), None)
+        if gm:
+            visit(gm)
+
+        visit(displayNode)
+        
+        return stack
 
     def buildRig(self):
         """Build the rig incrementally from the node graph based on Display Flag"""
@@ -497,22 +513,32 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.logMessage.emit("-" * 50, "info")
         self.logMessage.emit("Starting Build Process...", "info")
 
-        # 1. Scene Cleanup: Remove old controlRig and orphaned groups
-        for rig_root in ['controlRig', 'controlRig_sets']:
-            if cmds.objExists(rig_root):
+        # 1. Scene Cleanup: Remove old controlRig and all related sets
+        clean_targets = ['controlRig', 'controlRig_sets', 'geo_layer']
+        for target in clean_targets:
+            if cmds.objExists(target):
                 try:
-                    cmds.delete(rig_root)
-                    self.logMessage.emit(f"Cleaned up: {rig_root}", "info")
-                except Exception as e:
-                    self.logMessage.emit(f"Cleanup error ({rig_root}): {str(e)}", "error")
-        
-        # Cleanup potential orphaned module groups
-        orphans = cmds.ls('*_mod_grp*', '*_master_grp*', type='transform')
+                    cmds.delete(target)
+                    self.logMessage.emit(f"Cleaned up: {target}", "info")
+                except: pass
+
+        # Robustly find and delete all IronRig sets (any set ending in _set or _set1, etc)
+        # And orphaned module/master groups
+        all_sets = cmds.ls(type='objectSet')
+        iron_sets = [s for s in all_sets if '_mod_set' in s or '_mst_set' in s or s.startswith('controlRig_sets') or s == 'geo_layer']
+        if iron_sets:
+            try:
+                cmds.delete(iron_sets)
+                self.logMessage.emit(f"Cleaned up {len(iron_sets)} IronRig sets.", "info")
+            except: pass
+
+        orphans = cmds.ls('*_mod_grp*', '*_master_grp*', '*_sys_grp*', '*_out_grp*', '*_geo_grp*', type='transform')
         for orphan in orphans:
+            # Only delete if it has no parent (Top level orphan)
             if not cmds.listRelatives(orphan, parent=True):
                 try: 
                     cmds.delete(orphan)
-                    self.logMessage.emit(f"Cleaned up orphan: {orphan}", "info")
+                    self.logMessage.emit(f"Cleaned up orphan group: {orphan}", "info")
                 except: pass
 
         # 2. Setup API Scene
@@ -543,7 +569,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
             globalMst = irScene.addGlobalMaster(rootJnt, True)
 
         globalMst.build()
-        builtModulesMap = {} # Node Name -> API Module Object
+        builtItemsMap = {} # Node Name -> API Object (Module or Controller)
 
         # 5. Build modules and Advanced Nodes in chain order
         for node in buildChain:
@@ -555,7 +581,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
             name = node.moduleName
             
             # --- Case A: Standard Modules ---
-            if moduleType not in ['SpaceSwitch', 'CustomScript']:
+            if moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose']:
                 side_str = properties.get('side', 'CENTER')
                 side = getattr(irg.container.Container.SIDE, side_str)
                 joints = properties.get('joints', [])
@@ -575,13 +601,12 @@ class NodeEditor(QtWidgets.QGraphicsView):
                     self.logMessage.emit(f"Building Module {moduleType}: {name}...", "info")
                     module.preBuild()
                     
-                    # Apply specific properties AFTER preBuild
                     if moduleType == 'Neck' and 'inputPortCount' in properties:
                         module.numberOfControllers = properties.get('inputPortCount', 2)
                     
                     module.build()
                     globalMst.addModules(module)
-                    builtModulesMap[name] = module
+                    builtItemsMap[name] = module
                     self.logMessage.emit(f"Successfully built {name}", "success")
                 except Exception as e:
                     self.logMessage.emit(f"Error building {name}: {str(e)}", "error")
@@ -591,8 +616,8 @@ class NodeEditor(QtWidgets.QGraphicsView):
                 # Handle Standard Attachment
                 for conn in node.connections.get('output', []):
                     parent_node = conn.endNode
-                    parent_module = builtModulesMap.get(parent_node.moduleName)
-                    if parent_module:
+                    parent_module = builtItemsMap.get(parent_node.moduleName)
+                    if isinstance(parent_module, irg.container.Container): # Module or Master
                         try:
                             module.attachTo(parent_module)
                             self.logMessage.emit(f"Attached {name} to {parent_node.moduleName}", "info")
@@ -600,37 +625,66 @@ class NodeEditor(QtWidgets.QGraphicsView):
                             self.logMessage.emit(f"Attachment error: {str(e)}", "error")
                         break 
 
-            # --- Case B: SpaceSwitch ---
+            # --- Case B: ModuleDecompose ---
+            elif moduleType == 'ModuleDecompose':
+                try:
+                    targetCtrlName = properties.get('targetController', 'moduleController')
+                    self.logMessage.emit(f"Decomposing {name}: Extracting {targetCtrlName}...", "info")
+                    
+                    sourceMod = None
+                    for conn in node.connections.get('input', []):
+                        sourceMod = builtItemsMap.get(conn.startNode.moduleName)
+                        break
+                    
+                    if not sourceMod:
+                        self.logMessage.emit(f"Warning: No input module for {name}", "warning")
+                        continue
+                        
+                    # Find controller in module
+                    ctrl = sourceMod.findController(targetCtrlName)
+                    if ctrl:
+                        builtItemsMap[name] = ctrl
+                        self.logMessage.emit(f"Extracted {targetCtrlName} from {conn.startNode.moduleName}", "success")
+                    else:
+                        self.logMessage.emit(f"Error: Controller '{targetCtrlName}' not found in {conn.startNode.moduleName}", "error")
+                except Exception as e:
+                    self.logMessage.emit(f"Decompose Error: {str(e)}", "error")
+
+            # --- Case C: SpaceSwitch ---
             elif moduleType == 'SpaceSwitch':
                 try:
                     self.logMessage.emit(f"Setting up SpaceSwitch: {name}...", "info")
                     
                     # Resolve Driven from Port 0
-                    drivenMod = None
+                    drivenItem = None
                     for conn in node.connections.get('input', []):
                         if conn.endPort.split('_')[-1] == '0':
-                            drivenMod = builtModulesMap.get(conn.startNode.moduleName)
+                            drivenItem = builtItemsMap.get(conn.startNode.moduleName)
                             break
                     
-                    if not drivenMod:
-                        self.logMessage.emit(f"Warning: No driven module connected to {name} Port 0.", "warning")
+                    if not drivenItem:
+                        self.logMessage.emit(f"Warning: No driven item connected to {name} Port 0.", "warning")
                         continue
                         
                     # Resolve Drivers from Port 1+
-                    driverMods = []
+                    driverItems = []
                     for conn in node.connections.get('input', []):
                         portIdx = int(conn.endPort.split('_')[-1])
                         if portIdx > 0:
-                            mod = builtModulesMap.get(conn.startNode.moduleName)
-                            if mod: driverMods.append(mod)
+                            item = builtItemsMap.get(conn.startNode.moduleName)
+                            if item: driverItems.append(item)
                     
-                    if not driverMods:
-                        self.logMessage.emit(f"Warning: No driver modules connected to {name}.", "warning")
+                    if not driverItems:
+                        self.logMessage.emit(f"Warning: No driver items connected to {name}.", "warning")
                         continue
 
-                    # API call (Heuristic: Use last controller)
-                    drivenCtrl = drivenMod.controllers[-1]
-                    driverCtrls = [m.controllers[-1] for m in driverMods]
+                    # Convert Modules to Controllers if needed (Heuristic: use last controller)
+                    def to_ctrl(item):
+                        if hasattr(item, 'controllers'): return item.controllers[-1]
+                        return item
+                        
+                    drivenCtrl = to_ctrl(drivenItem)
+                    driverCtrls = [to_ctrl(i) for i in driverItems]
                     
                     defaultIdx = properties.get('defaultDriverIndex', 0)
                     defaultIdx = min(max(0, defaultIdx), len(driverCtrls)-1)

@@ -173,6 +173,11 @@ class ModulePanel(QtWidgets.QWidget):
                     'description': 'Executes custom Python code during build.',
                     'icon': 'script_icon.png',
                     'category': 'Special'
+                },
+                'ModuleDecompose': {
+                    'description': 'Exposes specific controllers from a module.',
+                    'icon': 'decompose_icon.png',
+                    'category': 'Special'
                 }
             }
         }

@@ -92,15 +92,52 @@ class PropertyEditor(QtWidgets.QWidget):
                                                    lambda v: self.onToggleProperty(node, 'buildRootController', v))
         
         # 4. SpaceSwitch Specific
-        if node.moduleType == 'SpaceSwitch':
+        elif node.moduleType == 'SpaceSwitch':
             self.addHeader("Space Switch Settings")
-            self.addComboField("Constraint Type", ["Parent", "Orient"], 
-                               "Parent" if node.properties.get('isParentType', True) else "Orient", 
-                               self.onSpaceConstraintTypeChanged)
-            self.addSpinField("Default Driver Index", 0, 10, node.properties.get('defaultDriverIndex', 0),
-                              lambda v: self.onToggleProperty(node, 'defaultDriverIndex', v))
+            items = ['Parent', 'Orient']
+            currType = 'Parent' if node.properties.get('isParentType', True) else 'Orient'
+            
+            def updateType(val):
+                self.currentNode.properties['isParentType'] = (val == 'Parent')
+                self.currentNode.properties['isOrientType'] = (val == 'Orient')
+            
+            self.addComboField("Constraint Type", items, currType, updateType)
+            
+            def updateDefIdx(val): self.currentNode.properties['defaultDriverIndex'] = val
+            self.addSpinField("Default Driver Index", 0, 10, node.properties.get('defaultDriverIndex', 0), updateDefIdx)
 
-        # 5. CustomScript Specific
+        # 5. ModuleDecompose Specific
+        elif node.moduleType == 'ModuleDecompose':
+            self.addHeader("Extraction Settings")
+            
+            # Resolve input module type
+            inputModType = "Generic"
+            # Assuming currentNode has a 'connections' attribute similar to targetNode
+            # And connections has 'input' which is a list of objects with 'startNode' and 'moduleType'
+            for conn in self.currentNode.connections.get('input', []):
+                inputModType = conn.startNode.moduleType
+                break
+            
+            # Logic controller list per type
+            ctrl_map = {
+                'Spine': ['pelvisController', 'chestController', 'midController'],
+                'Neck': ['headController', 'neckController'],
+                'TwoBoneLimb': ['ikController', 'fkRootController', 'poleVectorController', 'moduleController'],
+                'Foot': ['moduleController', 'ikController'],
+                'LimbBase': ['fkRootController'],
+                'GlobalMaster': ['mainController', 'rootController'],
+                'Finger': ['fkRootController', 'moduleController']
+            }
+            
+            items = ctrl_map.get(inputModType, ['moduleController', 'fkRootController', 'ikController'])
+            current = node.properties.get('targetController', items[0])
+            
+            def updateTarget(val):
+                self.currentNode.properties['targetController'] = val
+            
+            self.addComboField("Target Controller", items, current, updateTarget)
+
+        # 6. CustomScript Specific
         if node.moduleType == 'CustomScript':
             self.addHeader("Custom Script Settings")
             self.addComboField("Execution Timing", ["Pre-Build", "Post-Build"], 
@@ -109,10 +146,10 @@ class PropertyEditor(QtWidgets.QWidget):
             self.addTextAreaField("Python Code", node.properties.get('code', ''), 
                                   self.onScriptCodeChanged)
 
-        # 6. Skeleton Selection
+        # 7. Skeleton Selection
         headerText = "Skeleton (Root Joint)" if node.moduleType == 'GlobalMaster' else "Skeleton (Joint List)"
         # Hide skeleton for non-module types
-        if node.moduleType not in ['SpaceSwitch', 'CustomScript']:
+        if node.moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose']:
             self.addHeader(headerText)
             self.jointList = QtWidgets.QListWidget()
             self.jointList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)

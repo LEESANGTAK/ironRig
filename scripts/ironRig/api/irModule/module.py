@@ -541,6 +541,46 @@ class Module(Container):
             allCtrls.append(ctrl)
         return allCtrls
 
+    def findController(self, name):
+        """Find a controller by its name or a specific property alias."""
+        # First check direct properties (e.g., 'headController')
+        if hasattr(self, name):
+            attr = getattr(self, name)
+            if isinstance(attr, Controller):
+                return attr
+        
+        # Then check name match in all controllers
+        for ctrl in self._allControllers():
+            if ctrl.name == name or ctrl.name.replace('_ctrl', '') == name:
+                return ctrl
+        return None
+
+    def getExposedControllerNames(self):
+        """Get list of controller names/aliases for UI selection."""
+        # Collect property names that return Controller objects
+        exposed = []
+        import inspect
+        for attrName in dir(self):
+            if attrName.startswith('_'): continue
+            try:
+                attr = getattr(self.__class__, attrName)
+                if isinstance(attr, property):
+                    # We can't easily check type without an instance for some properties, 
+                    # but we can try to get it from the instance if it's already built
+                    val = getattr(self, attrName)
+                    if isinstance(val, Controller):
+                        exposed.append(attrName)
+            except:
+                continue
+        
+        # Also include raw names of all controllers if not already in exposed
+        for ctrl in self._allControllers():
+            name = ctrl.name.replace('_ctrl', '')
+            if name not in exposed:
+                exposed.append(name)
+        
+        return sorted(list(set(exposed)))
+
     def serialize(self):
         midLocator = self._oriPlaneLocators[1]
         parentModuleID = self._parentModule.id if self._parentModule else 0

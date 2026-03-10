@@ -60,5 +60,9 @@
         "timing": "Post-Build",
         "code": "# Python script here\n# Use @port0 to reference the module connected to input port 0",
         "inputPortCount": 1
+    },
+    "ModuleDecompose": {
+        "targetController": "moduleController",
+        "inputPortCount": 1
     }
 }
