@@ -1,6 +1,35 @@
 from Qt import QtWidgets, QtCore, QtGui
 
 
+class ModuleListWidget(QtWidgets.QListWidget):
+    """Custom ListWidget to handle drag initiation with module type data"""
+    def startDrag(self, supportedActions):
+        item = self.currentItem()
+        if not item:
+            return
+            
+        moduleData = item.data(QtCore.Qt.UserRole)
+        if not moduleData:
+            return
+            
+        drag = QtGui.QDrag(self)
+        mimeData = QtCore.QMimeData()
+        
+        # Add module type as plain text for easy dropping
+        mimeData.setText(moduleData['type'])
+        
+        # Add internal data if needed
+        # mimeData.setData("application/x-ironrig-module", QtCore.QByteArray(moduleData['type'].encode()))
+        
+        drag.setMimeData(mimeData)
+        
+        # Optional: Set a ghost icon for dragging
+        # pixmap = item.icon().pixmap(QtCore.QSize(64, 64))
+        # drag.setPixmap(pixmap)
+        
+        drag.exec_(supportedActions)
+
+
 class ModulePanel(QtWidgets.QWidget):
     """Panel showing available modules that can be added to the node editor"""
 
@@ -27,7 +56,7 @@ class ModulePanel(QtWidgets.QWidget):
         self.setupCategories()
 
         # Module list
-        self.moduleList = QtWidgets.QListWidget()
+        self.moduleList = ModuleListWidget()
         self.moduleList.setDragEnabled(True)
         self.moduleList.setAcceptDrops(False)
         self.moduleList.setDropIndicatorShown(False)
