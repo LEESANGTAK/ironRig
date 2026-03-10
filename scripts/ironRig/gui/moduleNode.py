@@ -11,6 +11,7 @@ class ModuleNode(QtWidgets.QGraphicsObject):
     connectionUnplugged = QtCore.Signal(object, str, str, object)  # node, portName, portType, connection
     connectionCompleted = QtCore.Signal(object, str, str)  # node, portName, portType
     nodeDeleted = QtCore.Signal(object)  # node
+    displayFlagChanged = QtCore.Signal(object, bool) # node, state
 
     def __init__(self, moduleType, moduleName):
         super().__init__()
@@ -18,6 +19,7 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         self.moduleType = moduleType
         self.moduleName = moduleName
         self.properties = {}
+        self.displayFlag = False  # Houdini-style Display Flag
 
         # Node dimensions
         self.width = 160
@@ -38,6 +40,7 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         # Visual properties
         # Remove ItemIsMovable by default, it will be enabled on header click
         self.setFlags(QtWidgets.QGraphicsItem.ItemIsSelectable |
+                      QtWidgets.QGraphicsItem.ItemIsMovable |
                       QtWidgets.QGraphicsItem.ItemIsFocusable |
                       QtWidgets.QGraphicsItem.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
@@ -49,26 +52,32 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         self.connections = {'input': [], 'output': []}
 
     def setupPorts(self):
-        """Setup input and output ports based on module type"""
-        if self.moduleType == 'Spine':
-            self.inputPorts = [('attach', 'input')]
-            self.outputPorts = [('neck', 'output'), ('clavicle', 'output'), ('leg', 'output')]
-        elif self.moduleType == 'Neck':
-            self.inputPorts = [('spine', 'input')]
-            self.outputPorts = [('head', 'output')]
-        elif self.moduleType == 'LimbBase':
-            self.inputPorts = [('spine', 'input')]
-            self.outputPorts = [('limb', 'output')]
-        elif self.moduleType == 'TwoBoneLimb':
-            self.inputPorts = [('parent', 'input')]
-            self.outputPorts = [('hand', 'output'), ('foot', 'output')]
-        elif self.moduleType == 'Foot':
-            self.inputPorts = [('leg', 'input')]
+        """Setup input and output ports (Tree-growth: Child Output [Bottom] -> Parent Input [Top])"""
+        # Case-insensitive matching for robustness
+        mType = self.moduleType.lower()
+        
+        if mType == 'spine':
+            self.inputPorts = [('neck', 'input'), ('arm_l', 'input'), ('arm_r', 'input'), ('leg_l', 'input'), ('leg_r', 'input')]
+            self.outputPorts = [('master', 'output')]
+        elif mType == 'neck':
+            self.inputPorts = [('head', 'input')]
+            self.outputPorts = [('spine', 'output')]
+        elif mType == 'limbbase':
+            self.inputPorts = [('limb', 'input')]
+            self.outputPorts = [('spine', 'output')]
+        elif mType == 'twobonelimb':
+            self.inputPorts = [('hand_foot', 'input')]
+            self.outputPorts = [('parent', 'output')]
+        elif mType == 'foot':
+            self.inputPorts = []
+            self.outputPorts = [('leg', 'output')]
+        elif mType in ['globalmaster', 'master']:
+            self.inputPorts = [('spine', 'input'), ('arm_l', 'input'), ('arm_r', 'input'), ('leg_l', 'input'), ('leg_r', 'input'), ('other', 'input')]
             self.outputPorts = []
         else:
             # Generic ports
-            self.inputPorts = [('input', 'input')]
-            self.outputPorts = [('output', 'output')]
+            self.inputPorts = [('in_child', 'input')]
+            self.outputPorts = [('out_parent', 'output')]
 
     def setupProperties(self):
         """Setup default properties based on module type"""
@@ -156,17 +165,39 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         # Draw ports
         self.drawPorts(painter)
 
+        # Draw Display Flag (Houdini-style on the right)
+        self.drawDisplayFlag(painter)
+
+    def drawDisplayFlag(self, painter):
+        """Draw the Houdini-style display flag on the right of the node"""
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        flagWidth = 20
+        flagX = bodyRect.right() + 5
+        flagY = bodyRect.y()
+        flagHeight = bodyRect.height()
+        
+        flagRect = QtCore.QRectF(flagX, flagY, flagWidth, flagHeight)
+        
+        if self.displayFlag:
+            color = QtGui.QColor(0, 150, 255) # Houdini Blue
+        else:
+            color = QtGui.QColor(60, 60, 60) # Dimmed
+            
+        painter.setBrush(QtGui.QBrush(color))
+        painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1))
+        painter.drawRect(flagRect)
+
     def drawPorts(self, painter):
-        """Draw input and output ports with better aesthetics"""
+        """Draw input and output ports with tree-growth layout (Input Top, Output Bottom)"""
         bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
 
-        # Draw input ports (Top side - Offset upwards)
+        # Draw input ports (Top side - Target for children above)
         numInputs = len(self.inputPorts)
         for i, (portName, portType) in enumerate(self.inputPorts):
             x = bodyRect.x() + (bodyRect.width() / (numInputs + 1)) * (i + 1)
             y = bodyRect.y() - self.portOffset
 
-            # Port circle (Houdini style)
+            # Port circle
             painter.setBrush(QtGui.QBrush(QtGui.QColor(180, 180, 180)))
             painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1))
             painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
@@ -176,7 +207,7 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             painter.setPen(QtCore.Qt.NoPen)
             painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius * 0.4, self.portRadius * 0.4)
 
-        # Draw output ports (Bottom side - Offset downwards)
+        # Draw output ports (Bottom side - Connects to parent below)
         numOutputs = len(self.outputPorts)
         for i, (portName, portType) in enumerate(self.outputPorts):
             x = bodyRect.x() + (bodyRect.width() / (numOutputs + 1)) * (i + 1)
@@ -201,20 +232,24 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         path.addRect(bodyRect)
         
         # Add port shapes (circles) with slightly larger hit area for easier clicking
-        # Input ports
+        # Input ports (Top)
         numInputs = len(self.inputPorts)
         for i in range(numInputs):
             x = bodyRect.x() + (bodyRect.width() / (numInputs + 1)) * (i + 1)
             y = bodyRect.y() - self.portOffset
             path.addEllipse(QtCore.QPointF(x, y), self.portRadius * 1.5, self.portRadius * 1.5)
-            
-        # Output ports
+
+        # Output ports (Bottom)
         numOutputs = len(self.outputPorts)
         for i in range(numOutputs):
             x = bodyRect.x() + (bodyRect.width() / (numOutputs + 1)) * (i + 1)
             y = bodyRect.y() + bodyRect.height() + self.portOffset
             path.addEllipse(QtCore.QPointF(x, y), self.portRadius * 1.5, self.portRadius * 1.5)
-            
+
+        # Add Display Flag area
+        flagRect = QtCore.QRectF(bodyRect.right() + 5, bodyRect.y(), 20, bodyRect.height())
+        path.addRect(flagRect)
+
         return path
 
     def mousePressEvent(self, event):
@@ -254,22 +289,30 @@ class ModuleNode(QtWidgets.QGraphicsObject):
                 # 3. Accept and stop event propagation
                 event.accept()
                 return 
+
+            # Check if clicking Display Flag
+            if self.isOverDisplayFlag(event.pos()):
+                self.displayFlag = not self.displayFlag
+                self.update()
+                self.displayFlagChanged.emit(self, self.displayFlag)
+                event.accept()
+                return
             
             # Clicking on the body (Selection and Movement)
-            # Enable movement for any body part, but port check above acts as a guard
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
             super().mousePressEvent(event)
             
         elif event.button() == QtCore.Qt.RightButton:
             self.showContextMenu(event.pos())
+            event.accept()
+            return
             
-        elif event.button() == QtCore.Qt.RightButton:
-            self.showContextMenu(event.pos())
+        # For MiddleButton or others, propagate to the View for panning
+        super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         """Handle mouse release events"""
-        # Always disable movement flag on release for safety
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
+        # Always restore movement flag on release
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
         
         if event.button() == QtCore.Qt.LeftButton:
             # Check if releasing on a port
@@ -306,6 +349,12 @@ class ModuleNode(QtWidgets.QGraphicsObject):
 
         return None
 
+    def isOverDisplayFlag(self, pos):
+        """Check if the position is over the Display Flag area"""
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        flagRect = QtCore.QRectF(bodyRect.right() + 5, bodyRect.y(), 20, bodyRect.height())
+        return flagRect.contains(pos)
+
     def showContextMenu(self, pos):
         """Show context menu for the node"""
         menu = QtWidgets.QMenu()
@@ -339,8 +388,10 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             self.connections[direction].remove(connection)
 
     def getProperties(self):
-        """Get the current properties of the node"""
-        return self.properties.copy()
+        """Get the current properties and metadata of the node for storage"""
+        config = self.properties.copy()
+        config['inputPortCount'] = len(self.inputPorts)
+        return config
 
     def getPortPositionLocal(self, portName, portType):
         """Get the local position of a port (Relative to Node center)"""
@@ -361,9 +412,9 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         numPorts = len(ports)
         x_offset = (bodyRect.width() / (numPorts + 1)) * (portIndex + 1)
         
-        if portType == 'input':
+        if portType == 'input': # Top (From children above)
             y = bodyRect.y() - self.portOffset
-        else:
+        else: # Output (Bottom) (To parent below)
             y = bodyRect.y() + bodyRect.height() + self.portOffset
             
         x = bodyRect.x() + x_offset
@@ -383,6 +434,35 @@ class ModuleNode(QtWidgets.QGraphicsObject):
                 conn.updatePath()
                 
         return super().itemChange(change, value)
+
+    def setInputPortCount(self, count):
+        """Update node's input port count dynamically for any node type"""
+        # Map of base ports for known modules to keep consistent naming
+        base_ports_map = {
+            'spine': ['neck', 'arm_l', 'arm_r', 'leg_l', 'leg_r', 'other'],
+            'globalmaster': ['spine', 'arm_l', 'arm_r', 'leg_l', 'leg_r', 'other'],
+            'master': ['spine', 'arm_l', 'arm_r', 'leg_l', 'leg_r', 'other'],
+            'neck': ['head', 'other'],
+            'twobonelimb': ['hand_foot', 'other'],
+            'limbbase': ['limb', 'other']
+        }
+        
+        mType = self.moduleType.lower()
+        base_ports = base_ports_map.get(mType, ['input'])
+        
+        new_ports = []
+        for i in range(count):
+            if i < len(base_ports):
+                new_ports.append((base_ports[i], 'input'))
+            else:
+                new_ports.append((f'input_{i}', 'input'))
+                
+        self.inputPorts = new_ports
+        self.update()
+        
+        # Trigger connection updates
+        for conn in self.connections.get('input', []) + self.connections.get('output', []):
+            conn.updatePath()
 
     def contextMenuEvent(self, event):
         """Handle context menu events"""
