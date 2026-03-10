@@ -44,14 +44,22 @@ class ConnectionLine(QtWidgets.QGraphicsPathItem):
             path = QtGui.QPainterPath()
             path.moveTo(startPos)
 
-            # Calculate control points for smooth vertical S-curve
-            dy = endPos.y() - startPos.y()
+            # Arrow parameters
+            arrowSize = 8
+            dy_total = endPos.y() - startPos.y()
             
-            # Control points: move vertically first, then towards target
-            cp1 = QtCore.QPointF(startPos.x(), startPos.y() + dy * 0.5)
-            cp2 = QtCore.QPointF(endPos.x(), endPos.y() - dy * 0.5)
+            # Shorten the line so it stops at the arrow base
+            # Our S-curve always ends vertically, so we can just offset in Y
+            lineEndPos = endPos - QtCore.QPointF(0, arrowSize) if dy_total > 0 else endPos + QtCore.QPointF(0, arrowSize)
 
-            path.cubicTo(cp1, cp2, endPos)
+            # Increase the control point distance for deeper Houdini-style curve
+            dy = lineEndPos.y() - startPos.y()
+            offset = max(abs(dy) * 0.5, 20)
+            
+            cp1 = QtCore.QPointF(startPos.x(), startPos.y() + offset if dy_total > 0 else startPos.y() - offset)
+            cp2 = QtCore.QPointF(lineEndPos.x(), lineEndPos.y() - offset if dy_total > 0 else lineEndPos.y() + offset)
+
+            path.cubicTo(cp1, cp2, lineEndPos)
 
             self.setPath(path)
 
@@ -82,54 +90,45 @@ class ConnectionLine(QtWidgets.QGraphicsPathItem):
         self.drawArrow(painter)
 
     def drawArrow(self, painter):
-        """Draw an arrow at the end of the connection line"""
+        """Draw a precise arrow at the end of the connection line"""
         if not self.endNode:
             return
 
-        # Get end position
+        # Get end position (The tip of the arrow should be exactly on the port center)
         endPos = self.getPortPosition(self.endNode, self.endPort, 'input')
         if not endPos:
             return
 
-        # Get path direction at end
-        path = self.path()
-        if path.elementCount() < 2:
-            return
-
-        # Calculate direction vector
-        lastElement = path.elementAt(path.elementCount() - 1)
-        prevElement = path.elementAt(path.elementCount() - 2)
-
-        direction = QtCore.QPointF(lastElement.x - prevElement.x, lastElement.y - prevElement.y)
-        length = (direction.x() ** 2 + direction.y() ** 2) ** 0.5
-
-        if length > 0:
-            direction = direction / length
-
-            # Arrow parameters
-            arrowSize = 8
-            arrowAngle = 0.5  # radians
-
-            # Calculate arrow points
-            arrowTip = endPos
-            arrowBase1 = arrowTip - QtCore.QPointF(
-                direction.x() * arrowSize * (1 + arrowAngle),
-                direction.y() * arrowSize * (1 + arrowAngle)
-            )
-            arrowBase2 = arrowTip - QtCore.QPointF(
-                direction.x() * arrowSize * (1 - arrowAngle),
-                direction.y() * arrowSize * (1 - arrowAngle)
-            )
-
-            # Draw arrow
-            arrowPath = QtGui.QPainterPath()
-            arrowPath.moveTo(arrowTip)
-            arrowPath.lineTo(arrowBase1)
-            arrowPath.lineTo(arrowBase2)
-            arrowPath.closeSubpath()
-
-            painter.setBrush(QtGui.QBrush(self.pen().color()))
-            painter.drawPath(arrowPath)
+        # Arrow parameters
+        arrowSize = 8
+        wingWidth = 5
+        
+        # Calculate direction (Simplified since our S-curve is always vertical at ports)
+        # Check start vs end to determine if pointing down or up
+        startPos = self.getPortPosition(self.startNode, self.startPort, 'output')
+        if not startPos: return
+        
+        is_down = (endPos.y() > startPos.y())
+        nx, ny = (0, 1) if is_down else (0, -1)
+        px, py = (-ny, nx) # Perpendicular
+        
+        # Tip is the exact port center
+        tip = endPos
+        base = tip - QtCore.QPointF(nx * arrowSize, ny * arrowSize)
+        
+        leftWing = base + QtCore.QPointF(px * wingWidth, py * wingWidth)
+        rightWing = base - QtCore.QPointF(px * wingWidth, py * wingWidth)
+        
+        # Draw arrow triangle
+        arrowPath = QtGui.QPainterPath()
+        arrowPath.moveTo(tip)
+        arrowPath.lineTo(leftWing)
+        arrowPath.lineTo(rightWing)
+        arrowPath.closeSubpath()
+        
+        painter.setBrush(QtGui.QBrush(self.pen().color()))
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.drawPath(arrowPath)
 
     def boundingRect(self):
         """Return the bounding rectangle of the connection line"""
