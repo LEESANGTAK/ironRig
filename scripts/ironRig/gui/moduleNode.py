@@ -6,8 +6,10 @@ import ironRig.api.irModule as irm
 class ModuleNode(QtWidgets.QGraphicsObject):
     """Visual representation of a module in the node editor"""
 
-    connectionRequested = QtCore.Signal(object, str, str)  # node, port_name, port_type
-    connectionCompleted = QtCore.Signal(object, str, str)  # target_node, port_name, port_type
+    # Signals
+    connectionRequested = QtCore.Signal(object, str, str)  # node, portName, portType
+    connectionUnplugged = QtCore.Signal(object, str, str, object)  # node, portName, portType, connection
+    connectionCompleted = QtCore.Signal(object, str, str)  # node, portName, portType
     nodeDeleted = QtCore.Signal(object)  # node
 
     def __init__(self, moduleType, moduleName):
@@ -229,19 +231,13 @@ class ModuleNode(QtWidgets.QGraphicsObject):
                     # Find the connection for this specific port
                     for conn in self.connections['input']:
                         if conn.endPort == portName:
-                            # 1. Store source info
-                            sourceNode = conn.startNode
-                            sourcePort = conn.startPort
+                            # 1. Clear selection to allow pure connection drag
+                            if self.scene():
+                                self.scene().clearSelection()
+                            self.setSelected(False)
                             
-                            # 2. Delete existing connection
-                            conn.deleteConnection()
-                            if self.scene() and hasattr(self.scene(), 'views'):
-                                view = self.scene().views()[0]
-                                if hasattr(view, 'connections') and conn in view.connections:
-                                    view.connections.remove(conn)
-                            
-                            # 3. Start NEW connection from the original source node
-                            self.connectionRequested.emit(sourceNode, sourcePort, 'output')
+                            # 2. Defer deletion and re-start to NodeEditor
+                            self.connectionUnplugged.emit(self, portName, portType, conn)
                             event.accept()
                             return
 

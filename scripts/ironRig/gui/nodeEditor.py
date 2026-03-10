@@ -94,6 +94,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
 
         # Connect node signals
         node.connectionRequested.connect(self.startConnection)
+        node.connectionUnplugged.connect(self.unplugConnection)
         node.connectionCompleted.connect(self.completeConnection)
         node.nodeDeleted.connect(self.deleteNode)
 
@@ -189,22 +190,65 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.connectionStartType = None
         self.tempConnectionLine.hide()
 
+    def deleteConnection(self, connection):
+        """Delete a connection line and cleanup references"""
+        if not connection:
+            return
+
+        # 1. Remove from editor's tracking list
+        if connection in self.connections:
+            self.connections.remove(connection)
+
+        # 2. Call the connection's own cleanup (removes from nodes and scene)
+        connection.deleteConnection()
+
+    def unplugConnection(self, node, portName, portType, connection):
+        """Houdini style: Unplug an existing connection and start a new drag from the source"""
+        # 1. Get origin info before deletion
+        sourceNode = connection.startNode
+        sourcePort = connection.startPort
+        sourceType = 'output' # Connections always start from output in our internal data
+
+        # 2. Delete the connection cleanly
+        self.deleteConnection(connection)
+
+        # 3. Start a new connection drag from the original source
+        self.startConnection(sourceNode, sourcePort, sourceType)
+
     def deleteNode(self, node):
         """Delete a node and its connections"""
         if node.moduleName in self.nodes:
-            # Remove connections
+            # Remove connections associated with this node
             connections_to_remove = []
             for conn in self.connections:
                 if (conn.startNode == node or conn.endNode == node):
                     connections_to_remove.append(conn)
 
             for conn in connections_to_remove:
-                self._scene.removeItem(conn)
-                self.connections.remove(conn)
+                self.deleteConnection(conn)
 
-            # Remove node
-            self._scene.removeItem(node)
+            # Remove node from scene and tracking
+            if self._scene:
+                self._scene.removeItem(node)
             del self.nodes[node.moduleName]
+
+    def deleteSelectedItems(self):
+        """Delete currently selected nodes and connections"""
+        selectedItems = self._scene.selectedItems()
+        if not selectedItems:
+            return
+
+        # Separate items by type
+        nodes_to_delete = [item for item in selectedItems if isinstance(item, ModuleNode)]
+        conns_to_delete = [item for item in selectedItems if isinstance(item, ConnectionLine)]
+
+        # Delete connections first
+        for conn in conns_to_delete:
+            self.deleteConnection(conn)
+
+        # Delete nodes
+        for node in nodes_to_delete:
+            self.deleteNode(node)
 
     def onSelectionChanged(self):
         """Handle selection changes"""
@@ -423,26 +467,6 @@ class NodeEditor(QtWidgets.QGraphicsView):
             self.deleteSelectedItems()
         else:
             super().keyPressEvent(event)
-
-    def deleteSelectedItems(self):
-        """Delete currently selected nodes and connections"""
-        selectedItems = self._scene.selectedItems()
-        if not selectedItems:
-            return
-
-        # Separate items by type
-        nodes_to_delete = [item for item in selectedItems if isinstance(item, ModuleNode)]
-        conns_to_delete = [item for item in selectedItems if isinstance(item, ConnectionLine)]
-
-        # Delete connections first
-        for conn in conns_to_delete:
-            conn.deleteConnection()
-            if conn in self.connections:
-                self.connections.remove(conn)
-
-        # Delete nodes
-        for node in nodes_to_delete:
-            self.deleteNode(node)
 
     def showTabMenu(self):
         """Show a search menu for creating modules (Tab menu)"""
