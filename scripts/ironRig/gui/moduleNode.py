@@ -221,6 +221,31 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             # Check if clicking on a port (Highest Priority)
             port = self.getPortAtPosition(event.pos())
             if port:
+                portName, portType = port
+                
+                # Houdini Style: If clicking an already connected input port, 
+                # disconnect it and start dragging from the source output port.
+                if portType == 'input' and self.connections['input']:
+                    # Find the connection for this specific port
+                    for conn in self.connections['input']:
+                        if conn.endPort == portName:
+                            # 1. Store source info
+                            sourceNode = conn.startNode
+                            sourcePort = conn.startPort
+                            
+                            # 2. Delete existing connection
+                            conn.deleteConnection()
+                            if self.scene() and hasattr(self.scene(), 'views'):
+                                view = self.scene().views()[0]
+                                if hasattr(view, 'connections') and conn in view.connections:
+                                    view.connections.remove(conn)
+                            
+                            # 3. Start NEW connection from the original source node
+                            self.connectionRequested.emit(sourceNode, sourcePort, 'output')
+                            event.accept()
+                            return
+
+                # Normal connection start
                 # 1. Block movement and selection to allow pure connection drag
                 self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
                 if self.scene():

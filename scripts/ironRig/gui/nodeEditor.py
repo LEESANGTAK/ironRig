@@ -416,11 +416,33 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.scale(factor, factor)
 
     def keyPressEvent(self, event):
-        """Handle key press events (Tab menu)"""
+        """Handle key press events (Delete, Tab menu)"""
         if event.key() == QtCore.Qt.Key_Tab:
             self.showTabMenu()
+        elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
+            self.deleteSelectedItems()
         else:
             super().keyPressEvent(event)
+
+    def deleteSelectedItems(self):
+        """Delete currently selected nodes and connections"""
+        selectedItems = self._scene.selectedItems()
+        if not selectedItems:
+            return
+
+        # Separate items by type
+        nodes_to_delete = [item for item in selectedItems if isinstance(item, ModuleNode)]
+        conns_to_delete = [item for item in selectedItems if isinstance(item, ConnectionLine)]
+
+        # Delete connections first
+        for conn in conns_to_delete:
+            conn.deleteConnection()
+            if conn in self.connections:
+                self.connections.remove(conn)
+
+        # Delete nodes
+        for node in nodes_to_delete:
+            self.deleteNode(node)
 
     def showTabMenu(self):
         """Show a search menu for creating modules (Tab menu)"""
