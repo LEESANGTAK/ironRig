@@ -4,8 +4,8 @@
       "type": "GlobalMaster",
       "name": "GlobalMaster_0",
       "position": {
-        "x": -91.0,
-        "y": 12.0
+        "x": -375.3709999999999,
+        "y": 87.68699999999998
       },
       "properties": {
         "joints": [
@@ -21,8 +21,8 @@
       "type": "Spine",
       "name": "Spine_1",
       "position": {
-        "x": -93.0,
-        "y": -172.0
+        "x": -357.7324999999999,
+        "y": -206.71299999999997
       },
       "properties": {
         "joints": [
@@ -42,8 +42,8 @@
       "type": "Neck",
       "name": "Neck_2",
       "position": {
-        "x": -78.0,
-        "y": -349.0
+        "x": -363.77099999999996,
+        "y": -553.713
       },
       "properties": {
         "joints": [
@@ -56,20 +56,261 @@
         "controllerColor": "BLUE",
         "inputPortCount": 3
       }
+    },
+    "TwoBoneLimb_3": {
+      "type": "TwoBoneLimb",
+      "name": "TwoBoneLimb_3",
+      "position": {
+        "x": 21.428999999999967,
+        "y": -490.513
+      },
+      "properties": {
+        "joints": [
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l"
+        ],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "inputPortCount": 1
+      }
+    },
+    "SpaceSwitch_4": {
+      "type": "SpaceSwitch",
+      "name": "SpaceSwitch_4",
+      "position": {
+        "x": 491.923,
+        "y": 441.85999999999984
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "isParentType": true,
+        "isOrientType": false,
+        "defaultDriverIndex": 0,
+        "inputPortCount": 2
+      }
+    },
+    "ModuleDecompose_5": {
+      "type": "ModuleDecompose",
+      "name": "ModuleDecompose_5",
+      "position": {
+        "x": 288.4799999999999,
+        "y": 248.2349999999999
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "targetController": "ikController",
+        "inputPortCount": 1
+      }
+    },
+    "ModuleDecompose_6": {
+      "type": "ModuleDecompose",
+      "name": "ModuleDecompose_6",
+      "position": {
+        "x": 520.7279999999996,
+        "y": 193.64300000000014
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "targetController": "ikController",
+        "inputPortCount": 1
+      }
+    },
+    "ModuleDecompose_7": {
+      "type": "ModuleDecompose",
+      "name": "ModuleDecompose_7",
+      "position": {
+        "x": 789.5780000000004,
+        "y": 280.17
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "targetController": "moduleController",
+        "inputPortCount": 1
+      }
+    },
+    "Neck_Reciver": {
+      "type": "Receiver",
+      "name": "Neck_Reciver",
+      "position": {
+        "x": 225.7,
+        "y": 141.0
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "routeName": "Neck",
+        "inputPortCount": 0
+      }
+    },
+    "Spine_Reciver": {
+      "type": "Receiver",
+      "name": "Spine_Reciver",
+      "position": {
+        "x": 887.0,
+        "y": 165.0
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "routeName": "Spine",
+        "inputPortCount": 0
+      }
+    },
+    "Spine_Sender": {
+      "type": "Sender",
+      "name": "Spine_Sender",
+      "position": {
+        "x": -476.0150999999999,
+        "y": -118.35120000000002
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "routeName": "Spine",
+        "inputPortCount": 1
+      }
+    },
+    "Neck_Sender": {
+      "type": "Sender",
+      "name": "Neck_Sender",
+      "position": {
+        "x": -488.50000000000006,
+        "y": -470.8999999999999
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "routeName": "Neck",
+        "inputPortCount": 1
+      }
+    },
+    "Arm_L_Sender": {
+      "type": "Sender",
+      "name": "Arm_L_Sender",
+      "position": {
+        "x": 69.1642,
+        "y": -350.2487000000001
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "routeName": "Arm_L",
+        "inputPortCount": 1
+      }
+    },
+    "Arm_L_Reciver": {
+      "type": "Receiver",
+      "name": "Arm_L_Reciver",
+      "position": {
+        "x": 511.70000000000005,
+        "y": 88.0
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "routeName": "Arm_L",
+        "inputPortCount": 0
+      }
     }
   },
   "connections": [
     {
-      "startNode": "Spine_1",
-      "startPort": "master",
-      "endNode": "GlobalMaster_0",
-      "endPort": "spine"
+      "startNode": "ModuleDecompose_5",
+      "startPort": "out_parent",
+      "endNode": "SpaceSwitch_4",
+      "endPort": "driven_0"
+    },
+    {
+      "startNode": "ModuleDecompose_6",
+      "startPort": "out_parent",
+      "endNode": "SpaceSwitch_4",
+      "endPort": "driver_1"
+    },
+    {
+      "startNode": "ModuleDecompose_7",
+      "startPort": "out_parent",
+      "endNode": "SpaceSwitch_4",
+      "endPort": "driver_2"
+    },
+    {
+      "startNode": "Neck_Reciver",
+      "startPort": "out_parent",
+      "endNode": "ModuleDecompose_5",
+      "endPort": "input"
+    },
+    {
+      "startNode": "Spine_Reciver",
+      "startPort": "out_parent",
+      "endNode": "ModuleDecompose_7",
+      "endPort": "input"
+    },
+    {
+      "startNode": "Arm_L_Reciver",
+      "startPort": "out_parent",
+      "endNode": "ModuleDecompose_6",
+      "endPort": "input"
+    },
+    {
+      "startNode": "TwoBoneLimb_3",
+      "startPort": "parent",
+      "endNode": "Spine_1",
+      "endPort": "leg_l"
+    },
+    {
+      "startNode": "TwoBoneLimb_3",
+      "startPort": "parent",
+      "endNode": "Arm_L_Sender",
+      "endPort": "input"
+    },
+    {
+      "startNode": "Neck_2",
+      "startPort": "spine",
+      "endNode": "Neck_Sender",
+      "endPort": "input"
     },
     {
       "startNode": "Neck_2",
       "startPort": "spine",
       "endNode": "Spine_1",
       "endPort": "arm_r"
+    },
+    {
+      "startNode": "Spine_1",
+      "startPort": "master",
+      "endNode": "Spine_Sender",
+      "endPort": "input"
+    },
+    {
+      "startNode": "Spine_1",
+      "startPort": "master",
+      "endNode": "GlobalMaster_0",
+      "endPort": "spine"
     }
   ]
 }

@@ -379,6 +379,11 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.connections.clear()
         self.selectedNode = None
         self.connectionStartNode = None
+        
+        # Re-add the temporary connection line as it was deleted by scene.clear()
+        self.tempConnectionLine = TemporaryConnectionLine()
+        self._scene.addItem(self.tempConnectionLine)
+        self.tempConnectionLine.hide()
 
     def selectAll(self):
         """Select all nodes"""
@@ -485,9 +490,19 @@ class NodeEditor(QtWidgets.QGraphicsView):
                 
             # 2. Functional Data Dependencies (Follow 'input' connections for specific types)
             # For these nodes, input ports provide actual data/objects needed for build.
-            if node.moduleType in ['SpaceSwitch', 'ModuleDecompose', 'CustomScript']:
+            if node.moduleType in ['SpaceSwitch', 'ModuleDecompose', 'CustomScript', 'Sender']:
                 for conn in node.connections.get('input', []):
                     visit(conn.startNode)
+                    
+            # 3. Wireless Dependencies (For Receiver nodes)
+            if node.moduleType == 'Receiver':
+                targetRoute = node.properties.get('routeName')
+                if targetRoute:
+                    # Find the Sender node with this route name
+                    for n in self.nodes.values():
+                        if n.moduleType == 'Sender' and n.properties.get('routeName') == targetRoute:
+                            visit(n)
+                            break
                 
             processing.remove(node)
             visited.add(node)
@@ -570,6 +585,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
 
         globalMst.build()
         builtItemsMap = {} # Node Name -> API Object (Module or Controller)
+        routeDataMap = {}  # Route Name -> API Object (Wireless cache)
 
         # 5. Build modules and Advanced Nodes in chain order
         for node in buildChain:
@@ -581,7 +597,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
             name = node.moduleName
             
             # --- Case A: Standard Modules ---
-            if moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose']:
+            if moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose', 'Sender', 'Receiver']:
                 side_str = properties.get('side', 'CENTER')
                 side = getattr(irg.container.Container.SIDE, side_str)
                 joints = properties.get('joints', [])
@@ -637,6 +653,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
                         break
                     
                     if not sourceMod:
+                        # Fallback for Receiver-to-Decompose connection though unusual
                         self.logMessage.emit(f"Warning: No input module for {name}", "warning")
                         continue
                         
@@ -650,7 +667,42 @@ class NodeEditor(QtWidgets.QGraphicsView):
                 except Exception as e:
                     self.logMessage.emit(f"Decompose Error: {str(e)}", "error")
 
-            # --- Case C: SpaceSwitch ---
+            # --- Case C: Sender (Wireless) ---
+            elif moduleType == 'Sender':
+                try:
+                    routeName = properties.get('routeName', 'route1')
+                    self.logMessage.emit(f"Wireless Sending: Broadcasting to '{routeName}'...", "info")
+                    
+                    inputData = None
+                    for conn in node.connections.get('input', []):
+                        inputData = builtItemsMap.get(conn.startNode.moduleName)
+                        break
+                    
+                    if inputData:
+                        routeDataMap[routeName] = inputData
+                        builtItemsMap[name] = inputData # Pass through
+                        self.logMessage.emit(f"Data broadcasted to '{routeName}'", "success")
+                    else:
+                        self.logMessage.emit(f"Warning: Sender {name} has no input data.", "warning")
+                except Exception as e:
+                    self.logMessage.emit(f"Sender Error: {str(e)}", "error")
+
+            # --- Case D: Receiver (Wireless) ---
+            elif moduleType == 'Receiver':
+                try:
+                    routeName = properties.get('routeName')
+                    self.logMessage.emit(f"Wireless Receiving: Fetching from '{routeName}'...", "info")
+                    
+                    receivedData = routeDataMap.get(routeName)
+                    if receivedData:
+                        builtItemsMap[name] = receivedData
+                        self.logMessage.emit(f"Data received from '{routeName}'", "success")
+                    else:
+                        self.logMessage.emit(f"Error: No data found for route '{routeName}'", "error")
+                except Exception as e:
+                    self.logMessage.emit(f"Receiver Error: {str(e)}", "error")
+
+            # --- Case E: SpaceSwitch ---
             elif moduleType == 'SpaceSwitch':
                 try:
                     self.logMessage.emit(f"Setting up SpaceSwitch: {name}...", "info")

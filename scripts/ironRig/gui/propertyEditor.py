@@ -110,13 +110,9 @@ class PropertyEditor(QtWidgets.QWidget):
         elif node.moduleType == 'ModuleDecompose':
             self.addHeader("Extraction Settings")
             
-            # Resolve input module type
-            inputModType = "Generic"
-            # Assuming currentNode has a 'connections' attribute similar to targetNode
-            # And connections has 'input' which is a list of objects with 'startNode' and 'moduleType'
-            for conn in self.currentNode.connections.get('input', []):
-                inputModType = conn.startNode.moduleType
-                break
+            # Resolve actual source module node across physical and wireless connections
+            sourceNode = self.getSourceNode(self.currentNode)
+            inputModType = sourceNode.moduleType if sourceNode else "Generic"
             
             # Logic controller list per type
             ctrl_map = {
@@ -146,10 +142,27 @@ class PropertyEditor(QtWidgets.QWidget):
             self.addTextAreaField("Python Code", node.properties.get('code', ''), 
                                   self.onScriptCodeChanged)
 
+        # 8. Sender Specific
+        elif node.moduleType == 'Sender':
+            self.addHeader("Wireless Sender Settings")
+            currentName = node.properties.get('routeName', 'route1')
+            def updateRoute():
+                node.properties['routeName'] = routeField.text()
+            routeField = self.addStringField("Route Name", currentName, updateRoute)
+
+        # 9. Receiver Specific
+        elif node.moduleType == 'Receiver':
+            self.addHeader("Wireless Receiver Settings")
+            senders = self.getAllSenderNames()
+            current = node.properties.get('routeName', senders[0] if senders else 'None')
+            def updateTarget(val):
+                node.properties['routeName'] = val
+            self.addComboField("Source Sender", senders if senders else ['None'], current, updateTarget)
+
         # 7. Skeleton Selection
         headerText = "Skeleton (Root Joint)" if node.moduleType == 'GlobalMaster' else "Skeleton (Joint List)"
         # Hide skeleton for non-module types
-        if node.moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose']:
+        if node.moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose', 'Sender', 'Receiver']:
             self.addHeader(headerText)
             self.jointList = QtWidgets.QListWidget()
             self.jointList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
@@ -319,3 +332,63 @@ class PropertyEditor(QtWidgets.QWidget):
             # Show a brief message or status
             self.titleLabel.setText("Settings Saved!")
             QtCore.QTimer.singleShot(1500, lambda: self.titleLabel.setText(f"Properties: {self.currentNode.moduleName} ({self.currentNode.moduleType})"))
+    def getAllSenderNames(self):
+        """Helper to find all Sender nodes in the scene and return their route names"""
+        from .nodeEditor import NodeEditor
+        
+        # We need to find the NodeEditor instance. Usually PropertyEditor is paired with it in MainWindow.
+        # For now, let's assume we can traverse or it's accessible.
+        # More robust: Look for all ModuleNodes of type 'Sender' in the current scene's graph.
+        
+        sender_names = []
+        # Accessing nodes via parent or global might be needed depending on UI structure
+        # In ironRig, MainWindow typically holds both. 
+        # Let's try to get it from the node's scene if possible, or search via parent
+        parent = self.parent()
+        while parent:
+            if hasattr(parent, 'nodeEditor'):
+                for n in parent.nodeEditor.nodes.values():
+                    if n.moduleType == 'Sender':
+                        name = n.properties.get('routeName', 'route1')
+                        if name not in sender_names:
+                            sender_names.append(name)
+                break
+            parent = parent.parent()
+        
+        return sorted(sender_names)
+
+    def getSourceNode(self, node):
+        """Follow input connections or wireless links to find the source provider node (recursively)"""
+        # 1. Physical connection
+        for conn in node.connections.get('input', []):
+            startNode = conn.startNode
+            # If it's a Sender, follow its input
+            if startNode.moduleType == 'Sender':
+                return self.getSourceNode(startNode)
+            # If it's a Receiver, follow its wireless source
+            if startNode.moduleType == 'Receiver':
+                return self.getWirelessSource(startNode)
+            return startNode
+            
+        # 2. If node itself is a Receiver (direct check)
+        if node.moduleType == 'Receiver':
+            return self.getWirelessSource(node)
+            
+        return None
+
+    def getWirelessSource(self, receiverNode):
+        """Find the corresponding Sender node for a Receiver wirelessly"""
+        routeName = receiverNode.properties.get('routeName')
+        if not routeName:
+            return None
+            
+        parent = self.parent()
+        while parent:
+            if hasattr(parent, 'nodeEditor'):
+                for n in parent.nodeEditor.nodes.values():
+                    if n.moduleType == 'Sender' and n.properties.get('routeName') == routeName:
+                        # Follow the sender's input to find what it's broadcasting
+                        return self.getSourceNode(n)
+                break
+            parent = parent.parent()
+        return None

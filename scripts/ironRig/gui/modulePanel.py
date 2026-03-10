@@ -178,6 +178,16 @@ class ModulePanel(QtWidgets.QWidget):
                     'description': 'Exposes specific controllers from a module.',
                     'icon': 'decompose_icon.png',
                     'category': 'Special'
+                },
+                'Sender': {
+                    'description': 'Wireless Sender: Broadcasts data with a specific name.',
+                    'icon': 'sender_icon.png',
+                    'category': 'Special'
+                },
+                'Receiver': {
+                    'description': 'Wireless Receiver: Receives data by referencing a Sender name.',
+                    'icon': 'receiver_icon.png',
+                    'category': 'Special'
                 }
             }
         }

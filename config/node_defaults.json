@@ -64,5 +64,13 @@
     "ModuleDecompose": {
         "targetController": "moduleController",
         "inputPortCount": 1
+    },
+    "Sender": {
+        "routeName": "route1",
+        "inputPortCount": 1
+    },
+    "Receiver": {
+        "routeName": "",
+        "inputPortCount": 0
     }
 }
