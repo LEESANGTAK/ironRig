@@ -1,14 +1,16 @@
 {
   "nodes": {
-    "Master_0": {
-      "type": "Master",
-      "name": "Master_0",
+    "GlobalMaster_0": {
+      "type": "GlobalMaster",
+      "name": "GlobalMaster_0",
       "position": {
-        "x": -30.0,
-        "y": 132.0
+        "x": -91.0,
+        "y": 12.0
       },
       "properties": {
-        "joints": [],
+        "joints": [
+          "root"
+        ],
         "side": "CENTER",
         "controllerSize": 10,
         "controllerColor": "BLUE",
@@ -19,11 +21,17 @@
       "type": "Spine",
       "name": "Spine_1",
       "position": {
-        "x": -31.0,
-        "y": -28.0
+        "x": -93.0,
+        "y": -172.0
       },
       "properties": {
-        "joints": [],
+        "joints": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "spine_04"
+        ],
         "side": "CENTER",
         "controllerSize": 10,
         "controllerColor": "BLUE",
@@ -34,11 +42,15 @@
       "type": "Neck",
       "name": "Neck_2",
       "position": {
-        "x": -24.0,
-        "y": -182.0
+        "x": -78.0,
+        "y": -349.0
       },
       "properties": {
-        "joints": [],
+        "joints": [
+          "neck_01",
+          "neck_02",
+          "head"
+        ],
         "side": "CENTER",
         "controllerSize": 10,
         "controllerColor": "BLUE",
@@ -50,7 +62,7 @@
     {
       "startNode": "Spine_1",
       "startPort": "master",
-      "endNode": "Master_0",
+      "endNode": "GlobalMaster_0",
       "endPort": "spine"
     },
     {

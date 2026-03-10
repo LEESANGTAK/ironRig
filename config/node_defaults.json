@@ -7,14 +7,24 @@
         "inputPortCount": 1
     },
     "Neck": {
-        "joints": [],
+        "joints": [
+            "neck_01",
+            "neck_02",
+            "head"
+        ],
         "side": "CENTER",
         "controllerSize": 10,
         "controllerColor": "BLUE",
         "inputPortCount": 3
     },
     "Spine": {
-        "joints": [],
+        "joints": [
+            "pelvis",
+            "spine_01",
+            "spine_02",
+            "spine_03",
+            "spine_04"
+        ],
         "side": "CENTER",
         "controllerSize": 10,
         "controllerColor": "BLUE",
@@ -25,6 +35,15 @@
             "Foot",
             "ToeBase",
             "Toe_End"
+        ],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "inputPortCount": 1
+    },
+    "GlobalMaster": {
+        "joints": [
+            "root"
         ],
         "side": "CENTER",
         "controllerSize": 10,
