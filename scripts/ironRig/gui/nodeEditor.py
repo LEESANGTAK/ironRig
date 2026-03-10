@@ -33,6 +33,8 @@ class NodeEditor(QtWidgets.QGraphicsView):
     moduleCreated = QtCore.Signal(str, str)  # module_type, module_name
     connectionCreated = QtCore.Signal(str, str)  # from_node, to_node
     selectionChanged = QtCore.Signal(object) # selected_node
+    logMessage = QtCore.Signal(str, str) # message, level
+    nodeRenamed = QtCore.Signal(object, str, str) # node, old_name, new_name
 
     def __init__(self):
         super().__init__()
@@ -330,15 +332,16 @@ class NodeEditor(QtWidgets.QGraphicsView):
         print(f"Node deleted: {getattr(node, 'moduleName', 'Unknown')}")
 
     def onNodeDisplayFlagChanged(self, node, state):
-        """Ensure only one node has the display flag active (Mutual Exclusion)"""
+        """Ensure only one node has the display flag active and trigger build"""
         if state:
             for otherNode in self.nodes.values():
                 if otherNode != node and getattr(otherNode, 'displayFlag', False):
                     otherNode.displayFlag = False
                     otherNode.update()
             
-            # TODO: Trigger rig rebuild up to this node
-            print(f"Display Flag active on: {node.moduleName}. Rig will build up to here.")
+            # TRIGGER BUILD: Build up to the newly flagged node
+            print(f"Display Flag active on: {node.moduleName}. Triggering Build...")
+            self.buildRig()
 
     def deleteSelectedItems(self):
         """Delete currently selected nodes and connections"""
@@ -485,75 +488,123 @@ class NodeEditor(QtWidgets.QGraphicsView):
 
     def buildRig(self):
         """Build the rig incrementally from the node graph based on Display Flag"""
-        # Import Iron Rig modules
+        from maya import cmds
+        import ironRig.api.irGlobal as irg
         import ironRig.api.irMaster as irmst
+        import ironRig.api.irModule as irm
+        import traceback
 
-        # Reset Maya scene or handle updates properly
-        # For simplicity, we'll start with a fresh build or clear old modules
+        self.logMessage.emit("-" * 50, "info")
+        self.logMessage.emit("Starting Build Process...", "info")
+
+        # 1. Scene Cleanup: Remove old controlRig and orphaned groups
+        for rig_root in ['controlRig', 'controlRig_sets']:
+            if cmds.objExists(rig_root):
+                try:
+                    cmds.delete(rig_root)
+                    self.logMessage.emit(f"Cleaned up: {rig_root}", "info")
+                except Exception as e:
+                    self.logMessage.emit(f"Cleanup error ({rig_root}): {str(e)}", "error")
         
-        # 1. Get the build chain
+        # Cleanup potential orphaned module groups
+        orphans = cmds.ls('*_mod_grp*', '*_master_grp*', type='transform')
+        for orphan in orphans:
+            if not cmds.listRelatives(orphan, parent=True):
+                try: 
+                    cmds.delete(orphan)
+                    self.logMessage.emit(f"Cleaned up orphan: {orphan}", "info")
+                except: pass
+
+        # 2. Setup API Scene
+        irScene = irg.scene.Scene()
+
+        # 3. Get the build chain
         buildChain = self.getBuildChain()
         if not buildChain:
             print("No Display Flag active. Nothing to build.")
             return
 
-        # 2. Build GlobalMaster (should be first in chain or created if not exists)
+        # 4. Build GlobalMaster
         globalMasterNode = None
-        for node in self.nodes.values():
+        for node in buildChain:
             if node.moduleType == 'GlobalMaster':
                 globalMasterNode = node
                 break
         
-        # If GlobalMaster is not in chain, we might still need it as a base
-        # But if the user follows the tree, it should be the root of the chain.
-        
-        # Create Global Master API object
-        globalMst = irmst.GlobalMaster('root', True)
-        globalMst.build()
+        if not globalMasterNode:
+            print("Warning: GlobalMaster not found in build chain. Using default 'root'.")
+            globalMst = irScene.addGlobalMaster('root', True)
+        else:
+            props = globalMasterNode.getProperties()
+            rootJnt = props.get('joints', ['root'])[0]
+            if not cmds.objExists(rootJnt):
+                print(f"Error: Root joint '{rootJnt}' not found in Maya.")
+                return
+            globalMst = irScene.addGlobalMaster(rootJnt, True)
 
-        # 3. Build modules in chain order
+        globalMst.build()
         builtModulesMap = {} # Node Name -> API Module Object
 
-        # Mocking the ironRig API interaction (Needs actual API details)
-        import ironRig.api.irModule as irm
-        
+        # 5. Build modules in chain order
         for node in buildChain:
             if node.moduleType == 'GlobalMaster':
-                continue # Already handled or acts as base
+                continue
                 
             moduleType = node.moduleType
             properties = node.getProperties()
             name = node.moduleName
+            side_str = properties.get('side', 'CENTER')
+            side = getattr(irg.container.Container.SIDE, side_str)
+            joints = properties.get('joints', [])
             
-            # Create API Module
-            side = getattr(irm.Module.SIDE, properties.get('side', 'CENTER'))
-            module = None
+            # Create API Module via Scene/Factory
+            try:
+                module = irScene.addModule(moduleType, name, side, skeletonJoints=joints)
+            except KeyError:
+                self.logMessage.emit(f"Warning: Module type '{moduleType}' not found in API Factory. Skipping.", "warning")
+                continue
             
-            # Generic factory (simplified)
-            module_class = getattr(irm, moduleType, irm.Module)
-            module = module_class(name, side, properties.get('joints', []))
+            # Apply common properties
+            if 'controllerSize' in properties:
+                module.controllerSize = properties.get('controllerSize')
+            if 'controllerColor' in properties:
+                module.controllerColor = properties.get('controllerColor')
             
-            # Set properties
-            module.controllerSize = properties.get('controllerSize', 10)
-            
-            # Build API lifecycle
-            module.preBuild()
-            module.build()
-            
-            # Add to global master
-            globalMst.addModules(module)
-            builtModulesMap[name] = module
+            # API Build Lifecycle
+            try:
+                self.logMessage.emit(f"Building {moduleType}: {name}...", "info")
+                module.preBuild()
+                
+                # Apply module-specific properties AFTER preBuild (when systems are initialized)
+                if moduleType == 'Neck' and 'inputPortCount' in properties:
+                    module.numberOfControllers = properties.get('inputPortCount', 2)
+                
+                module.build()
+                
+                # Parent to GlobalMaster
+                globalMst.addModules(module)
+                builtModulesMap[name] = module
+                self.logMessage.emit(f"Successfully built {name}", "success")
+            except Exception as e:
+                self.logMessage.emit(f"Error building {name}: {str(e)}", "error")
+                self.logMessage.emit(traceback.format_exc(), "error")
+                return 
             
             # Handle Attachment (Child -> Parent)
-            # Find which parent this node is connected to in the graph
             for conn in node.connections.get('output', []):
                 parent_node = conn.endNode
                 parent_module = builtModulesMap.get(parent_node.moduleName)
                 if parent_module:
-                    module.attachTo(parent_module)
-                    break # Single parent for now
-                    
-        return globalMst
+                    try:
+                        module.attachTo(parent_module)
+                        self.logMessage.emit(f"Attached {name} to {parent_node.moduleName}", "info")
+                    except Exception as e:
+                        self.logMessage.emit(f"Attachment error: {str(e)}", "error")
+                    break 
+
+        self.logMessage.emit(f"Rig Build Complete up to: {buildChain[-1].moduleName}", "success")
+        self.logMessage.emit("-" * 50, "info")
+        return irScene
 
     def drawBackground(self, painter, rect):
         """Draw the background grid (Major and Minor)"""

@@ -159,8 +159,8 @@ class ModulePanel(QtWidgets.QWidget):
                     'icon': 'custom_icon.png',
                     'category': 'Special'
                 },
-                'Master': {
-                    'description': 'Master module that can contain other modules',
+                'GlobalMaster': {
+                    'description': 'Root of the control rig. Required for building.',
                     'icon': 'master_icon.png',
                     'category': 'Special'
                 }

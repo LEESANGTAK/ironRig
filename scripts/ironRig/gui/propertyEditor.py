@@ -84,9 +84,16 @@ class PropertyEditor(QtWidgets.QWidget):
         self.addHeader("Connectivity")
         current_ports = len(node.inputPorts)
         self.portCountSpin = self.addSpinField("Input Port Count", 1, 10, current_ports, self.onPortCountChanged)
+        
+        # 3. GlobalMaster Specific
+        if node.moduleType == 'GlobalMaster':
+            self.addHeader("Global Master Settings")
+            self.buildRootCheck = self.addCheckField("Build Root Controller", node.properties.get('buildRootController', True), 
+                                                   lambda v: self.onToggleProperty(node, 'buildRootController', v))
 
-        # 3. Joint Selection
-        self.addHeader("Skeleton")
+        # 4. Skeleton Selection
+        headerText = "Skeleton (Root Joint)" if node.moduleType == 'GlobalMaster' else "Skeleton (Joint List)"
+        self.addHeader(headerText)
         self.jointList = QtWidgets.QListWidget()
         self.jointList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         for jnt in node.properties.get('joints', []):
@@ -153,6 +160,15 @@ class PropertyEditor(QtWidgets.QWidget):
         self.scrollLayout.addLayout(layout)
         return spin
 
+    def addCheckField(self, label, value, callback):
+        layout = QtWidgets.QHBoxLayout()
+        check = QtWidgets.QCheckBox(label)
+        check.setChecked(value)
+        check.stateChanged.connect(lambda state: callback(state == QtCore.Qt.Checked))
+        layout.addWidget(check)
+        self.scrollLayout.addLayout(layout)
+        return check
+
     # --- Callbacks ---
 
     def onNameChanged(self):
@@ -166,6 +182,10 @@ class PropertyEditor(QtWidgets.QWidget):
     def onSideChanged(self, value):
         if self.currentNode:
             self.currentNode.properties['side'] = value
+
+    def onToggleProperty(self, node, key, value):
+        if node:
+            node.properties[key] = value
 
     def onPortCountChanged(self, value):
         """Update node's input port count dynamically (User Request: Generalized)"""

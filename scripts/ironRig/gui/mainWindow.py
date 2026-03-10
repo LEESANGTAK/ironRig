@@ -58,11 +58,59 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(centralWidget)
 
         # Main layout
-        mainLayout = QtWidgets.QHBoxLayout(centralWidget)
+        mainLayout = QtWidgets.QVBoxLayout(centralWidget)
         mainLayout.setContentsMargins(0, 0, 0, 0)
+        mainLayout.setSpacing(0)
 
-        # Add node editor as central widget
-        mainLayout.addWidget(self.nodeEditor)
+        # Create Splitter for NodeEditor and LogPanel
+        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        mainLayout.addWidget(self.splitter)
+
+        # Add node editor to splitter
+        self.splitter.addWidget(self.nodeEditor)
+
+        # Log Panel
+        self.logPanel = QtWidgets.QPlainTextEdit()
+        self.logPanel.setReadOnly(True)
+        self.logPanel.setPlaceholderText("Iron Rig Build Logs...")
+        self.logPanel.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.logPanel.customContextMenuRequested.connect(self.showLogContextMenu)
+        self.logPanel.setStyleSheet("""
+            QPlainTextEdit {
+                background-color: #1a1a1a;
+                color: #ccc;
+                font-family: 'Consolas', 'Courier New', monospace;
+                font-size: 10pt;
+                border-top: 1px solid #333;
+            }
+        """)
+        self.splitter.addWidget(self.logPanel)
+
+        # Set initial sizes (4:1 ratio)
+        self.splitter.setSizes([700, 200])
+
+        # Connect NodeEditor log signal to logPanel
+        self.nodeEditor.logMessage.connect(self.appendLog)
+    
+    def showLogContextMenu(self, pos):
+        """Show context menu for log panel"""
+        menu = self.logPanel.createStandardContextMenu()
+        menu.addSeparator()
+        clearAction = menu.addAction("Clear Log")
+        clearAction.triggered.connect(self.logPanel.clear)
+        menu.exec_(self.logPanel.mapToGlobal(pos))
+    
+    def appendLog(self, message, level="info"):
+        """Append a message to the log panel with color coding if needed"""
+        color = "#ccc" # info
+        if level == "error": color = "#f44"
+        elif level == "warning": color = "#fb0"
+        elif level == "success": color = "#4f4"
+
+        # Simple HTML formatting for color
+        self.logPanel.appendHtml(f'<span style="color:{color};">{message}</span>')
+        # Auto-scroll to bottom
+        self.logPanel.verticalScrollBar().setValue(self.logPanel.verticalScrollBar().maximum())
 
     def setupMenuBar(self):
         """Setup the menu bar"""
