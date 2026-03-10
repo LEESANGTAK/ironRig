@@ -21,8 +21,8 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         self.width = 160
         self.height = 40
         self.headerHeight = 20
-        self.portRadius = 5
-        self.portOffset = 8  # Offset ports from the body
+        self.portRadius = 10 # Doubled from 5
+        self.portOffset = 12 # Increased from 8
         self.portSpacing = 20
 
         # Setup ports
@@ -34,9 +34,10 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         self.setupProperties()
 
         # Visual properties
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges)
+        # Remove ItemIsMovable by default, it will be enabled on header click
+        self.setFlags(QtWidgets.QGraphicsItem.ItemIsSelectable |
+                      QtWidgets.QGraphicsItem.ItemIsFocusable |
+                      QtWidgets.QGraphicsItem.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
 
         # Setup appearance
@@ -190,12 +191,13 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius * 0.4, self.portRadius * 0.4)
 
     def shape(self):
-        """Return a precise shape for hit testing (Body + Ports)"""
+        """Return a precise shape for hit testing (Header + Ports)"""
         path = QtGui.QPainterPath()
         
-        # Add body
+        # Add ONLY header for moving/selecting the node
         bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
-        path.addRect(bodyRect)
+        headerRect = QtCore.QRectF(bodyRect.x(), bodyRect.y(), bodyRect.width(), self.headerHeight)
+        path.addRect(headerRect)
         
         # Add port shapes (circles)
         # Input ports
@@ -215,23 +217,44 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         return path
 
     def mousePressEvent(self, event):
-        """Handle mouse press events - Block selection if clicking on a port"""
+        """Handle mouse press events - Precision control for movement/connection"""
         if event.button() == QtCore.Qt.LeftButton:
             # Check if clicking on a port
             port = self.getPortAtPosition(event.pos())
             if port:
-                # Store selection state to restore if needed
+                # 1. Block movement and selection
+                self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
+                if self.scene():
+                    self.scene().clearSelection()
+                self.setSelected(False)
+                
+                # 2. Request connection
                 self.connectionRequested.emit(self, port[0], port[1])
+                
+                # 3. Accept and stop event propagation
                 event.accept()
-                # Explicitly do NOT call super().mousePressEvent(event) to avoid selection
                 return 
+            
+            # Check if clicking on header (for moving)
+            bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+            headerRect = QtCore.QRectF(bodyRect.x(), bodyRect.y(), bodyRect.width(), self.headerHeight)
+            if headerRect.contains(event.pos()):
+                # Enable movement ONLY when clicking header
+                self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
             else:
-                super().mousePressEvent(event)
+                # Disable movement for body clicks
+                self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
+                
+            super().mousePressEvent(event)
+            
         elif event.button() == QtCore.Qt.RightButton:
             self.showContextMenu(event.pos())
 
     def mouseReleaseEvent(self, event):
         """Handle mouse release events"""
+        # Always disable movement flag on release for safety
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
+        
         if event.button() == QtCore.Qt.LeftButton:
             # Check if releasing on a port
             port = self.getPortAtPosition(event.pos())

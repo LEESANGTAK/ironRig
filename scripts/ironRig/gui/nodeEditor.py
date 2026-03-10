@@ -11,6 +11,8 @@ class TemporaryConnectionLine(QtWidgets.QGraphicsPathItem):
         super().__init__()
         self.setPen(QtGui.QPen(QtGui.QColor(224, 134, 0, 255), 3, QtCore.Qt.SolidLine))
         self.setZValue(100) # Ensure it's on top while dragging
+        self.setAcceptedMouseButtons(QtCore.Qt.NoButton)
+        self.setAcceptHoverEvents(False)
 
     def updatePath(self, startPos, endPos):
         path = QtGui.QPainterPath()
@@ -103,19 +105,28 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.connectionStartNode = node
         self.connectionStartPort = portName
         self.connectionStartType = portType
+        
+        # Clear selection to prevent moving nodes while connecting
+        self._scene.clearSelection()
+        
         self.tempConnectionLine.show()
         
-        # Initial path
-        startPos = self.connectionStartNode.pos() + self.connectionStartNode.getPortPositionLocal(portName, portType)
+        # Initial path (Use mapToScene for precision)
+        localPortPos = self.connectionStartNode.getPortPositionLocal(portName, portType)
+        startPos = self.connectionStartNode.mapToScene(localPortPos)
         self.tempConnectionLine.updatePath(startPos, startPos)
 
     def mouseMoveEvent(self, event):
         """Handle mouse move for temporary connection line"""
         if self.connectionStartNode:
-            startPos = self.connectionStartNode.pos() + self.connectionStartNode.getPortPositionLocal(self.connectionStartPort, self.connectionStartType)
+            # Calculate scene positions dynamically
+            localPortPos = self.connectionStartNode.getPortPositionLocal(self.connectionStartPort, self.connectionStartType)
+            startPos = self.connectionStartNode.mapToScene(localPortPos)
             endPos = self.mapToScene(event.pos())
+            
+            # Use encapsulated updatePath with scene coordinates
             self.tempConnectionLine.updatePath(startPos, endPos)
-        
+            
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
