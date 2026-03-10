@@ -44,22 +44,14 @@ class ConnectionLine(QtWidgets.QGraphicsPathItem):
             path = QtGui.QPainterPath()
             path.moveTo(startPos)
 
-            # Arrow parameters
-            arrowSize = 8
-            dy_total = endPos.y() - startPos.y()
-            
-            # Shorten the line so it stops at the arrow base
-            # Our S-curve always ends vertically, so we can just offset in Y
-            lineEndPos = endPos - QtCore.QPointF(0, arrowSize) if dy_total > 0 else endPos + QtCore.QPointF(0, arrowSize)
-
             # Increase the control point distance for deeper Houdini-style curve
-            dy = lineEndPos.y() - startPos.y()
-            offset = max(abs(dy) * 0.5, 20)
+            dy_total = endPos.y() - startPos.y()
+            offset = max(abs(dy_total) * 0.5, 20)
             
             cp1 = QtCore.QPointF(startPos.x(), startPos.y() + offset if dy_total > 0 else startPos.y() - offset)
-            cp2 = QtCore.QPointF(lineEndPos.x(), lineEndPos.y() - offset if dy_total > 0 else lineEndPos.y() + offset)
+            cp2 = QtCore.QPointF(endPos.x(), endPos.y() - offset if dy_total > 0 else endPos.y() + offset)
 
-            path.cubicTo(cp1, cp2, lineEndPos)
+            path.cubicTo(cp1, cp2, endPos)
 
             self.setPath(path)
 
@@ -85,50 +77,6 @@ class ConnectionLine(QtWidgets.QGraphicsPathItem):
 
         # Draw the path
         painter.drawPath(self.path())
-
-        # Draw arrow at the end
-        self.drawArrow(painter)
-
-    def drawArrow(self, painter):
-        """Draw a precise arrow at the end of the connection line"""
-        if not self.endNode:
-            return
-
-        # Get end position (The tip of the arrow should be exactly on the port center)
-        endPos = self.getPortPosition(self.endNode, self.endPort, 'input')
-        if not endPos:
-            return
-
-        # Arrow parameters
-        arrowSize = 8
-        wingWidth = 5
-        
-        # Calculate direction (Simplified since our S-curve is always vertical at ports)
-        # Check start vs end to determine if pointing down or up
-        startPos = self.getPortPosition(self.startNode, self.startPort, 'output')
-        if not startPos: return
-        
-        is_down = (endPos.y() > startPos.y())
-        nx, ny = (0, 1) if is_down else (0, -1)
-        px, py = (-ny, nx) # Perpendicular
-        
-        # Tip is the exact port center
-        tip = endPos
-        base = tip - QtCore.QPointF(nx * arrowSize, ny * arrowSize)
-        
-        leftWing = base + QtCore.QPointF(px * wingWidth, py * wingWidth)
-        rightWing = base - QtCore.QPointF(px * wingWidth, py * wingWidth)
-        
-        # Draw arrow triangle
-        arrowPath = QtGui.QPainterPath()
-        arrowPath.moveTo(tip)
-        arrowPath.lineTo(leftWing)
-        arrowPath.lineTo(rightWing)
-        arrowPath.closeSubpath()
-        
-        painter.setBrush(QtGui.QBrush(self.pen().color()))
-        painter.setPen(QtCore.Qt.NoPen)
-        painter.drawPath(arrowPath)
 
     def boundingRect(self):
         """Return the bounding rectangle of the connection line"""
