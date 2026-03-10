@@ -1,0 +1,63 @@
+{
+  "nodes": {
+    "Master_0": {
+      "type": "Master",
+      "name": "Master_0",
+      "position": {
+        "x": -30.0,
+        "y": 132.0
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "inputPortCount": 1
+      }
+    },
+    "Spine_1": {
+      "type": "Spine",
+      "name": "Spine_1",
+      "position": {
+        "x": -31.0,
+        "y": -28.0
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "inputPortCount": 5
+      }
+    },
+    "Neck_2": {
+      "type": "Neck",
+      "name": "Neck_2",
+      "position": {
+        "x": -24.0,
+        "y": -182.0
+      },
+      "properties": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "inputPortCount": 3
+      }
+    }
+  },
+  "connections": [
+    {
+      "startNode": "Spine_1",
+      "startPort": "master",
+      "endNode": "Master_0",
+      "endPort": "spine"
+    },
+    {
+      "startNode": "Neck_2",
+      "startPort": "spine",
+      "endNode": "Spine_1",
+      "endPort": "arm_r"
+    }
+  ]
+}

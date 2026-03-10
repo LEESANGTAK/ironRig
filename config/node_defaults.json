@@ -1,0 +1,34 @@
+{
+    "Master": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "inputPortCount": 1
+    },
+    "Neck": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "inputPortCount": 3
+    },
+    "Spine": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "inputPortCount": 5
+    },
+    "Foot": {
+        "joints": [
+            "Foot",
+            "ToeBase",
+            "Toe_End"
+        ],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "inputPortCount": 1
+    }
+}
