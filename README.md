@@ -60,10 +60,15 @@ You can modify the attributes and code to fit your workflow.
 
 ## Launch GUI
 ```python
-from imp import reload
-import ironRig; reload(ironRig)
+import sys
+# ironRig 관련 모듈들을 삭제하여 다시 로드되게 함
+modules_to_reload = [m for m in sys.modules if 'ironRig.gui' in m]
+for m in modules_to_reload:
+    del sys.modules[m]
 
-ironRig.gui.ironrig_command.run_ironrig()
+# 다시 실행
+import ironRig.gui.maya_launcher as launcher
+launcher.launch_in_maya()
 ```
 
 ## TO DO
