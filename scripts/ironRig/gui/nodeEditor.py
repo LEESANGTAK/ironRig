@@ -152,27 +152,35 @@ class NodeEditor(QtWidgets.QGraphicsView):
         super().mouseReleaseEvent(event)
 
     def completeConnection(self, targetNode, targetPort, targetType):
-        """Complete a connection to a target node port"""
+        """Complete a connection to a target node port (Normalized as Output -> Input)"""
         if (self.connectionStartNode and
             self.connectionStartNode != targetNode and
-            self.connectionStartType != targetType):  # Different types can connect
+            self.connectionStartType != targetType): 
+
+            # Normalize direction: Always Start=Output, End=Input
+            if self.connectionStartType == 'output':
+                sourceNode, sourcePort = self.connectionStartNode, self.connectionStartPort
+                sinkNode, sinkPort = targetNode, targetPort
+            else:
+                sourceNode, sourcePort = targetNode, targetPort
+                sinkNode, sinkPort = self.connectionStartNode, self.connectionStartPort
 
             # Create connection line
             connection = ConnectionLine(
-                self.connectionStartNode, self.connectionStartPort,
-                targetNode, targetPort
+                sourceNode, sourcePort,
+                sinkNode, sinkPort
             )
 
             self._scene.addItem(connection)
             self.connections.append(connection)
 
-            # Store connection in nodes
-            self.connectionStartNode.addConnection(connection, 'output')
-            targetNode.addConnection(connection, 'input')
+            # Store connection in nodes using normalized direction
+            sourceNode.addConnection(connection, 'output')
+            sinkNode.addConnection(connection, 'input')
 
             self.connectionCreated.emit(
-                self.connectionStartNode.moduleName,
-                targetNode.moduleName
+                sourceNode.moduleName,
+                sinkNode.moduleName
             )
 
         # Reset connection state

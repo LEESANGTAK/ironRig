@@ -56,37 +56,16 @@ class ConnectionLine(QtWidgets.QGraphicsPathItem):
             self.setPath(path)
 
     def getPortPosition(self, node, portName, portType):
-        """Get the position of a port on a node (Top/Bottom)"""
+        """Get the scene position of a port on a node"""
         if not node:
             return None
-
-        rect = node.boundingRect()
-        nodePos = node.pos()
-
-        # Find port index
-        ports = node.inputPorts if portType == 'input' else node.outputPorts
-        portIndex = -1
-
-        for i, (name, ptype) in enumerate(ports):
-            if name == portName:
-                portIndex = i
-                break
-
-        if portIndex == -1:
-            return None
-
-        # Calculate port position (Matching ModuleNode.drawPorts logic)
-        numPorts = len(ports)
-        x_offset = (rect.width() / (numPorts + 1)) * (portIndex + 1)
-        
-        if portType == 'input':
-            y = rect.y() - node.portOffset
-        else:
-            y = rect.y() + rect.height() + node.portOffset
             
-        x = rect.x() + x_offset
-
-        return nodePos + QtCore.QPointF(x, y)
+        # Use the node's own coordinate mapping for maximum precision
+        if hasattr(node, 'getPortPositionLocal'):
+            localPos = node.getPortPositionLocal(portName, portType)
+            return node.mapToScene(localPos)
+            
+        return None
 
     def paint(self, painter, option, widget):
         """Paint the connection line"""

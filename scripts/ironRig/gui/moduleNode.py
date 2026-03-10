@@ -360,6 +360,15 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         self.properties.update(properties)
         self.update()
 
+    def itemChange(self, change, value):
+        """Handle item changes (Position change) to update connections"""
+        if change == QtWidgets.QGraphicsItem.ItemPositionHasChanged:
+            # Update all connected lines
+            for conn in self.connections['input'] + self.connections['output']:
+                conn.updatePath()
+                
+        return super().itemChange(change, value)
+
     def contextMenuEvent(self, event):
         """Handle context menu events"""
         self.showContextMenu(event.pos())
