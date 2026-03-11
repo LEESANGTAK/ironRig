@@ -188,6 +188,11 @@ class ModulePanel(QtWidgets.QWidget):
                     'description': 'Wireless Receiver: Receives data by referencing a Sender name.',
                     'icon': 'receiver_icon.png',
                     'category': 'Special'
+                },
+                'Build': {
+                    'description': 'Aggregation Node: Build multiple module chains at once.',
+                    'icon': 'build_icon.png',
+                    'category': 'Special'
                 }
             }
         }

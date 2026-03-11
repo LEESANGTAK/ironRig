@@ -203,22 +203,24 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         for i, (portName, portType) in enumerate(self.inputPorts):
             x = bodyRect.x() + (bodyRect.width() / (numInputs + 1)) * (i + 1)
             y = bodyRect.y() - self.portOffset
-
-            # Port circle (Improved visually without inner dot as requested)
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(180, 180, 180)))
-            painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1.5))
+            # INPUTS: Standard Circles (Build node children connect to parent outputs)
             painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
 
-        # Draw output ports (Bottom side - Connects to parent below)
+        # Draw output ports (Bottom side)
         numOutputs = len(self.outputPorts)
         for i, (portName, portType) in enumerate(self.outputPorts):
             x = bodyRect.x() + (bodyRect.width() / (numOutputs + 1)) * (i + 1)
             y = bodyRect.y() + bodyRect.height() + self.portOffset
 
-            # Port circle
             painter.setBrush(QtGui.QBrush(QtGui.QColor(180, 180, 180)))
             painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1.5))
-            painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
+            
+            # Array Port (Build node) -> Output is Square (Connects to many parents)
+            if self.moduleType == 'Build':
+                side = self.portRadius * 2
+                painter.drawRect(QtCore.QRectF(x - self.portRadius, y - self.portRadius, side, side))
+            else:
+                painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
 
     def shape(self):
         """Return the shape for hit testing (Body + Ports)"""
@@ -257,8 +259,8 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             if port:
                 portName, portType = port
                 
-                # Houdini Style: If clicking an already connected input port, 
-                # disconnect it and start dragging from the source output port.
+                # Disconnect existing connection? 
+                # Standard modules allow only 1 input.
                 if portType == 'input' and self.connections['input']:
                     # Find the connection for this specific port
                     for conn in self.connections['input']:
