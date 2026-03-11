@@ -246,6 +246,17 @@ class NodeEditor(QtWidgets.QGraphicsView):
                 childNode, childPort = targetNode, targetPort
                 parentNode, parentPort = self.connectionStartNode, self.connectionStartPort
 
+            # Array Port Logic: If target is an input port and NOT a Build node, 
+            # replace existing connection to that port.
+            if parentNode.moduleType != 'Build':
+                existing = None
+                for conn in parentNode.connections['input']:
+                    if conn.endPort == parentPort:
+                        existing = conn
+                        break
+                if existing:
+                    self.deleteConnection(existing)
+
             # Create connection line
             connection = ConnectionLine(
                 childNode, childPort,
@@ -473,28 +484,35 @@ class NodeEditor(QtWidgets.QGraphicsView):
         visited = set()
         processing = set() # For cycle detection
         
+        # Define Data-Consumer nodes that behave differently in dependency logic
+        DATA_CONSUMERS = ['Sender', 'SpaceSwitch', 'CustomScript', 'ModuleDecompose']
+        
         def visit(node):
+            if node in visited:
+                return
             if node in processing:
                 print(f"Cycle detected at node: {node.moduleName}")
-                return
-            if node in visited:
                 return
                 
             processing.add(node)
             
-            # Dependencies:
-            # 1. Structural Parents (Follow 'output' connections for all nodes)
-            # In ironRig: Child.Output -> Parent.Input
+            # --- Dependency 1: Structural Attachment (Parent modules) ---
+            # If I am a Child (e.g. Neck), my Output connects to Parent's Input (e.g. Spine).
+            # So I depend on my Parent (endNode) being built first. 
             for conn in node.connections.get('output', []):
-                visit(conn.endNode) 
-                
-            # 2. Functional Data Dependencies (Follow 'input' connections for specific types)
-            # For these nodes, input ports provide actual data/objects needed for build.
-            if node.moduleType in ['SpaceSwitch', 'ModuleDecompose', 'CustomScript', 'Sender']:
+                parent_node = conn.endNode
+                if parent_node.moduleType not in DATA_CONSUMERS:
+                    visit(parent_node)
+                    
+            # --- Dependency 2: Data Flow (Input data) ---
+            # If I am a Data Consumer (e.g. Sender), I consume data from my Input connection.
+            # So I depend on the Provider (startNode) being built first.
+            if node.moduleType in DATA_CONSUMERS or node.moduleType == 'Build':
                 for conn in node.connections.get('input', []):
                     visit(conn.startNode)
                     
-            # 3. Wireless Dependencies (For Receiver nodes)
+            # --- Dependency 3: Wireless Data (Receiver) ---
+            # If I am a Receiver, I depend on the corresponding Sender being built first.
             if node.moduleType == 'Receiver':
                 targetRoute = node.properties.get('routeName')
                 if targetRoute:
@@ -508,11 +526,12 @@ class NodeEditor(QtWidgets.QGraphicsView):
             visited.add(node)
             stack.append(node)
 
-        # Always ensure GlobalMaster is at the start if it exists
-        gm = next((n for n in self.nodes.values() if n.moduleType == 'GlobalMaster'), None)
-        if gm:
-            visit(gm)
-
+        # 1. Foundation: Evaluate GlobalMaster first if it exists. 
+        # But properly follow the Display Node dependencies so we don't build isolated nodes.
+        # Actually, let's just trace from displayNode. The new logic will naturally find GlobalMaster
+        # if the displayNode is attached to the tree!
+        
+        # 2. Main Chain: Visit the display node and its recursive dependencies
         visit(displayNode)
         
         return stack
@@ -528,33 +547,44 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.logMessage.emit("-" * 50, "info")
         self.logMessage.emit("Starting Build Process...", "info")
 
-        # 1. Scene Cleanup: Remove old controlRig and all related sets
+        # 1. Scene Cleanup: Aggressive one-shot deletion to avoid DG errors
         clean_targets = ['controlRig', 'controlRig_sets', 'geo_layer']
+        nodes_to_delete = []
+
+        # Find all IronRig specific sets (modules, masters, systems)
+        all_sets = cmds.ls(type='objectSet')
+        iron_sets = [s for s in all_sets if any(sub in s for sub in ['_mod_set', '_mst_set', '_sys_set', '_spSys_set', '_ikSys_set', 'controlRig_sets'])]
+        
+        for s in iron_sets:
+            if not cmds.objExists(s): continue
+            nodes_to_delete.append(s)
+            
+            # Add all members to delete list (DG nodes, constraints, handles, etc)
+            members = cmds.sets(s, q=True) or []
+            for m in members:
+                if not cmds.objExists(m): continue
+                # Skip skeleton joints (non-rig joints)
+                if cmds.nodeType(m) == 'joint' and not any(suff in m for suff in ['_init', '_ik', '_fk', '_out']):
+                    continue
+                nodes_to_delete.append(m)
+
+        # Add main groups
         for target in clean_targets:
             if cmds.objExists(target):
-                try:
-                    cmds.delete(target)
-                    self.logMessage.emit(f"Cleaned up: {target}", "info")
-                except: pass
+                nodes_to_delete.append(target)
 
-        # Robustly find and delete all IronRig sets (any set ending in _set or _set1, etc)
-        # And orphaned module/master groups
-        all_sets = cmds.ls(type='objectSet')
-        iron_sets = [s for s in all_sets if '_mod_set' in s or '_mst_set' in s or s.startswith('controlRig_sets') or s == 'geo_layer']
-        if iron_sets:
+        # Add any orphan groups found in the scene
+        orphans = cmds.ls('*_mod_grp*', '*_master_grp*', '*_sys_grp*', '*_out_grp*', '*_geo_grp*', '*_blbx_grp*', '*_ctrl_grp*', type='transform')
+        nodes_to_delete.extend([o for o in orphans if cmds.objExists(o) and not cmds.listRelatives(o, parent=True)])
+
+        # Execute single Maya delete command for thread safety and dependency handling
+        actual_delete = list(set([n for n in nodes_to_delete if cmds.objExists(n)]))
+        if actual_delete:
             try:
-                cmds.delete(iron_sets)
-                self.logMessage.emit(f"Cleaned up {len(iron_sets)} IronRig sets.", "info")
-            except: pass
-
-        orphans = cmds.ls('*_mod_grp*', '*_master_grp*', '*_sys_grp*', '*_out_grp*', '*_geo_grp*', type='transform')
-        for orphan in orphans:
-            # Only delete if it has no parent (Top level orphan)
-            if not cmds.listRelatives(orphan, parent=True):
-                try: 
-                    cmds.delete(orphan)
-                    self.logMessage.emit(f"Cleaned up orphan group: {orphan}", "info")
-                except: pass
+                cmds.delete(actual_delete)
+                self.logMessage.emit(f"Aggressive cleanup complete: {len(actual_delete)} nodes/sets removed.", "info")
+            except Exception as e:
+                self.logMessage.emit(f"Cleanup warning: {str(e)}", "warning")
 
         # 2. Setup API Scene
         irScene = irg.scene.Scene()
@@ -587,6 +617,11 @@ class NodeEditor(QtWidgets.QGraphicsView):
         builtItemsMap = {} # Node Name -> API Object (Module or Controller)
         routeDataMap = {}  # Route Name -> API Object (Wireless cache)
 
+        if globalMasterNode:
+            builtItemsMap[globalMasterNode.moduleName] = globalMst
+        else:
+            builtItemsMap["GlobalMaster_0"] = globalMst
+
         # 5. Build modules and Advanced Nodes in chain order
         for node in buildChain:
             if node.moduleType == 'GlobalMaster':
@@ -597,7 +632,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
             name = node.moduleName
             
             # --- Case A: Standard Modules ---
-            if moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose', 'Sender', 'Receiver']:
+            if moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose', 'Sender', 'Receiver', 'Build']:
                 side_str = properties.get('side', 'CENTER')
                 side = getattr(irg.container.Container.SIDE, side_str)
                 joints = properties.get('joints', [])
@@ -621,25 +656,38 @@ class NodeEditor(QtWidgets.QGraphicsView):
                         module.numberOfControllers = properties.get('inputPortCount', 2)
                     
                     module.build()
-                    globalMst.addModules(module)
                     builtItemsMap[name] = module
+
+                    # Handle Standard Attachment FIRST before adding to master
+                    for conn in node.connections.get('output', []):
+                        parent_node = conn.endNode
+                        parent_port = conn.endPort  # The port on the parent node that this child is connected to
+                        parent_module = builtItemsMap.get(parent_node.moduleName)
+                        self.logMessage.emit(f"Parent node: {parent_node.moduleType}", "info")
+                        # Use string class check instead of isinstance due to Maya reload environment
+                        parent_class_names = [cls.__name__ for cls in parent_module.__class__.__mro__]
+                        if 'Container' in parent_class_names: # Module
+                            if parent_node.moduleType == 'GlobalMaster':
+                                # GlobalMaster does not have outJoints for attachTo, connection is purely logical here
+                                break
+                            try:
+                                # Force evaluation of DAG before checking positions
+                                import maya.cmds as cmds
+                                cmds.refresh()
+                                
+                                module.attachTo(parent_module)
+                                self.logMessage.emit(f"Attached {name} to {parent_node.moduleName}", "info")
+                            except Exception as e:
+                                self.logMessage.emit(f"Attachment error for {name}: {str(e)}", "error")
+                            break
+
+                    globalMst.addModules(module)
                     self.logMessage.emit(f"Successfully built {name}", "success")
                 except Exception as e:
                     self.logMessage.emit(f"Error building {name}: {str(e)}", "error")
                     self.logMessage.emit(traceback.format_exc(), "error")
                     return 
 
-                # Handle Standard Attachment
-                for conn in node.connections.get('output', []):
-                    parent_node = conn.endNode
-                    parent_module = builtItemsMap.get(parent_node.moduleName)
-                    if isinstance(parent_module, irg.container.Container): # Module or Master
-                        try:
-                            module.attachTo(parent_module)
-                            self.logMessage.emit(f"Attached {name} to {parent_node.moduleName}", "info")
-                        except Exception as e:
-                            self.logMessage.emit(f"Attachment error: {str(e)}", "error")
-                        break 
 
             # --- Case B: ModuleDecompose ---
             elif moduleType == 'ModuleDecompose':
@@ -729,10 +777,10 @@ class NodeEditor(QtWidgets.QGraphicsView):
                     if not driverItems:
                         self.logMessage.emit(f"Warning: No driver items connected to {name}.", "warning")
                         continue
-
+                        
                     # Convert Modules to Controllers if needed (Heuristic: use last controller)
                     def to_ctrl(item):
-                        if hasattr(item, 'controllers'): return item.controllers[-1]
+                        if hasattr(item, 'controllers') and item.controllers: return item.controllers[-1]
                         return item
                         
                     drivenCtrl = to_ctrl(drivenItem)
@@ -750,6 +798,11 @@ class NodeEditor(QtWidgets.QGraphicsView):
                     self.logMessage.emit(f"SpaceSwitch {name} registered.", "success")
                 except Exception as e:
                     self.logMessage.emit(f"SpaceSwitch Error: {str(e)}", "error")
+
+            # --- Case F: Build (Aggregation) ---
+            elif moduleType == 'Build':
+                self.logMessage.emit(f"Aggregation Node {name}: All input chains compiled successfully.", "success")
+                # Build node itself doesn't call an API, it just triggers the dependency chain above it.
 
             # --- Case C: CustomScript ---
             elif moduleType == 'CustomScript':
