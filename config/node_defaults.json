@@ -72,5 +72,8 @@
     "Receiver": {
         "routeName": "",
         "inputPortCount": 0
+    },
+    "Build": {
+        "inputPortCount": 1
     }
 }
