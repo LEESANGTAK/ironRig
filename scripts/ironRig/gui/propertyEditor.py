@@ -80,16 +80,45 @@ class PropertyEditor(QtWidgets.QWidget):
         self.nameEdit = self.addStringField("Module Name", node.moduleName, self.onNameChanged)
         self.sideCombo = self.addComboField("Side", ["CENTER", "LEFT", "RIGHT"], node.properties.get('side', 'CENTER'), self.onSideChanged)
 
-        # 2. Dynamic Port Settings (User Request: All Nodes)
+        # 2. Dynamic Port Settings (children output ports)
         self.addHeader("Connectivity")
-        current_ports = len(node.inputPorts)
-        self.portCountSpin = self.addSpinField("Input Port Count", 1, 10, current_ports, self.onPortCountChanged)
+        current_ports = len(node.outputPorts)
+        self.portCountSpin = self.addSpinField("Output Port Count", 0, 10, current_ports, self.onPortCountChanged)
         
-        # 3. GlobalMaster Specific
-        if node.moduleType == 'GlobalMaster':
-            self.addHeader("Global Master Settings")
+        # 3. GlobalRoot Specific
+        if node.moduleType in ['GlobalRoot', 'GlobalMaster']:
+            self.addHeader("Global Root Settings")
             self.buildRootCheck = self.addCheckField("Build Root Controller", node.properties.get('buildRootController', True), 
                                                    lambda v: self.onToggleProperty(node, 'buildRootController', v))
+
+        # --- Module-Specific Properties ---
+        moduleSpecificProps = self.getModuleSpecificProperties(node.moduleType)
+        if moduleSpecificProps:
+            self.addHeader("Module Settings")
+            for propDef in moduleSpecificProps:
+                propName = propDef['name']
+                propType = propDef['type']
+                propDefault = propDef['default']
+                propLabel = propDef.get('label', propName)
+                currentVal = node.properties.get(propName, propDefault)
+                
+                if propType == 'int':
+                    minVal = propDef.get('min', 0)
+                    maxVal = propDef.get('max', 100)
+                    self.addSpinField(propLabel, minVal, maxVal, currentVal,
+                                      lambda v, key=propName: self.onToggleProperty(node, key, v))
+                elif propType == 'bool':
+                    self.addCheckField(propLabel, currentVal,
+                                       lambda v, key=propName: self.onToggleProperty(node, key, v))
+                elif propType == 'enum':
+                    items = propDef.get('items', [])
+                    # Map integer back to string for combo display
+                    if isinstance(currentVal, int) and currentVal < len(items):
+                        currentStr = items[currentVal]
+                    else:
+                        currentStr = str(currentVal) if currentVal in items else items[0]
+                    self.addComboField(propLabel, items, currentStr,
+                                       lambda v, key=propName, itms=items: self.onToggleProperty(node, key, itms.index(v) if v in itms else v))
         
         # 4. SpaceSwitch Specific
         elif node.moduleType == 'SpaceSwitch':
@@ -121,7 +150,7 @@ class PropertyEditor(QtWidgets.QWidget):
                 'TwoBoneLimb': ['ikController', 'fkRootController', 'poleVectorController', 'moduleController'],
                 'Foot': ['moduleController', 'ikController'],
                 'LimbBase': ['fkRootController'],
-                'GlobalMaster': ['mainController', 'rootController'],
+                'GlobalRoot': ['mainController', 'rootController'],
                 'Finger': ['fkRootController', 'moduleController']
             }
             
@@ -133,7 +162,7 @@ class PropertyEditor(QtWidgets.QWidget):
             
             self.addComboField("Target Controller", items, current, updateTarget)
 
-        # 6. CustomScript Specific
+        # 6. CustomScript Specific — Enhanced with @symbol attribute system
         if node.moduleType == 'CustomScript':
             self.addHeader("Custom Script Settings")
             self.addComboField("Execution Timing", ["Pre-Build", "Post-Build"], 
@@ -141,6 +170,27 @@ class PropertyEditor(QtWidgets.QWidget):
                                lambda v: self.onToggleProperty(node, 'timing', v))
             self.addTextAreaField("Python Code", node.properties.get('code', ''), 
                                   self.onScriptCodeChanged)
+            
+            # Dynamic Attribute List (@symbol system)
+            self.addHeader("Script Attributes (@symbol)")
+            
+            attrs = node.properties.get('scriptAttributes', [])
+            self.attrWidgets = []
+            
+            self.attrContainer = QtWidgets.QWidget()
+            self.attrContainerLayout = QtWidgets.QVBoxLayout(self.attrContainer)
+            self.attrContainerLayout.setContentsMargins(0, 0, 0, 0)
+            self.attrContainerLayout.setSpacing(4)
+            
+            for attr in attrs:
+                self._addAttributeRow(attr)
+            
+            self.scrollLayout.addWidget(self.attrContainer)
+            
+            addAttrBtn = QtWidgets.QPushButton("+ Add Attribute")
+            addAttrBtn.setStyleSheet("background-color: #3a5a3a; color: #ccc; padding: 4px;")
+            addAttrBtn.clicked.connect(self._onAddAttribute)
+            self.scrollLayout.addWidget(addAttrBtn)
 
         # 8. Sender Specific
         elif node.moduleType == 'Sender':
@@ -160,7 +210,7 @@ class PropertyEditor(QtWidgets.QWidget):
             self.addComboField("Source Sender", senders if senders else ['None'], current, updateTarget)
 
         # 7. Skeleton Selection
-        headerText = "Skeleton (Root Joint)" if node.moduleType == 'GlobalMaster' else "Skeleton (Joint List)"
+        headerText = "Skeleton (Root Joint)" if node.moduleType in ['GlobalRoot', 'GlobalMaster'] else "Skeleton (Joint List)"
         # Hide skeleton for non-module types
         if node.moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose', 'Sender', 'Receiver']:
             self.addHeader(headerText)
@@ -249,6 +299,114 @@ class PropertyEditor(QtWidgets.QWidget):
         self.scrollLayout.addWidget(edit)
         return edit
 
+    # --- Module-Specific Properties Definition ---
+
+    @staticmethod
+    def getModuleSpecificProperties(moduleType):
+        """Return property definitions for each module type"""
+        PROPS = {
+            'Neck': [
+                {'name': 'numberOfControllers', 'label': 'Number of Controllers', 'type': 'int', 'default': 3, 'min': 2, 'max': 10},
+            ],
+            'TwoBoneLimb': [
+                {'name': 'ikRootController', 'label': 'IK Root Controller', 'type': 'bool', 'default': False},
+                {'name': 'nonroll', 'label': 'Non-Roll', 'type': 'bool', 'default': True},
+                {'name': 'detectInbetweenJoints', 'label': 'Detect In-Between Joints', 'type': 'bool', 'default': False},
+            ],
+            'ThreeBoneLimb': [
+                {'name': 'ikRootController', 'label': 'IK Root Controller', 'type': 'bool', 'default': False},
+            ],
+            'Finger': [
+                {'name': 'curlStartIndex', 'label': 'Curl Start Index', 'type': 'int', 'default': 1, 'min': 0, 'max': 10},
+            ],
+            'Simple': [
+                {'name': 'simpleType', 'label': 'Simple Type', 'type': 'enum', 'default': 0, 'items': ['FK', 'SINGLE']},
+                {'name': 'controllerShape', 'label': 'Controller Shape', 'type': 'enum', 'default': 'CIRCLE',
+                 'items': ['CIRCLE', 'SQUARE', 'TRIANGLE', 'DIAMOND', 'CROSS', 'ARROW', 'CUBE', 'SPHERE']},
+            ],
+        }
+        # Common properties for all standard modules
+        COMMON = [
+            {'name': 'globalController', 'label': 'Global Controller', 'type': 'bool', 'default': False},
+            {'name': 'mirrorTranslate', 'label': 'Mirror Translate', 'type': 'bool', 'default': False},
+        ]
+        
+        specific = PROPS.get(moduleType, [])
+        # Only add common props for non-special nodes
+        if moduleType not in ['GlobalRoot', 'GlobalMaster', 'SpaceSwitch', 'CustomScript', 
+                              'ModuleDecompose', 'Sender', 'Receiver', 'Build']:
+            return specific + COMMON
+        return specific
+
+    # --- CustomScript Attribute Management ---
+
+    def _addAttributeRow(self, attrData=None):
+        """Add a row for a CustomScript @attribute"""
+        if attrData is None:
+            attrData = {'name': 'newAttr', 'type': 'STRING', 'value': ''}
+        
+        row = QtWidgets.QWidget()
+        rowLayout = QtWidgets.QHBoxLayout(row)
+        rowLayout.setContentsMargins(0, 0, 0, 0)
+        rowLayout.setSpacing(4)
+        
+        nameEdit = QtWidgets.QLineEdit(attrData.get('name', 'newAttr'))
+        nameEdit.setPlaceholderText("attr name")
+        nameEdit.setFixedWidth(80)
+        nameEdit.setStyleSheet("background: #333; color: #eee; padding: 2px;")
+        rowLayout.addWidget(nameEdit)
+        
+        typeCombo = QtWidgets.QComboBox()
+        typeCombo.addItems(['STRING', 'NUMBER'])
+        typeCombo.setCurrentText(attrData.get('type', 'STRING'))
+        typeCombo.setFixedWidth(75)
+        rowLayout.addWidget(typeCombo)
+        
+        valueEdit = QtWidgets.QLineEdit(str(attrData.get('value', '')))
+        valueEdit.setPlaceholderText("value")
+        valueEdit.setStyleSheet("background: #333; color: #eee; padding: 2px;")
+        rowLayout.addWidget(valueEdit)
+        
+        removeBtn = QtWidgets.QPushButton("×")
+        removeBtn.setFixedSize(20, 20)
+        removeBtn.setStyleSheet("background: #5a3a3a; color: #ccc; border: none; font-weight: bold;")
+        removeBtn.clicked.connect(lambda: self._onRemoveAttribute(row))
+        rowLayout.addWidget(removeBtn)
+        
+        # Connect signals for live sync
+        nameEdit.editingFinished.connect(self._syncAttributes)
+        typeCombo.currentTextChanged.connect(self._syncAttributes)
+        valueEdit.editingFinished.connect(self._syncAttributes)
+        
+        self.attrContainerLayout.addWidget(row)
+        self.attrWidgets.append({'widget': row, 'name': nameEdit, 'type': typeCombo, 'value': valueEdit})
+
+    def _onAddAttribute(self):
+        """Add a new empty attribute row"""
+        self._addAttributeRow()
+        self._syncAttributes()
+
+    def _onRemoveAttribute(self, rowWidget):
+        """Remove an attribute row"""
+        self.attrWidgets = [w for w in self.attrWidgets if w['widget'] != rowWidget]
+        rowWidget.deleteLater()
+        self._syncAttributes()
+
+    def _syncAttributes(self):
+        """Sync attribute widgets back to node properties"""
+        if not self.currentNode:
+            return
+        attrs = []
+        for w in self.attrWidgets:
+            if not w['widget'].parent():
+                continue
+            attrs.append({
+                'name': w['name'].text(),
+                'type': w['type'].currentText(),
+                'value': w['value'].text()
+            })
+        self.currentNode.properties['scriptAttributes'] = attrs
+
     # --- Callbacks ---
 
     def onNameChanged(self):
@@ -277,9 +435,9 @@ class PropertyEditor(QtWidgets.QWidget):
             self.currentNode.properties['code'] = value
 
     def onPortCountChanged(self, value):
-        """Update node's input port count dynamically (User Request: Generalized)"""
+        """Update node's output port count dynamically (children ports)"""
         if self.currentNode:
-            self.currentNode.setInputPortCount(value)
+            self.currentNode.setOutputPortCount(value)
 
     def addMayaSelectedJoints(self):
         sel = cmds.ls(sl=True, type='joint')

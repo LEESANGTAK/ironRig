@@ -226,6 +226,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if fileName:
             try:
                 self.nodeEditor.loadScene(fileName)
+                self.nodeEditor.buildAll()
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Error", f"Failed to open scene: {str(e)}")
 
@@ -240,9 +241,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.critical(self, "Error", f"Failed to save scene: {str(e)}")
 
     def buildRig(self):
-        """Build the rig from the node graph"""
+        """Build the entire rig from the node graph"""
         try:
-            self.nodeEditor.buildRig()
+            self.nodeEditor.buildAll()
             QtWidgets.QMessageBox.information(self, "Success", "Rig built successfully!")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to build rig: {str(e)}")

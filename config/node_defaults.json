@@ -75,5 +75,12 @@
     },
     "Build": {
         "inputPortCount": 1
+    },
+    "GlobalRoot": {
+        "joints": [],
+        "side": "CENTER",
+        "controllerSize": 10,
+        "controllerColor": "BLUE",
+        "outputPortCount": 1
     }
 }
