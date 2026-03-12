@@ -380,6 +380,10 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             # Check if clicking Display Flag
             if self.isOverDisplayFlag(event.pos()):
                 self.displayFlag = not self.displayFlag
+                # Mutually exclusive: turn off Guide Flag
+                if self.displayFlag and self.guideFlag:
+                    self.guideFlag = False
+                    self.guideFlagChanged.emit(self, False)
                 self.update()
                 self.displayFlagChanged.emit(self, self.displayFlag)
                 event.accept()
@@ -388,6 +392,10 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             # Check if clicking Guide Flag
             if self.isOverGuideFlag(event.pos()):
                 self.guideFlag = not self.guideFlag
+                # Mutually exclusive: turn off Display Flag
+                if self.guideFlag and self.displayFlag:
+                    self.displayFlag = False
+                    self.displayFlagChanged.emit(self, False)
                 self.update()
                 self.guideFlagChanged.emit(self, self.guideFlag)
                 event.accept()

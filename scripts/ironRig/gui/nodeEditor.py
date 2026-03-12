@@ -383,19 +383,24 @@ class NodeEditor(QtWidgets.QGraphicsView):
         self.logMessage.emit("-" * 50, "info")
         self.logMessage.emit(f"Guide Mode: Building for {guideNode.moduleName}...", "info")
         
-        # Temporarily set display flag to build the chain
+        # Save and clear display flag to prevent triggering a normal build
         origDisplayNode = None
         for n in self.nodes.values():
             if getattr(n, 'displayFlag', False):
                 origDisplayNode = n
+                n.displayFlag = False
+                n.update()
                 break
         
-        # Build the full chain (parents) via normal build, stopping at guide node
-        # For now, trigger a full build then preBuild the guide module
-        # TODO: Optimize to only build parents + preBuild target
+        # Temporarily set display flag on guide node to get its build chain
         guideNode.displayFlag = True
         guideNode.update()
-        self.buildRig()  # Builds up to guideNode including itself
+        
+        # Build parent chain only (exclude guide node itself)
+        # Store the guide node name so buildRig can stop before building it
+        self._guideTargetNode = guideNode
+        self.buildRig()
+        self._guideTargetNode = None
         
         # Restore original display flag
         guideNode.displayFlag = False
@@ -817,6 +822,13 @@ class NodeEditor(QtWidgets.QGraphicsView):
                     self.logMessage.emit(f"Building Module {moduleType}: {name}...", "info")
                     module.preBuild()
                     
+                    # Guide Mode: If this is the guide target, stop after preBuild
+                    guideTarget = getattr(self, '_guideTargetNode', None)
+                    if guideTarget and guideTarget == node:
+                        builtItemsMap[name] = module
+                        self.logMessage.emit(f"Guide Mode: preBuild only for {name}", "success")
+                        continue
+
                     # Apply module-specific properties from PropertyEditor definitions
                     from .propertyEditor import PropertyEditor
                     propDefs = PropertyEditor.getModuleSpecificProperties(moduleType)
