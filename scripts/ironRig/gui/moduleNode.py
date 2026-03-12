@@ -12,6 +12,7 @@ class ModuleNode(QtWidgets.QGraphicsObject):
     connectionCompleted = QtCore.Signal(object, str, str)  # node, portName, portType
     nodeDeleted = QtCore.Signal(object)  # node
     displayFlagChanged = QtCore.Signal(object, bool) # node, state
+    guideFlagChanged = QtCore.Signal(object, bool) # node, state
 
     def __init__(self, moduleType, moduleName):
         super().__init__()
@@ -19,7 +20,9 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         self.moduleType = moduleType
         self.moduleName = moduleName
         self.properties = {}
-        self.displayFlag = False  # Houdini-style Display Flag
+        self.displayFlag = False  # Houdini-style Display Flag (Right)
+        self.guideFlag = False    # Guide Mode Flag (Left)
+        self.bypassFlag = False   # Houdini-style Bypass Flag (Far Left)
 
         # Node dimensions
         self.width = 160
@@ -52,39 +55,49 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         self.connections = {'input': [], 'output': []}
 
     def setupPorts(self):
-        """Setup input and output ports (Tree-growth: Child Output [Bottom] -> Parent Input [Top])"""
-        # Case-insensitive matching for robustness
+        """Setup input and output ports (Top-Down: Parent Output [Bottom] -> Child Input [Top])
+        
+        Input (Top): Port receiving from parent (typically 1)
+        Output (Bottom): Ports connecting to children (can be multiple)
+        """
         mType = self.moduleType.lower()
         
         if mType == 'spine':
-            self.inputPorts = [('neck', 'input'), ('arm_l', 'input'), ('arm_r', 'input'), ('leg_l', 'input'), ('leg_r', 'input')]
-            self.outputPorts = [('master', 'output')]
+            self.inputPorts = [('master', 'input')]
+            self.outputPorts = [('neck', 'output'), ('arm_l', 'output'), ('arm_r', 'output'), ('leg_l', 'output'), ('leg_r', 'output')]
         elif mType == 'neck':
-            self.inputPorts = [('head', 'input')]
-            self.outputPorts = [('spine', 'output')]
+            self.inputPorts = [('spine', 'input')]
+            self.outputPorts = [('head', 'output')]
         elif mType == 'limbbase':
-            self.inputPorts = [('limb', 'input')]
-            self.outputPorts = [('spine', 'output')]
+            self.inputPorts = [('spine', 'input')]
+            self.outputPorts = [('limb', 'output')]
         elif mType == 'twobonelimb':
-            self.inputPorts = [('hand_foot', 'input')]
-            self.outputPorts = [('parent', 'output')]
+            self.inputPorts = [('parent', 'input')]
+            self.outputPorts = [('hand_foot', 'output')]
         elif mType == 'foot':
-            self.inputPorts = []
-            self.outputPorts = [('leg', 'output')]
-        elif mType in ['globalmaster', 'master']:
-            self.inputPorts = [('spine', 'input'), ('arm_l', 'input'), ('arm_r', 'input'), ('leg_l', 'input'), ('leg_r', 'input'), ('other', 'input')]
+            self.inputPorts = [('leg', 'input')]
             self.outputPorts = []
+        elif mType in ['globalroot', 'globalmaster']:
+            self.inputPorts = [('pre_script', 'input')]
+            self.outputPorts = [('spine', 'output'), ('arm_l', 'output'), ('arm_r', 'output'), ('leg_l', 'output'), ('leg_r', 'output'), ('other', 'output')]
         elif mType == 'spaceswitch':
             # Port 0: Driven, Port 1+: Drivers
             self.inputPorts = [('driven_0', 'input'), ('driver_1', 'input')]
-            self.outputPorts = [('out_parent', 'output')]
+            self.outputPorts = [('out_result', 'output')]
         elif mType == 'customscript':
-            self.inputPorts = [('port_0', 'input')]
-            self.outputPorts = [('out_exec', 'output')]
+            self.inputPorts = [('in_exec', 'input')]
+            self.outputPorts = [('port_0', 'output')]
+        elif mType == 'finger':
+            self.inputPorts = [('parent', 'input')]
+            self.outputPorts = []
+        elif mType == 'build':
+            # Aggregation node: 1 Array input port (top), 1 output (bottom)
+            self.inputPorts = [('chain_0', 'input')]
+            self.outputPorts = [('out', 'output')]
         else:
             # Generic ports
-            self.inputPorts = [('in_child', 'input')]
-            self.outputPorts = [('out_parent', 'output')]
+            self.inputPorts = [('parent', 'input')]
+            self.outputPorts = [('child', 'output')]
 
     def setupProperties(self):
         """Setup default properties based on module type"""
@@ -105,6 +118,12 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         elif self.moduleType == 'Foot':
             self.properties['joints'] = ['Foot', 'ToeBase', 'Toe_End']
 
+        # Set module-specific property defaults
+        from .propertyEditor import PropertyEditor
+        specificProps = PropertyEditor.getModuleSpecificProperties(self.moduleType)
+        for propDef in specificProps:
+            self.properties[propDef['name']] = propDef['default']
+
     def setupAppearance(self):
         """Setup the visual appearance of the node"""
         # Add shadow effect
@@ -115,10 +134,14 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         self.setGraphicsEffect(shadow)
 
     def boundingRect(self):
-        """Return the bounding rectangle of the node (expanded for ports)"""
-        margin = self.portRadius + self.portOffset + 2
-        return QtCore.QRectF(-self.width/2 - margin, -self.height/2 - margin, 
-                             self.width + margin * 2, self.height + margin * 2)
+        """Return the bounding rectangle of the node (expanded for ports and flags)"""
+        portMargin = self.portRadius + self.portOffset + 2  # 24px for ports (top/bottom)
+        # Left margin: Bypass flag extends to bodyRect.left() - 47, so 47 + 2 padding
+        leftMargin = 49
+        # Right margin: Display flag extends to bodyRect.right() + 25, so 25 + 2 padding
+        rightMargin = 27
+        return QtCore.QRectF(-self.width/2 - leftMargin, -self.height/2 - portMargin, 
+                             self.width + leftMargin + rightMargin, self.height + portMargin * 2)
 
     def paint(self, painter, option, widget):
         """Paint the node"""
@@ -134,6 +157,10 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             headerColor = QtGui.QColor(80, 80, 80)
             bgColor = QtGui.QColor(45, 45, 45)
             borderColor = QtGui.QColor(30, 30, 30)
+
+        # Bypass visual: reduce opacity for entire node body
+        if self.bypassFlag:
+            painter.setOpacity(0.4)
 
         # Draw node body (use fixed size, not full boundingRect)
         bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
@@ -172,8 +199,25 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         # Draw ports
         self.drawPorts(painter)
 
-        # Draw Display Flag (Houdini-style on the right)
+        # Bypass overlay: diagonal slash across the node body
+        if self.bypassFlag:
+            painter.setOpacity(0.7)
+            slashPen = QtGui.QPen(QtGui.QColor(200, 180, 0), 2.5)
+            painter.setPen(slashPen)
+            painter.drawLine(bodyRect.topLeft(), bodyRect.bottomRight())
+            painter.drawLine(bodyRect.topRight(), bodyRect.bottomLeft())
+
+        # Restore full opacity for flags (always visible)
+        painter.setOpacity(1.0)
+
+        # Draw Display Flag (Right)
         self.drawDisplayFlag(painter)
+
+        # Draw Bypass Flag (Far Left)
+        self.drawBypassFlag(painter)
+
+        # Draw Guide Flag (Left, between Bypass and Body)
+        self.drawGuideFlag(painter)
 
     def drawDisplayFlag(self, painter):
         """Draw the Houdini-style display flag on the right of the node"""
@@ -194,19 +238,65 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1))
         painter.drawRect(flagRect)
 
+    def drawGuideFlag(self, painter):
+        """Draw the Guide Mode flag on the left of the node (between Bypass and Body)"""
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        flagWidth = 20
+        flagX = bodyRect.left() - 5 - flagWidth
+        flagY = bodyRect.y()
+        flagHeight = bodyRect.height()
+        
+        flagRect = QtCore.QRectF(flagX, flagY, flagWidth, flagHeight)
+        
+        if self.guideFlag:
+            color = QtGui.QColor(0, 180, 80) # Green for Guide Mode
+        else:
+            color = QtGui.QColor(60, 60, 60) # Dimmed
+            
+        painter.setBrush(QtGui.QBrush(color))
+        painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1))
+        painter.drawRect(flagRect)
+
+    def drawBypassFlag(self, painter):
+        """Draw the Houdini-style Bypass flag to the left of the Guide flag"""
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        flagWidth = 20
+        # Position: left of Guide flag (Guide is at bodyRect.left() - 25)
+        flagX = bodyRect.left() - 5 - flagWidth - 2 - flagWidth  # Guide gap + Guide width + gap + Bypass width
+        flagY = bodyRect.y()
+        flagHeight = bodyRect.height()
+        
+        flagRect = QtCore.QRectF(flagX, flagY, flagWidth, flagHeight)
+        
+        if self.bypassFlag:
+            color = QtGui.QColor(200, 180, 0)  # Houdini Yellow for Bypass
+        else:
+            color = QtGui.QColor(60, 60, 60)   # Dimmed
+            
+        painter.setBrush(QtGui.QBrush(color))
+        painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1))
+        painter.drawRect(flagRect)
+
     def drawPorts(self, painter):
-        """Draw input and output ports with tree-growth layout (Input Top, Output Bottom)"""
+        """Draw input and output ports (Top-Down: Input Top from parent, Output Bottom to children)"""
         bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
 
-        # Draw input ports (Top side - Target for children above)
+        # Draw input ports (Top side - receiving from parent)
         numInputs = len(self.inputPorts)
         for i, (portName, portType) in enumerate(self.inputPorts):
             x = bodyRect.x() + (bodyRect.width() / (numInputs + 1)) * (i + 1)
             y = bodyRect.y() - self.portOffset
-            # INPUTS: Standard Circles (Build node children connect to parent outputs)
-            painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(180, 180, 180)))
+            painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1.5))
+            
+            # Array Port (Build node) -> Square shape on Input
+            if self.moduleType == 'Build':
+                side = self.portRadius * 2
+                painter.drawRect(QtCore.QRectF(x - self.portRadius, y - self.portRadius, side, side))
+            else:
+                painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
 
-        # Draw output ports (Bottom side)
+        # Draw output ports (Bottom side - connecting to children)
         numOutputs = len(self.outputPorts)
         for i, (portName, portType) in enumerate(self.outputPorts):
             x = bodyRect.x() + (bodyRect.width() / (numOutputs + 1)) * (i + 1)
@@ -214,13 +304,7 @@ class ModuleNode(QtWidgets.QGraphicsObject):
 
             painter.setBrush(QtGui.QBrush(QtGui.QColor(180, 180, 180)))
             painter.setPen(QtGui.QPen(QtGui.QColor(30, 30, 30), 1.5))
-            
-            # Array Port (Build node) -> Output is Square (Connects to many parents)
-            if self.moduleType == 'Build':
-                side = self.portRadius * 2
-                painter.drawRect(QtCore.QRectF(x - self.portRadius, y - self.portRadius, side, side))
-            else:
-                painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
+            painter.drawEllipse(QtCore.QPointF(x, y), self.portRadius, self.portRadius)
 
     def shape(self):
         """Return the shape for hit testing (Body + Ports)"""
@@ -245,9 +329,17 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             y = bodyRect.y() + bodyRect.height() + self.portOffset
             path.addEllipse(QtCore.QPointF(x, y), self.portRadius * 1.5, self.portRadius * 1.5)
 
-        # Add Display Flag area
+        # Add Display Flag area (Right)
         flagRect = QtCore.QRectF(bodyRect.right() + 5, bodyRect.y(), 20, bodyRect.height())
         path.addRect(flagRect)
+
+        # Add Guide Flag area (Left)
+        guideFlagRect = QtCore.QRectF(bodyRect.left() - 25, bodyRect.y(), 20, bodyRect.height())
+        path.addRect(guideFlagRect)
+
+        # Add Bypass Flag area (Far Left, left of Guide)
+        bypassFlagRect = QtCore.QRectF(bodyRect.left() - 47, bodyRect.y(), 20, bodyRect.height())
+        path.addRect(bypassFlagRect)
 
         return path
 
@@ -259,24 +351,20 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             if port:
                 portName, portType = port
                 
-                # Disconnect existing connection? 
-                # Standard modules allow only 1 input.
+                # Disconnect existing connection?
+                # Input ports (from parent) allow only 1 connection.
                 if portType == 'input' and self.connections['input']:
-                    # Find the connection for this specific port
                     for conn in self.connections['input']:
                         if conn.endPort == portName:
-                            # 1. Clear selection to allow pure connection drag
                             if self.scene():
                                 self.scene().clearSelection()
                             self.setSelected(False)
-                            
-                            # 2. Defer deletion and re-start to NodeEditor
                             self.connectionUnplugged.emit(self, portName, portType, conn)
                             event.accept()
                             return
 
                 # Normal connection start
-                # 1. Block movement and selection to allow pure connection drag
+                # Readjust flags for proper UI feedback during connection
                 self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
                 if self.scene():
                     self.scene().clearSelection()
@@ -296,16 +384,35 @@ class ModuleNode(QtWidgets.QGraphicsObject):
                 self.displayFlagChanged.emit(self, self.displayFlag)
                 event.accept()
                 return
+
+            # Check if clicking Guide Flag
+            if self.isOverGuideFlag(event.pos()):
+                self.guideFlag = not self.guideFlag
+                self.update()
+                self.guideFlagChanged.emit(self, self.guideFlag)
+                event.accept()
+                return
+
+            # Check if clicking Bypass Flag
+            if self.isOverBypassFlag(event.pos()):
+                self.bypassFlag = not self.bypassFlag
+                self.update()
+                event.accept()
+                return
             
-            # Clicking on the body (Selection and Movement)
-            super().mousePressEvent(event)
+            # Check if clicked inside the main body block
+            bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+            if bodyRect.contains(event.pos()):
+                # Clicking on the body or title (Selection and Movement)
+                super().mousePressEvent(event)
+                return
             
         elif event.button() == QtCore.Qt.RightButton:
             self.showContextMenu(event.pos())
             event.accept()
             return
             
-        # For MiddleButton or others, propagate to the View for panning
+        # For MiddleButton or others, pass up
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -334,7 +441,13 @@ class ModuleNode(QtWidgets.QGraphicsObject):
             # Use specific cursor over ports
             self.setCursor(QtCore.Qt.CrossCursor)
         elif self.isOverDisplayFlag(pos):
-            self.setToolTip("Build Visibility Flag: 클릭하여 이 노드까지 빌드합니다.")
+            self.setToolTip("Display Flag: 클릭하여 이 노드까지 빌드합니다.")
+            self.setCursor(QtCore.Qt.PointingHandCursor)
+        elif self.isOverGuideFlag(pos):
+            self.setToolTip("Guide Flag: 클릭하여 조인트 방향을 수동 조절합니다.")
+            self.setCursor(QtCore.Qt.PointingHandCursor)
+        elif self.isOverBypassFlag(pos):
+            self.setToolTip("Bypass: 클릭하여 빌드 시 이 노드를 건너뜁니다.")
             self.setCursor(QtCore.Qt.PointingHandCursor)
         else:
             self.setToolTip(f"{self.moduleType}: {self.moduleName}")
@@ -354,18 +467,20 @@ class ModuleNode(QtWidgets.QGraphicsObject):
                     return f"Driver Input {idx}: 공간의 기준이 될 타겟 모듈을 연결하세요."
                 except: return "Space Driver Input"
             elif mType == 'CustomScript':
-                return f"Variable Input ({portName}): 스크립트 내에서 @{portName}으로 참조할 수 있습니다."
-            elif mType == 'GlobalMaster':
-                return f"Root Child ({portName}): 리그 루트 아래에 연결될 모듈을 여기에 연결하세요."
+                return f"Exec Input: 실행 순서를 제어하려면 위쪽 노드의 Output에 연결하세요."
+            elif mType in ['GlobalRoot', 'GlobalMaster']:
+                return f"Pre-Script Input: PreCustomScript 노드를 연결할 수 있습니다."
             else:
-                return f"Child Input ({portName}): 자식 모듈을 여기에 연결하여 리깅 구조를 만드세요."
+                return f"Parent Input ({portName}): 위쪽 부모 모듈의 Output 포트에서 연결하세요."
         else: # output
             if mType == 'SpaceSwitch':
-                return "Output: 부모 모듈에 연결하거나 다른 SpaceSwitch의 Driven으로 연결 가능합니다."
+                return "Output: 결과를 다른 노드에 전달합니다."
             elif mType == 'CustomScript':
-                return "Execution Output: 빌드 실행 순서를 제어하기 위해 사용합니다."
+                return f"Variable Output ({portName}): @{portName}으로 참조 가능한 값을 전달합니다."
+            elif mType in ['GlobalRoot', 'GlobalMaster']:
+                return f"Child Output ({portName}): 자식 모듈의 Input 포트에 연결하세요."
             else:
-                return f"Connect to Parent: 위쪽에 있는 부모 모듈의 Input 포트에 연결하세요."
+                return f"Child Output ({portName}): 아래쪽 자식 모듈의 Input 포트에 연결하세요."
 
     def getPortAtPosition(self, pos):
         """Get the port at the given position (Matching shape() hit area)"""
@@ -400,6 +515,18 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         flagRect = QtCore.QRectF(bodyRect.right() + 5, bodyRect.y(), 20, bodyRect.height())
         return flagRect.contains(pos)
 
+    def isOverGuideFlag(self, pos):
+        """Check if the position is over the Guide Flag area"""
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        flagRect = QtCore.QRectF(bodyRect.left() - 25, bodyRect.y(), 20, bodyRect.height())
+        return flagRect.contains(pos)
+
+    def isOverBypassFlag(self, pos):
+        """Check if the position is over the Bypass Flag area (far left)"""
+        bodyRect = QtCore.QRectF(-self.width/2, -self.height/2, self.width, self.height)
+        flagRect = QtCore.QRectF(bodyRect.left() - 47, bodyRect.y(), 20, bodyRect.height())
+        return flagRect.contains(pos)
+
     def showContextMenu(self, pos):
         """Show context menu for the node"""
         menu = QtWidgets.QMenu()
@@ -410,6 +537,13 @@ class ModuleNode(QtWidgets.QGraphicsObject):
 
         menu.addSeparator()
 
+        # Bypass toggle
+        bypassText = "Bypass OFF" if self.bypassFlag else "Bypass ON"
+        bypassAction = menu.addAction(bypassText)
+        bypassAction.triggered.connect(self._toggleBypass)
+
+        menu.addSeparator()
+
         # Delete action
         deleteAction = menu.addAction("Delete")
         deleteAction.triggered.connect(lambda: self.nodeDeleted.emit(self))
@@ -417,6 +551,11 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         if self.scene() and self.scene().views():
             view = self.scene().views()[0]
             menu.exec_(view.mapToGlobal(view.mapFromScene(self.mapToScene(pos))))
+
+    def _toggleBypass(self):
+        """Toggle bypass flag from context menu"""
+        self.bypassFlag = not self.bypassFlag
+        self.update()
 
     def showProperties(self):
         """Show properties dialog for the node"""
@@ -435,7 +574,7 @@ class ModuleNode(QtWidgets.QGraphicsObject):
     def getProperties(self):
         """Get the current properties and metadata of the node for storage"""
         config = self.properties.copy()
-        config['inputPortCount'] = len(self.inputPorts)
+        config['outputPortCount'] = len(self.outputPorts)
         return config
 
     def getPortPositionLocal(self, portName, portType):
@@ -457,9 +596,9 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         numPorts = len(ports)
         x_offset = (bodyRect.width() / (numPorts + 1)) * (portIndex + 1)
         
-        if portType == 'input': # Top (From children above)
+        if portType == 'input': # Top (From parent above)
             y = bodyRect.y() - self.portOffset
-        else: # Output (Bottom) (To parent below)
+        else: # Output (Bottom) (To children below)
             y = bodyRect.y() + bodyRect.height() + self.portOffset
             
         x = bodyRect.x() + x_offset
@@ -480,13 +619,12 @@ class ModuleNode(QtWidgets.QGraphicsObject):
                 
         return super().itemChange(change, value)
 
-    def setInputPortCount(self, count):
-        """Update node's input port count dynamically for any node type"""
-        # Map of base ports for known modules to keep consistent naming
+    def setOutputPortCount(self, count):
+        """Update node's output port count dynamically (children ports)"""
         base_ports_map = {
             'spine': ['neck', 'arm_l', 'arm_r', 'leg_l', 'leg_r', 'other'],
+            'globalroot': ['spine', 'arm_l', 'arm_r', 'leg_l', 'leg_r', 'other'],
             'globalmaster': ['spine', 'arm_l', 'arm_r', 'leg_l', 'leg_r', 'other'],
-            'master': ['spine', 'arm_l', 'arm_r', 'leg_l', 'leg_r', 'other'],
             'neck': ['head', 'other'],
             'twobonelimb': ['hand_foot', 'other'],
             'limbbase': ['limb', 'other'],
@@ -495,16 +633,16 @@ class ModuleNode(QtWidgets.QGraphicsObject):
         }
         
         mType = self.moduleType.lower()
-        base_ports = base_ports_map.get(mType, ['input'])
+        base_ports = base_ports_map.get(mType, ['child'])
         
         new_ports = []
         for i in range(count):
             if i < len(base_ports):
-                new_ports.append((base_ports[i], 'input'))
+                new_ports.append((base_ports[i], 'output'))
             else:
-                new_ports.append((f'input_{i}', 'input'))
+                new_ports.append((f'output_{i}', 'output'))
                 
-        self.inputPorts = new_ports
+        self.outputPorts = new_ports
         self.update()
         
         # Trigger connection updates
