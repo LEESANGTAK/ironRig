@@ -102,8 +102,8 @@ class NodeEditor(QtWidgets.QGraphicsView):
         defaults = get_node_default(moduleType)
         if defaults:
             # Apply port count first as it affects geometry
-            if 'inputPortCount' in defaults:
-                node.setInputPortCount(defaults['inputPortCount'])
+            if 'outputPortCount' in defaults:
+                node.setOutputPortCount(defaults['outputPortCount'])
             
             node.setProperties(defaults)
             print(f"Applied defaults for {moduleType}")
@@ -120,15 +120,17 @@ class NodeEditor(QtWidgets.QGraphicsView):
         node.connectionCompleted.connect(self.completeConnection)
         node.nodeDeleted.connect(self.deleteNode)
         node.displayFlagChanged.connect(self.onNodeDisplayFlagChanged)
+        node.guideFlagChanged.connect(self.onNodeGuideFlagChanged)
 
         self.moduleCreated.emit(moduleType, moduleName)
         return node
 
     def mousePressEvent(self, event):
         """Handle mouse press for navigation and connections"""
+        # 1. Handle MMB Panning globally (intercept before items get it)
         if event.button() == QtCore.Qt.MiddleButton:
             self._last_pan_pos = event.pos()
-            self.setCursor(QtCore.Qt.SizeAllCursor)
+            self.setCursor(QtCore.Qt.ClosedHandCursor)
             event.accept()
             return
 
@@ -155,7 +157,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
     def mouseMoveEvent(self, event):
         """Handle mouse move for panning and temporary connection line"""
         # 1. Handle MMB Panning
-        if self._last_pan_pos is not None:
+        if (event.buttons() & QtCore.Qt.MiddleButton) and self._last_pan_pos is not None:
             delta = event.pos() - self._last_pan_pos
             self._last_pan_pos = event.pos()
             
@@ -165,6 +167,8 @@ class NodeEditor(QtWidgets.QGraphicsView):
             vs.setValue(vs.value() - delta.y())
             event.accept()
             return
+        elif self._last_pan_pos is not None and not (event.buttons() & QtCore.Qt.MiddleButton):
+            self._last_pan_pos = None
 
         # 2. Handle Connection Dragging
         if self.connectionStartNode:
@@ -233,46 +237,45 @@ class NodeEditor(QtWidgets.QGraphicsView):
             event.acceptProposedAction()
 
     def completeConnection(self, targetNode, targetPort, targetType):
-        """Complete a connection to a target node port (Normalized as Output -> Input)"""
+        """Complete a connection (Top-Down: Parent Output -> Child Input)"""
         if (self.connectionStartNode and
             self.connectionStartNode != targetNode and
             self.connectionStartType != targetType): 
 
-            # Normalize direction: Always Source=Child (Output), Target=Parent (Input)
+            # Normalize direction: Always Source=Parent (Output), Target=Child (Input)
             if self.connectionStartType == 'output':
-                childNode, childPort = self.connectionStartNode, self.connectionStartPort
-                parentNode, parentPort = targetNode, targetPort
-            else:
-                childNode, childPort = targetNode, targetPort
                 parentNode, parentPort = self.connectionStartNode, self.connectionStartPort
+                childNode, childPort = targetNode, targetPort
+            else:
+                parentNode, parentPort = targetNode, targetPort
+                childNode, childPort = self.connectionStartNode, self.connectionStartPort
 
-            # Array Port Logic: If target is an input port and NOT a Build node, 
-            # replace existing connection to that port.
-            if parentNode.moduleType != 'Build':
+            # Child input port allows only 1 connection (except Build node)
+            if childNode.moduleType != 'Build':
                 existing = None
-                for conn in parentNode.connections['input']:
-                    if conn.endPort == parentPort:
+                for conn in childNode.connections['input']:
+                    if conn.endPort == childPort:
                         existing = conn
                         break
                 if existing:
                     self.deleteConnection(existing)
 
-            # Create connection line
+            # Create connection line: startNode=Parent(Output), endNode=Child(Input)
             connection = ConnectionLine(
-                childNode, childPort,
-                parentNode, parentPort
+                parentNode, parentPort,
+                childNode, childPort
             )
 
             self._scene.addItem(connection)
             self.connections.append(connection)
 
             # Store connection in nodes
-            childNode.addConnection(connection, 'output')
-            parentNode.addConnection(connection, 'input')
+            parentNode.addConnection(connection, 'output')
+            childNode.addConnection(connection, 'input')
 
             self.connectionCreated.emit(
-                childNode.moduleName,
-                parentNode.moduleName
+                parentNode.moduleName,
+                childNode.moduleName
             )
 
         # Reset connection state
@@ -294,17 +297,17 @@ class NodeEditor(QtWidgets.QGraphicsView):
         connection.deleteConnection()
 
     def unplugConnection(self, node, portName, portType, connection):
-        """Houdini style: Unplug an existing connection and start a new drag from the source"""
-        # 1. Get origin info before deletion
-        sourceNode = connection.startNode
-        sourcePort = connection.startPort
-        sourceType = 'output' # Connections always start from output in our internal data
+        """Houdini style: Unplug an existing connection and start a new drag from the parent"""
+        # 1. Get parent info before deletion (startNode is always parent in Top-Down)
+        parentNode = connection.startNode
+        parentPort = connection.startPort
+        parentType = 'output'
 
         # 2. Delete the connection cleanly
         self.deleteConnection(connection)
 
-        # 3. Start a new connection drag from the original source
-        self.startConnection(sourceNode, sourcePort, sourceType)
+        # 3. Start a new connection drag from the parent's output port
+        self.startConnection(parentNode, parentPort, parentType)
 
     def renameNode(self, node, oldName, newName):
         """Update node name and dictionary key"""
@@ -353,6 +356,94 @@ class NodeEditor(QtWidgets.QGraphicsView):
             # TRIGGER BUILD: Build up to the newly flagged node
             print(f"Display Flag active on: {node.moduleName}. Triggering Build...")
             self.buildRig()
+
+    def onNodeGuideFlagChanged(self, node, state):
+        """Handle Guide Flag activation: build parents, preBuild target for guide mode"""
+        if state:
+            # Only one guide flag at a time
+            for otherNode in self.nodes.values():
+                if otherNode != node and getattr(otherNode, 'guideFlag', False):
+                    otherNode.guideFlag = False
+                    otherNode.update()
+            
+            print(f"Guide Flag active on: {node.moduleName}. Building parents + preBuild...")
+            self.buildGuide(node)
+        else:
+            # Guide flag deactivated: save orient plane data from Maya scene
+            print(f"Guide Flag deactivated on: {node.moduleName}. Saving guide data...")
+            self.saveGuideData(node)
+
+    def buildGuide(self, guideNode):
+        """Build parent chain normally, then only preBuild the guide node"""
+        from maya import cmds
+        import ironRig.api.irGlobal as irg
+        import ironRig.api.irModule as irm
+        import traceback
+        
+        self.logMessage.emit("-" * 50, "info")
+        self.logMessage.emit(f"Guide Mode: Building for {guideNode.moduleName}...", "info")
+        
+        # Temporarily set display flag to build the chain
+        origDisplayNode = None
+        for n in self.nodes.values():
+            if getattr(n, 'displayFlag', False):
+                origDisplayNode = n
+                break
+        
+        # Build the full chain (parents) via normal build, stopping at guide node
+        # For now, trigger a full build then preBuild the guide module
+        # TODO: Optimize to only build parents + preBuild target
+        guideNode.displayFlag = True
+        guideNode.update()
+        self.buildRig()  # Builds up to guideNode including itself
+        
+        # Restore original display flag
+        guideNode.displayFlag = False
+        guideNode.update()
+        if origDisplayNode:
+            origDisplayNode.displayFlag = True
+            origDisplayNode.update()
+        
+        self.logMessage.emit(f"Guide Mode active on: {guideNode.moduleName}", "success")
+
+    def saveGuideData(self, node):
+        """Save orient plane locator data from Maya to node properties"""
+        try:
+            from maya import cmds
+            moduleName = node.moduleName
+            moduleType = node.moduleType
+            
+            # Save midLocator position (common to all modules)
+            midLocName = f"{moduleName}_orientPlane_loc"
+            if cmds.objExists(midLocName):
+                pos = cmds.xform(midLocName, q=True, ws=True, t=True)
+                node.properties['guideMidLocatorPosition'] = pos
+                
+                # Save axis attributes if they exist
+                axisAttrs = {}
+                for attr in ['negateXAxis', 'negateZAxis', 'swapYZAxis']:
+                    fullAttr = f"{midLocName}.{attr}"
+                    if cmds.attributeQuery(attr, node=midLocName, exists=True):
+                        axisAttrs[attr] = cmds.getAttr(fullAttr)
+                if axisAttrs:
+                    node.properties['guideMidLocatorAxisAttrs'] = axisAttrs
+                
+                self.logMessage.emit(f"Saved guide data for {moduleName}: midLocator", "info")
+            
+            # Foot-specific: Save pivot locator positions (in, out, heel, tip)
+            if moduleType == 'Foot':
+                pivotNames = ['in', 'out', 'heel', 'tip']
+                pivotPositions = {}
+                for pivotName in pivotNames:
+                    locName = f"{moduleName}_{pivotName}_pivot_loc"
+                    if cmds.objExists(locName):
+                        pivotPositions[pivotName] = cmds.xform(locName, q=True, ws=True, t=True)
+                if pivotPositions:
+                    node.properties['guidePivotLocatorPositions'] = pivotPositions
+                    self.logMessage.emit(f"Saved Foot pivot data: {list(pivotPositions.keys())}", "info")
+                    
+        except Exception as e:
+            self.logMessage.emit(f"Guide data save warning: {str(e)}", "warning")
 
     def deleteSelectedItems(self):
         """Delete currently selected nodes and connections"""
@@ -412,48 +503,102 @@ class NodeEditor(QtWidgets.QGraphicsView):
         pass
 
     def saveScene(self, filename):
-        """Save the current scene to a file"""
+        """Save the current scene to .ir file (GUI state) + .json file (API data)
+        
+        .ir file references the .json file for API serialization data (controller CVs etc.)
+        """
+        import os
+        
         sceneData = {
-            'nodes': {},
-            'connections': []
+            'version': 2,
+            'gui': {
+                'nodes': {},
+                'connections': []
+            }
         }
 
         # Save node data
         for name, node in self.nodes.items():
-            sceneData['nodes'][name] = {
+            nodeData = {
                 'type': node.moduleType,
                 'name': node.moduleName,
                 'position': {'x': node.pos().x(), 'y': node.pos().y()},
-                'properties': node.getProperties()
+                'properties': node.getProperties(),
+                'guideFlag': getattr(node, 'guideFlag', False),
+                'bypassFlag': getattr(node, 'bypassFlag', False)
             }
+            sceneData['gui']['nodes'][name] = nodeData
 
-        # Save connection data
+        # Save connection data (Top-Down: startNode=Parent, endNode=Child)
         for conn in self.connections:
-            sceneData['connections'].append({
+            sceneData['gui']['connections'].append({
                 'startNode': conn.startNode.moduleName,
                 'startPort': conn.startPort,
                 'endNode': conn.endNode.moduleName,
                 'endPort': conn.endPort
             })
 
+        # Save API .json if a build has been done (captures controller CV shapes)
+        jsonBasename = os.path.splitext(os.path.basename(filename))[0] + '.json'
+        jsonPath = os.path.join(os.path.dirname(filename), jsonBasename)
+        sceneData['apiDataFile'] = jsonBasename
+        
+        lastIrScene = getattr(self, '_lastIrScene', None)
+        if lastIrScene:
+            try:
+                lastIrScene.saveToFile(jsonPath)
+                self._apiDataPath = jsonPath
+                self.logMessage.emit(f"API data saved: {jsonBasename}", "success")
+            except Exception as e:
+                self.logMessage.emit(f"API save warning: {str(e)}", "warning")
+
         with open(filename, 'w') as f:
             json.dump(sceneData, f, indent=2)
+        
+        self.logMessage.emit(f"Scene saved to: {filename}", "success")
 
     def loadScene(self, filename):
-        """Load a scene from a file"""
+        """Load a scene from .ir file and optionally restore from .json API data"""
+        import os
+        
         with open(filename, 'r') as f:
             sceneData = json.load(f)
 
         self.clearScene()
 
+        # Support both v1 (flat) and v2 (gui/api split) formats
+        if 'version' in sceneData and sceneData['version'] >= 2:
+            guiData = sceneData.get('gui', {})
+            nodesData = guiData.get('nodes', {})
+            connsData = guiData.get('connections', [])
+        else:
+            # Legacy v1 format
+            nodesData = sceneData.get('nodes', {})
+            connsData = sceneData.get('connections', [])
+
         # Load nodes
-        for name, nodeData in sceneData['nodes'].items():
+        for name, nodeData in nodesData.items():
             node = self.createModuleNode(nodeData['type'], nodeData['name'])
             node.setPos(nodeData['position']['x'], nodeData['position']['y'])
-            node.setProperties(nodeData.get('properties', {}))
+            
+            props = nodeData.get('properties', {})
+            # Restore output port count first
+            if 'outputPortCount' in props:
+                node.setOutputPortCount(props['outputPortCount'])
+            node.setProperties(props)
+            
+            # Restore guide flag state
+            if nodeData.get('guideFlag', False):
+                node.guideFlag = True
+                node.update()
+
+            # Restore bypass flag state
+            if nodeData.get('bypassFlag', False):
+                node.bypassFlag = True
+                node.update()
 
         # Load connections
-        for connData in sceneData['connections']:
+        for connData in connsData:
             startNode = self.nodes.get(connData['startNode'])
             endNode = self.nodes.get(connData['endNode'])
 
@@ -468,24 +613,45 @@ class NodeEditor(QtWidgets.QGraphicsView):
                 startNode.addConnection(connection, 'output')
                 endNode.addConnection(connection, 'input')
 
-    def getBuildChain(self):
-        """Calculate the build chain (topological sort) from dependencies of the Display Node"""
-        displayNode = None
-        for node in self.nodes.values():
-            if getattr(node, 'displayFlag', False):
-                displayNode = node
-                break
-        
-        if not displayNode:
-            return []
+        # Store reference to API json for build-time CV restoration
+        apiDataFile = sceneData.get('apiDataFile')
+        if apiDataFile:
+            apiJsonPath = os.path.join(os.path.dirname(filename), apiDataFile)
+            if os.path.exists(apiJsonPath):
+                self._apiDataPath = apiJsonPath
+                self.logMessage.emit(f"API data reference: {apiJsonPath}", "info")
+            else:
+                self._apiDataPath = None
+                self.logMessage.emit(f"API data file not found: {apiJsonPath}", "warning")
+        else:
+            self._apiDataPath = None
 
-        # Topological Sort using DFS
+    def getBuildChain(self, buildAll=False):
+        """Calculate the build chain (topological sort)
+        
+        buildAll=False: Only nodes reachable from Display Flag node
+        buildAll=True: All nodes in the graph (ignores Display Flag)
+        """
+        if buildAll:
+            # Use all nodes as entry points; DFS visited set handles deduplication
+            # and topological sort ensures correct build order
+            entryNodes = list(self.nodes.values())
+        else:
+            displayNode = None
+            for node in self.nodes.values():
+                if getattr(node, 'displayFlag', False):
+                    displayNode = node
+                    break
+            if not displayNode:
+                return []
+            entryNodes = [displayNode]
+
+        # Topological Sort using DFS (Top-Down: parent built before child)
         stack = []
         visited = set()
-        processing = set() # For cycle detection
+        processing = set()
         
-        # Define Data-Consumer nodes that behave differently in dependency logic
-        DATA_CONSUMERS = ['Sender', 'SpaceSwitch', 'CustomScript', 'ModuleDecompose']
+        DATA_CONSUMERS = ['Sender', 'SpaceSwitch', 'ModuleDecompose']
         
         def visit(node):
             if node in visited:
@@ -496,27 +662,22 @@ class NodeEditor(QtWidgets.QGraphicsView):
                 
             processing.add(node)
             
-            # --- Dependency 1: Structural Attachment (Parent modules) ---
-            # If I am a Child (e.g. Neck), my Output connects to Parent's Input (e.g. Spine).
-            # So I depend on my Parent (endNode) being built first. 
-            for conn in node.connections.get('output', []):
-                parent_node = conn.endNode
+            # --- Dependency 1: Structural Parent (Top-Down) ---
+            # My Input port connects from Parent's Output. Parent must be built first.
+            for conn in node.connections.get('input', []):
+                parent_node = conn.startNode
                 if parent_node.moduleType not in DATA_CONSUMERS:
                     visit(parent_node)
                     
-            # --- Dependency 2: Data Flow (Input data) ---
-            # If I am a Data Consumer (e.g. Sender), I consume data from my Input connection.
-            # So I depend on the Provider (startNode) being built first.
+            # --- Dependency 2: Data Flow (for data consumers) ---
             if node.moduleType in DATA_CONSUMERS or node.moduleType == 'Build':
                 for conn in node.connections.get('input', []):
                     visit(conn.startNode)
                     
             # --- Dependency 3: Wireless Data (Receiver) ---
-            # If I am a Receiver, I depend on the corresponding Sender being built first.
             if node.moduleType == 'Receiver':
                 targetRoute = node.properties.get('routeName')
                 if targetRoute:
-                    # Find the Sender node with this route name
                     for n in self.nodes.values():
                         if n.moduleType == 'Sender' and n.properties.get('routeName') == targetRoute:
                             visit(n)
@@ -526,18 +687,22 @@ class NodeEditor(QtWidgets.QGraphicsView):
             visited.add(node)
             stack.append(node)
 
-        # 1. Foundation: Evaluate GlobalMaster first if it exists. 
-        # But properly follow the Display Node dependencies so we don't build isolated nodes.
-        # Actually, let's just trace from displayNode. The new logic will naturally find GlobalMaster
-        # if the displayNode is attached to the tree!
-        
-        # 2. Main Chain: Visit the display node and its recursive dependencies
-        visit(displayNode)
+        # Visit entry nodes — DFS will trace up to parents first
+        for entryNode in entryNodes:
+            visit(entryNode)
         
         return stack
 
-    def buildRig(self):
-        """Build the rig incrementally from the node graph based on Display Flag"""
+    def buildAll(self):
+        """Build the entire node graph (ignores Display Flag)"""
+        return self.buildRig(buildAll=True)
+
+    def buildRig(self, buildAll=False):
+        """Build the rig from the node graph
+        
+        buildAll=False: Build up to Display Flag node only
+        buildAll=True: Build all nodes in the graph
+        """
         from maya import cmds
         import ironRig.api.irGlobal as irg
         import ironRig.api.irMaster as irmst
@@ -590,49 +755,49 @@ class NodeEditor(QtWidgets.QGraphicsView):
         irScene = irg.scene.Scene()
 
         # 3. Get the build chain
-        buildChain = self.getBuildChain()
+        buildChain = self.getBuildChain(buildAll=buildAll)
         if not buildChain:
-            print("No Display Flag active. Nothing to build.")
+            if buildAll:
+                print("No nodes found in graph. Nothing to build.")
+            else:
+                print("No Display Flag active. Nothing to build.")
             return
 
-        # 4. Build GlobalMaster
-        globalMasterNode = None
-        for node in buildChain:
-            if node.moduleType == 'GlobalMaster':
-                globalMasterNode = node
-                break
-        
-        if not globalMasterNode:
-            print("Warning: GlobalMaster not found in build chain. Using default 'root'.")
-            globalMst = irScene.addGlobalMaster('root', True)
-        else:
-            props = globalMasterNode.getProperties()
-            rootJnt = props.get('joints', ['root'])[0]
-            if not cmds.objExists(rootJnt):
-                print(f"Error: Root joint '{rootJnt}' not found in Maya.")
-                return
-            globalMst = irScene.addGlobalMaster(rootJnt, True)
-
-        globalMst.build()
+        # 4. Build chain: evaluate nodes in topological order
+        #    Only nodes in the chain are built — consistent "evaluate up to Display Flag" logic.
         builtItemsMap = {} # Node Name -> API Object (Module or Controller)
         routeDataMap = {}  # Route Name -> API Object (Wireless cache)
+        globalMst = None   # Will be set only if GlobalRoot is in the chain
 
-        if globalMasterNode:
-            builtItemsMap[globalMasterNode.moduleName] = globalMst
-        else:
-            builtItemsMap["GlobalMaster_0"] = globalMst
-
-        # 5. Build modules and Advanced Nodes in chain order
         for node in buildChain:
-            if node.moduleType == 'GlobalMaster':
-                continue
                 
             moduleType = node.moduleType
             properties = node.getProperties()
             name = node.moduleName
+
+            # --- Bypass Check: Skip bypassed nodes ---
+            if getattr(node, 'bypassFlag', False):
+                self.logMessage.emit(f"Bypassed: {name} ({moduleType})", "warning")
+                continue
+
+            # --- Case G: GlobalRoot ---
+            if moduleType in ['GlobalRoot', 'GlobalMaster']:
+                props = node.getProperties()
+                rootJnt = props.get('joints', ['root'])[0]
+                if not cmds.objExists(rootJnt):
+                    self.logMessage.emit(f"Error: Root joint '{rootJnt}' not found in Maya.", "error")
+                    continue
+                try:
+                    globalMst = irScene.addGlobalMaster(rootJnt, True)
+                    globalMst.build()
+                    builtItemsMap[name] = globalMst
+                    self.logMessage.emit(f"Built GlobalRoot: {name} (root={rootJnt})", "success")
+                except Exception as e:
+                    self.logMessage.emit(f"GlobalRoot Build Error: {str(e)}", "error")
+                continue
             
             # --- Case A: Standard Modules ---
-            if moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose', 'Sender', 'Receiver', 'Build']:
+            elif moduleType not in ['SpaceSwitch', 'CustomScript', 'ModuleDecompose', 'Sender', 'Receiver', 'Build']:
                 side_str = properties.get('side', 'CENTER')
                 side = getattr(irg.container.Container.SIDE, side_str)
                 joints = properties.get('joints', [])
@@ -652,26 +817,32 @@ class NodeEditor(QtWidgets.QGraphicsView):
                     self.logMessage.emit(f"Building Module {moduleType}: {name}...", "info")
                     module.preBuild()
                     
-                    if moduleType == 'Neck' and 'inputPortCount' in properties:
-                        module.numberOfControllers = properties.get('inputPortCount', 2)
+                    # Apply module-specific properties from PropertyEditor definitions
+                    from .propertyEditor import PropertyEditor
+                    propDefs = PropertyEditor.getModuleSpecificProperties(moduleType)
+                    for propDef in propDefs:
+                        propName = propDef['name']
+                        if propName in properties:
+                            if hasattr(module, propName):
+                                setattr(module, propName, properties[propName])
+                                self.logMessage.emit(f"  Set {propName} = {properties[propName]}", "info")
                     
                     module.build()
                     builtItemsMap[name] = module
 
-                    # Handle Standard Attachment FIRST before adding to master
-                    for conn in node.connections.get('output', []):
-                        parent_node = conn.endNode
-                        parent_port = conn.endPort  # The port on the parent node that this child is connected to
+                    # Handle Attachment: find parent from input connections (Top-Down)
+                    for conn in node.connections.get('input', []):
+                        parent_node = conn.startNode
                         parent_module = builtItemsMap.get(parent_node.moduleName)
+                        if not parent_module:
+                            continue
                         self.logMessage.emit(f"Parent node: {parent_node.moduleType}", "info")
-                        # Use string class check instead of isinstance due to Maya reload environment
                         parent_class_names = [cls.__name__ for cls in parent_module.__class__.__mro__]
-                        if 'Container' in parent_class_names: # Module
-                            if parent_node.moduleType == 'GlobalMaster':
-                                # GlobalMaster does not have outJoints for attachTo, connection is purely logical here
+                        if 'Container' in parent_class_names:
+                            if parent_node.moduleType in ['GlobalRoot', 'GlobalMaster']:
+                                # GlobalRoot does not have outJoints for attachTo
                                 break
                             try:
-                                # Force evaluation of DAG before checking positions
                                 import maya.cmds as cmds
                                 cmds.refresh()
                                 
@@ -681,7 +852,8 @@ class NodeEditor(QtWidgets.QGraphicsView):
                                 self.logMessage.emit(f"Attachment error for {name}: {str(e)}", "error")
                             break
 
-                    globalMst.addModules(module)
+                    if globalMst:
+                        globalMst.addModules(module)
                     self.logMessage.emit(f"Successfully built {name}", "success")
                 except Exception as e:
                     self.logMessage.emit(f"Error building {name}: {str(e)}", "error")
@@ -794,8 +966,18 @@ class NodeEditor(QtWidgets.QGraphicsView):
                     ssb.isParentType = properties.get('isParentType', True)
                     ssb.isOrientType = properties.get('isOrientType', False)
                     
-                    globalMst.addSpaceSwitchBuilder(ssb)
-                    self.logMessage.emit(f"SpaceSwitch {name} registered.", "success")
+                    # Find GlobalRoot in built items to register SpaceSwitch
+                    globalRootObj = None
+                    for builtName, builtObj in builtItemsMap.items():
+                        if hasattr(builtObj, 'addSpaceSwitchBuilder'):
+                            globalRootObj = builtObj
+                            break
+                    
+                    if globalRootObj:
+                        globalRootObj.addSpaceSwitchBuilder(ssb)
+                        self.logMessage.emit(f"SpaceSwitch {name} registered.", "success")
+                    else:
+                        self.logMessage.emit(f"Warning: GlobalRoot not in chain. SpaceSwitch {name} skipped.", "warning")
                 except Exception as e:
                     self.logMessage.emit(f"SpaceSwitch Error: {str(e)}", "error")
 
@@ -816,19 +998,116 @@ class NodeEditor(QtWidgets.QGraphicsView):
                     else:
                         cs = irScene.addPostCustomScript(name, code)
                     
-                    # Inject variables from inputs
-                    for conn in node.connections.get('input', []):
-                        portIdx = conn.endPort.split('_')[-1]
-                        modName = conn.startNode.moduleName
-                        cs.addAttribute(f'port{portIdx}', 1, modName) # 1 = STRING
+                    # Inject @symbol attributes from Property Editor
+                    scriptAttrs = properties.get('scriptAttributes', [])
+                    for attr in scriptAttrs:
+                        attrName = attr.get('name', '')
+                        attrType = 1 if attr.get('type', 'STRING') == 'STRING' else 0  # 1=STRING, 0=NUMBER
+                        attrValue = attr.get('value', '')
+                        if attrType == 0:  # NUMBER
+                            try:
+                                attrValue = float(attrValue)
+                            except (ValueError, TypeError):
+                                attrValue = 0.0
+                        cs.addAttribute(attrName, attrType, attrValue)
+                        self.logMessage.emit(f"  Attribute @{attrName} = {attrValue}", "info")
                     
-                    self.logMessage.emit(f"Custom Script {name} added.", "success")
+                    # Legacy: Inject variables from output port connections
+                    for conn in node.connections.get('output', []):
+                        portName = conn.startPort
+                        childName = conn.endNode.moduleName
+                        cs.addAttribute(f'{portName}', 1, childName)  # 1 = STRING
+                    
+                    # Execute the script now
+                    cs.run()
+                    builtItemsMap[name] = cs
+                    self.logMessage.emit(f"Custom Script {name} executed.", "success")
                 except Exception as e:
                     self.logMessage.emit(f"CustomScript Error: {str(e)}", "error")
 
         self.logMessage.emit(f"Rig Build Complete up to: {buildChain[-1].moduleName}", "success")
+        
+        # 6. Restore Controller CVs from .json if available
+        self._restoreControllerShapes(builtItemsMap)
+        
+        # Store irScene for Save Scene to serialize later
+        self._lastIrScene = irScene
+        
         self.logMessage.emit("-" * 50, "info")
         return irScene
+
+    def _autoSaveApiJson(self, irScene):
+        """Auto-save API serialization to .json after build for controller shape persistence"""
+        import os
+        apiPath = getattr(self, '_apiDataPath', None)
+        if not apiPath or not irScene:
+            return
+        try:
+            irScene.saveToFile(apiPath)
+            self.logMessage.emit(f"API data auto-saved: {os.path.basename(apiPath)}", "success")
+        except Exception as e:
+            self.logMessage.emit(f"API auto-save warning: {str(e)}", "warning")
+
+    def _restoreControllerShapes(self, builtItemsMap):
+        """Restore controller CV positions and colors from saved .json API data"""
+        import os
+        
+        apiPath = getattr(self, '_apiDataPath', None)
+        if not apiPath or not os.path.exists(apiPath):
+            return
+        
+        try:
+            with open(apiPath, 'r') as f:
+                apiData = json.load(f)
+        except Exception as e:
+            self.logMessage.emit(f"CV restore: could not read {apiPath}: {e}", "warning")
+            return
+        
+        # Collect all controller data from .json (globalMaster, modules, masters)
+        savedControllers = {}  # controller name -> {cvsPosition, curvesRGB}
+        
+        # GlobalMaster controllers
+        gm = apiData.get('globalMaster', {})
+        for ctrl in gm.get('controllers', []):
+            savedControllers[ctrl['name']] = ctrl
+        
+        # Module controllers
+        for mod in apiData.get('modules', []):
+            for ctrl in mod.get('controllers', []):
+                savedControllers[ctrl['name']] = ctrl
+        
+        # Master controllers
+        for mst in apiData.get('masters', []):
+            for ctrl in mst.get('controllers', []):
+                savedControllers[ctrl['name']] = ctrl
+        
+        if not savedControllers:
+            return
+        
+        # Apply to built modules
+        from maya import cmds
+        restoredCount = 0
+        
+        for name, builtObj in builtItemsMap.items():
+            if not hasattr(builtObj, 'controllers'):
+                continue
+            for ctrl in builtObj.controllers:
+                ctrlName = ctrl.name if hasattr(ctrl, 'name') else str(ctrl)
+                if ctrlName in savedControllers:
+                    saved = savedControllers[ctrlName]
+                    try:
+                        cvs = saved.get('cvsPosition')
+                        if cvs:
+                            ctrl.restoreCVsPosition(cvs)
+                            restoredCount += 1
+                        rgb = saved.get('curvesRGB')
+                        if rgb:
+                            ctrl.restoreCurvesRGB(rgb)
+                    except Exception as e:
+                        self.logMessage.emit(f"CV restore warning for {ctrlName}: {e}", "warning")
+        
+        if restoredCount:
+            self.logMessage.emit(f"Restored {restoredCount} controller shapes from {os.path.basename(apiPath)}", "success")
 
     def drawBackground(self, painter, rect):
         """Draw the background grid (Major and Minor)"""
@@ -903,7 +1182,7 @@ class NodeEditor(QtWidgets.QGraphicsView):
         """)
 
         # Get available modules from ModulePanel if possible, or use defaults
-        moduleTypes = ["GlobalMaster", "Spine", "Neck", "LimbBase", "TwoBoneLimb", "Foot", "Finger", "MasterGroup", "SpaceSwitch", "CustomScript"]
+        moduleTypes = ["GlobalRoot", "Spine", "Neck", "LimbBase", "TwoBoneLimb", "Foot", "Finger", "MasterGroup", "SpaceSwitch", "CustomScript"]
         
         for mType in moduleTypes:
             action = menu.addAction(mType)
